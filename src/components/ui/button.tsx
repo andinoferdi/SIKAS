@@ -15,15 +15,15 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         className={cn(
           "inline-flex items-center justify-center font-medium rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed",
           {
-            "bg-zinc-900 text-white hover:bg-zinc-800 focus:ring-zinc-500 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100":
+            "bg-btn-primary-bg text-btn-primary-text hover:bg-btn-primary-hover focus:ring-ring-focus":
               variant === "primary",
-            "bg-zinc-100 text-zinc-900 hover:bg-zinc-200 focus:ring-zinc-300 dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700":
+            "bg-btn-secondary-bg text-btn-secondary-text hover:bg-btn-secondary-hover focus:ring-ring-focus":
               variant === "secondary",
-            "border border-zinc-300 bg-transparent hover:bg-zinc-50 focus:ring-zinc-300 dark:border-zinc-700 dark:hover:bg-zinc-800":
+            "border border-btn-outline-border bg-transparent hover:bg-btn-outline-hover focus:ring-ring-focus":
               variant === "outline",
-            "bg-transparent hover:bg-zinc-100 focus:ring-zinc-300 dark:hover:bg-zinc-800":
+            "bg-transparent hover:bg-btn-ghost-hover focus:ring-ring-focus":
               variant === "ghost",
-            "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500":
+            "bg-danger text-white hover:bg-danger-hover focus:ring-ring-error":
               variant === "danger",
           },
           {

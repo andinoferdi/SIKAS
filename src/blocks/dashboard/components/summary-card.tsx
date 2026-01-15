@@ -19,31 +19,31 @@ export function SummaryCard({
   return (
     <Card>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-zinc-900 dark:text-white">
+        <h3 className="font-semibold text-text-primary">
           Ringkasan {getMonthName(month)} {year}
         </h3>
       </div>
 
       <div className="grid grid-cols-3 gap-4">
         <div>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">Pemasukan</p>
-          <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+          <p className="text-xs text-text-muted mb-1">Pemasukan</p>
+          <p className="text-sm font-semibold text-success">
             +{formatCurrency(income)}
           </p>
         </div>
         <div>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">Pengeluaran</p>
-          <p className="text-sm font-semibold text-red-600 dark:text-red-400">
+          <p className="text-xs text-text-muted mb-1">Pengeluaran</p>
+          <p className="text-sm font-semibold text-danger">
             -{formatCurrency(expense)}
           </p>
         </div>
         <div>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">Selisih</p>
+          <p className="text-xs text-text-muted mb-1">Selisih</p>
           <p
             className={`text-sm font-semibold ${
               net >= 0
-                ? "text-emerald-600 dark:text-emerald-400"
-                : "text-red-600 dark:text-red-400"
+                ? "text-success"
+                : "text-danger"
             }`}
           >
             {net >= 0 ? "+" : ""}

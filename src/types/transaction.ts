@@ -23,12 +23,6 @@ export interface CreateTransactionInput {
   transaction_date: string
 }
 
-export interface Category {
-  id: string
-  name: string
-  type: TransactionType
-  created_at: string
-}
 
 export interface MonthlySummary {
   total_income: number

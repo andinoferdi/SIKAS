@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { userService } from "@/service"
 
 interface HeaderProps {
   userName: string
@@ -13,10 +14,10 @@ export function Header({ userName }: HeaderProps) {
 
   const handleLogout = async () => {
     setLoading(true)
-    try {
-      await fetch("/api/auth/logout", { method: "POST" })
+    const success = await userService.logout()
+    if (success) {
       router.push("/login")
-    } catch {
+    } else {
       setLoading(false)
     }
   }
@@ -24,15 +25,15 @@ export function Header({ userName }: HeaderProps) {
   return (
     <header className="flex items-center justify-between mb-6">
       <div>
-        <p className="text-zinc-500 dark:text-zinc-400 text-sm">Halo,</p>
-        <h1 className="text-xl font-bold text-zinc-900 dark:text-white">
+        <p className="text-text-muted text-sm">Halo,</p>
+        <h1 className="text-xl font-bold text-text-primary">
           {userName}
         </h1>
       </div>
       <button
         onClick={handleLogout}
         disabled={loading}
-        className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-500 dark:text-zinc-400"
+        className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors text-icon-muted"
       >
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path

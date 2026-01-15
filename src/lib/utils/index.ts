@@ -1,2 +1,2 @@
-export * from "./format"
-export * from "./cn"
+export * from "@/lib/utils/format"
+export * from "@/lib/utils/cn"

@@ -1,2 +1,3 @@
-export * from "./user"
-export * from "./transaction"
+export * from "@/types/user"
+export * from "@/types/transaction"
+export * from "@/types/category"

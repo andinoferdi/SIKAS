@@ -1,4 +1,4 @@
-import { BottomNav } from "@/components/layout"
+import { BottomNav, Sidebar } from "@/components/layout"
 
 export default function DashboardLayout({
   children,
@@ -6,11 +6,18 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <main className="max-w-md mx-auto pb-24">
-        {children}
-      </main>
-      <BottomNav />
+    <div className="min-h-screen bg-background-secondary">
+      <Sidebar />
+
+      <div className="lg:pl-64">
+        <main className="max-w-7xl mx-auto pb-24 lg:pb-8 lg:px-8">
+          {children}
+        </main>
+      </div>
+
+      <div className="lg:hidden">
+        <BottomNav />
+      </div>
     </div>
   )
 }

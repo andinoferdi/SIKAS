@@ -14,8 +14,8 @@ export function BalanceCard({ title, amount, type }: BalanceCardProps) {
       className={cn(
         "relative overflow-hidden",
         type === "mbanking"
-          ? "bg-gradient-to-br from-blue-500 to-blue-600"
-          : "bg-gradient-to-br from-emerald-500 to-emerald-600"
+          ? "bg-linear-to-br from-gradient-mbanking-from to-gradient-mbanking-to"
+          : "bg-linear-to-br from-gradient-cash-from to-gradient-cash-to"
       )}
     >
       <div className="relative z-10">

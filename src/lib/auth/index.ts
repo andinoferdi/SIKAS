@@ -1,2 +1,2 @@
-export * from "./session"
-export * from "./pin"
+export * from "@/lib/auth/session"
+export * from "@/lib/auth/pin"

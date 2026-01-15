@@ -10,18 +10,18 @@ export function TransactionItem({ transaction, onDelete }: TransactionItemProps)
   const isIncome = transaction.type === "income"
 
   return (
-    <div className="flex items-center justify-between py-3 border-b border-zinc-100 dark:border-zinc-800 last:border-0">
+    <div className="flex items-center justify-between py-3 border-b border-card-border last:border-0">
       <div className="flex items-center gap-3">
         <div
           className={`w-10 h-10 rounded-full flex items-center justify-center ${
             isIncome
-              ? "bg-emerald-100 dark:bg-emerald-900/30"
-              : "bg-red-100 dark:bg-red-900/30"
+              ? "bg-success-bg dark:bg-success-bg-dark"
+              : "bg-danger-bg dark:bg-danger-bg-dark"
           }`}
         >
           {isIncome ? (
             <svg
-              className="w-5 h-5 text-emerald-600 dark:text-emerald-400"
+              className="w-5 h-5 text-success"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -35,7 +35,7 @@ export function TransactionItem({ transaction, onDelete }: TransactionItemProps)
             </svg>
           ) : (
             <svg
-              className="w-5 h-5 text-red-600 dark:text-red-400"
+              className="w-5 h-5 text-danger"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -50,10 +50,10 @@ export function TransactionItem({ transaction, onDelete }: TransactionItemProps)
           )}
         </div>
         <div>
-          <p className="font-medium text-zinc-900 dark:text-white text-sm">
+          <p className="font-medium text-text-primary text-sm">
             {transaction.category}
           </p>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          <p className="text-xs text-text-muted">
             {formatShortDate(transaction.transaction_date)}
             {transaction.description && ` · ${transaction.description}`}
           </p>
@@ -64,21 +64,21 @@ export function TransactionItem({ transaction, onDelete }: TransactionItemProps)
           <p
             className={`font-semibold text-sm ${
               isIncome
-                ? "text-emerald-600 dark:text-emerald-400"
-                : "text-red-600 dark:text-red-400"
+                ? "text-success"
+                : "text-danger"
             }`}
           >
             {isIncome ? "+" : "-"}
             {formatCurrency(transaction.amount)}
           </p>
-          <p className="text-xs text-zinc-400">
+          <p className="text-xs text-text-muted">
             {transaction.payment_method === "mbanking" ? "M-Banking" : "Cash"}
           </p>
         </div>
         {onDelete && (
           <button
             onClick={() => onDelete(transaction.id)}
-            className="p-1 text-zinc-400 hover:text-red-500 transition-colors"
+            className="p-1 text-icon-muted hover:text-danger transition-colors"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
