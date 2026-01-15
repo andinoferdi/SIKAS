@@ -1,9 +1,18 @@
 import { cookies } from "next/headers"
 import { SignJWT, jwtVerify } from "jose"
 
-const SECRET_KEY = new TextEncoder().encode(
-  process.env.SESSION_SECRET || "keuangan-andino-sayu-secret-key-2026-very-secure-app"
-)
+const getSecretKey = () => {
+  const secret = process.env.SESSION_SECRET
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("SESSION_SECRET environment variable is required in production")
+    }
+    return new TextEncoder().encode("dev-only-insecure-secret-do-not-use-in-production")
+  }
+  return new TextEncoder().encode(secret)
+}
+
+const SECRET_KEY = getSecretKey()
 
 export interface SessionPayload {
   userId: string

@@ -1,32 +1,28 @@
 import { cn } from "@/lib/utils"
-import { InputHTMLAttributes, forwardRef } from "react"
+import { type InputHTMLAttributes, forwardRef } from "react"
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string
 }
 
-const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ className, error, ...props }, ref) => {
-    return (
-      <div className="w-full">
-        <input
-          ref={ref}
-          className={cn(
-            "w-full h-12 px-4 rounded-xl border bg-input-bg text-text-primary placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-ring-focus focus:border-transparent transition-colors",
-            error
-              ? "border-input-error focus:ring-ring-error"
-              : "border-input-border",
-            className
-          )}
-          {...props}
-        />
-        {error && (
-          <p className="mt-1 text-sm text-danger">{error}</p>
+const Input = forwardRef<HTMLInputElement, InputProps>(({ className, error, ...props }, ref) => {
+  return (
+    <div className="w-full">
+      <input
+        ref={ref}
+        className={cn(
+          "w-full h-12 px-4 rounded-lg border bg-input-bg text-foreground placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-offset-1 transition-all duration-200",
+          error
+            ? "border-input-error focus:ring-input-error focus:border-input-error"
+            : "border-input-border focus:ring-input-focus focus:border-input-focus",
+          className,
         )}
-      </div>
-    )
-  }
-)
+        {...props}
+      />
+      {error && <p className="mt-2 text-xs font-medium text-danger">{error}</p>}
+    </div>
+  )
+})
 
 Input.displayName = "Input"
 

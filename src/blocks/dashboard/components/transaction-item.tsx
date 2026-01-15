@@ -1,5 +1,10 @@
+"use client"
+
 import { formatCurrency, formatShortDate } from "@/lib/utils/format"
-import { Transaction } from "@/types"
+import type { Transaction } from "@/types"
+import { TrendingUp, TrendingDown, Trash2 } from "lucide-react"
+import { useState } from "react"
+import { cn } from "@/lib/utils"
 
 interface TransactionItemProps {
   transaction: Transaction
@@ -8,86 +13,63 @@ interface TransactionItemProps {
 
 export function TransactionItem({ transaction, onDelete }: TransactionItemProps) {
   const isIncome = transaction.type === "income"
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const handleDelete = async () => {
+    setIsDeleting(true)
+    if (onDelete) {
+      onDelete(transaction.id)
+    }
+  }
 
   return (
-    <div className="flex items-center justify-between py-3 border-b border-card-border last:border-0">
-      <div className="flex items-center gap-3">
+    <div className="flex items-center justify-between py-4 px-3 border-b border-neutral-100 last:border-0 hover:bg-neutral-50 transition-colors duration-200 rounded-lg -mx-2">
+      <div className="flex items-center gap-4 min-w-0 flex-1">
+        {/* Icon */}
         <div
-          className={`w-10 h-10 rounded-full flex items-center justify-center ${
-            isIncome
-              ? "bg-success-bg dark:bg-success-bg-dark"
-              : "bg-danger-bg dark:bg-danger-bg-dark"
-          }`}
+          className={cn(
+            "w-12 h-12 rounded-lg flex items-center justify-center shrink-0 border",
+            isIncome ? "bg-success-bg border-success-border" : "bg-danger-bg border-danger-border",
+          )}
         >
           {isIncome ? (
-            <svg
-              className="w-5 h-5 text-success"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M7 11l5-5m0 0l5 5m-5-5v12"
-              />
-            </svg>
+            <TrendingUp className="h-5 w-5 text-success" />
           ) : (
-            <svg
-              className="w-5 h-5 text-danger"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M17 13l-5 5m0 0l-5-5m5 5V6"
-              />
-            </svg>
+            <TrendingDown className="h-5 w-5 text-danger" />
           )}
         </div>
-        <div>
-          <p className="font-medium text-text-primary text-sm">
-            {transaction.category}
-          </p>
-          <p className="text-xs text-text-muted">
+
+        {/* Content */}
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold text-foreground text-sm">{transaction.category}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
             {formatShortDate(transaction.transaction_date)}
-            {transaction.description && ` · ${transaction.description}`}
+            {transaction.description && ` • ${transaction.description}`}
           </p>
         </div>
       </div>
-      <div className="flex items-center gap-2">
-        <div className="text-right">
-          <p
-            className={`font-semibold text-sm ${
-              isIncome
-                ? "text-success"
-                : "text-danger"
-            }`}
-          >
+
+      {/* Amount & Delete */}
+      <div className="flex items-center gap-3">
+        <div className="text-right shrink-0">
+          <p className={cn("font-semibold text-sm", isIncome ? "text-success" : "text-danger")}>
             {isIncome ? "+" : "-"}
             {formatCurrency(transaction.amount)}
           </p>
-          <p className="text-xs text-text-muted">
+          <p className="text-xs text-neutral-500 mt-0.5">
             {transaction.payment_method === "mbanking" ? "M-Banking" : "Cash"}
           </p>
         </div>
+
+        {/* Delete Button */}
         {onDelete && (
           <button
-            onClick={() => onDelete(transaction.id)}
-            className="p-1 text-icon-muted hover:text-danger transition-colors"
+            onClick={handleDelete}
+            disabled={isDeleting}
+            className="p-2 text-muted-foreground hover:text-danger hover:bg-danger-bg rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+            title="Hapus transaksi"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-              />
-            </svg>
+            <Trash2 className="h-4 w-4" />
           </button>
         )}
       </div>

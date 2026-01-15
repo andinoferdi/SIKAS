@@ -1,12 +1,28 @@
 "use client"
 
+import type React from "react"
+
 import { useEffect, useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { Button, Input, Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui"
-import { Category, TransactionType, PaymentMethod, User } from "@/types"
+import { toast } from "sonner"
+import {
+  Button,
+  Input,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  DatePicker,
+} from "@/components/ui"
+import type { Category, TransactionType, PaymentMethod, User } from "@/types"
 import { cn } from "@/lib/utils"
 import { formatInputCurrency, parseInputCurrency, formatCurrency } from "@/lib/utils/format"
 import { userService, categoryService, transactionService } from "@/service"
+import { DollarSign, Building2 } from "lucide-react"
 
 const MIN_MBANKING_BALANCE = 50000
 
@@ -18,9 +34,7 @@ export default function AddTransactionPage() {
   const [category, setCategory] = useState("")
   const [description, setDescription] = useState("")
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash")
-  const [transactionDate, setTransactionDate] = useState(
-    new Date().toISOString().split("T")[0]
-  )
+  const [transactionDate, setTransactionDate] = useState(new Date().toISOString().split("T")[0])
 
   const [categories, setCategories] = useState<Category[]>([])
   const [user, setUser] = useState<User | null>(null)
@@ -56,9 +70,7 @@ export default function AddTransactionPage() {
       return ""
     }
 
-    const currentBalance = paymentMethod === "mbanking"
-      ? Number(user.mbanking_balance)
-      : Number(user.cash_balance)
+    const currentBalance = paymentMethod === "mbanking" ? Number(user.mbanking_balance) : Number(user.cash_balance)
 
     if (numericAmount > currentBalance) {
       return "Saldo tidak cukup"
@@ -80,12 +92,15 @@ export default function AddTransactionPage() {
     const numericAmount = parseInputCurrency(amount)
 
     if (!numericAmount || !category || !transactionDate) {
-      setError("Lengkapi semua data")
+      const errorMessage = "Lengkapi semua data"
+      setError(errorMessage)
+      toast.error(errorMessage)
       return
     }
 
     if (balanceWarning) {
       setError(balanceWarning)
+      toast.error(balanceWarning)
       return
     }
 
@@ -103,10 +118,12 @@ export default function AddTransactionPage() {
 
     if (result.error) {
       setError(result.error)
+      toast.error(result.error)
       setLoading(false)
       return
     }
 
+    toast.success("Transaksi berhasil disimpan")
     router.push("/dashboard")
   }
 
@@ -117,50 +134,28 @@ export default function AddTransactionPage() {
 
   const getCurrentBalance = () => {
     if (!user) return 0
-    return paymentMethod === "mbanking"
-      ? Number(user.mbanking_balance)
-      : Number(user.cash_balance)
+    return paymentMethod === "mbanking" ? Number(user.mbanking_balance) : Number(user.cash_balance)
   }
 
   return (
     <div className="p-4 lg:p-6 space-y-6">
-      <h1 className="text-xl lg:text-2xl font-bold text-text-primary">
-        Tambah Transaksi
-      </h1>
+      <h1 className="text-xl lg:text-2xl font-bold text-text-primary">Tambah Transaksi</h1>
 
       <div className="lg:grid lg:grid-cols-2 lg:gap-8">
         <form onSubmit={handleSubmit} className="space-y-4 lg:space-y-6">
-          <div className="flex gap-2 p-1 bg-neutral-100 dark:bg-neutral-800 rounded-xl">
-            <button
-              type="button"
-              onClick={() => setType("expense")}
-              className={cn(
-                "flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors",
-                type === "expense"
-                  ? "bg-card text-danger shadow-sm"
-                  : "text-text-muted"
-              )}
-            >
-              Pengeluaran
-            </button>
-            <button
-              type="button"
-              onClick={() => setType("income")}
-              className={cn(
-                "flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors",
-                type === "income"
-                  ? "bg-card text-success shadow-sm"
-                  : "text-text-muted"
-              )}
-            >
-              Pemasukan
-            </button>
-          </div>
+          <Tabs value={type} onValueChange={(val) => setType(val as TransactionType)}>
+            <TabsList className="w-full">
+              <TabsTrigger value="expense" className="flex-1">
+                <span className="text-danger">Pengeluaran</span>
+              </TabsTrigger>
+              <TabsTrigger value="income" className="flex-1">
+                <span className="text-success">Pemasukan</span>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
 
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">
-              Jumlah (Rp)
-            </label>
+            <label className="block text-sm font-medium text-text-secondary mb-2">Jumlah (Rp)</label>
             <Input
               type="text"
               inputMode="numeric"
@@ -177,9 +172,7 @@ export default function AddTransactionPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">
-              Kategori
-            </label>
+            <label className="block text-sm font-medium text-text-secondary mb-2">Kategori</label>
             <Select value={category} onValueChange={setCategory}>
               <SelectTrigger>
                 <SelectValue placeholder="Pilih kategori" />
@@ -195,52 +188,44 @@ export default function AddTransactionPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">
-              Metode Pembayaran
-            </label>
+            <label className="block text-sm font-medium text-text-secondary mb-2">Metode Pembayaran</label>
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={() => setPaymentMethod("cash")}
                 className={cn(
-                  "flex-1 py-3 px-4 rounded-xl border text-sm font-medium transition-colors",
+                  "flex-1 py-3 px-4 rounded-lg border-2 text-sm font-medium transition-all cursor-pointer flex items-center justify-center gap-2",
                   paymentMethod === "cash"
-                    ? "border-neutral-900 dark:border-white bg-neutral-900 dark:bg-white text-white dark:text-neutral-900"
-                    : "border-neutral-300 dark:border-neutral-700 text-text-secondary"
+                    ? "border-primary bg-sky-50 text-primary shadow-sm"
+                    : "border-neutral-200 text-text-secondary hover:border-neutral-300",
                 )}
               >
-                Cash
+                <DollarSign className="h-4 w-4" />
+                <span>Cash</span>
               </button>
               <button
                 type="button"
                 onClick={() => setPaymentMethod("mbanking")}
                 className={cn(
-                  "flex-1 py-3 px-4 rounded-xl border text-sm font-medium transition-colors",
+                  "flex-1 py-3 px-4 rounded-lg border-2 text-sm font-medium transition-all cursor-pointer flex items-center justify-center gap-2",
                   paymentMethod === "mbanking"
-                    ? "border-neutral-900 dark:border-white bg-neutral-900 dark:bg-white text-white dark:text-neutral-900"
-                    : "border-neutral-300 dark:border-neutral-700 text-text-secondary"
+                    ? "border-primary bg-sky-50 text-primary shadow-sm"
+                    : "border-neutral-200 text-text-secondary hover:border-neutral-300",
                 )}
               >
-                M-Banking
+                <Building2 className="h-4 w-4" />
+                <span>M-Banking</span>
               </button>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">
-              Tanggal
-            </label>
-            <Input
-              type="date"
-              value={transactionDate}
-              onChange={(e) => setTransactionDate(e.target.value)}
-            />
+            <label className="block text-sm font-medium text-text-secondary mb-2">Tanggal</label>
+            <DatePicker value={transactionDate} onChange={setTransactionDate} placeholder="Pilih tanggal" />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">
-              Keterangan (opsional)
-            </label>
+            <label className="block text-sm font-medium text-text-secondary mb-2">Keterangan (opsional)</label>
             <Input
               type="text"
               placeholder="Contoh: Makan siang"
@@ -250,14 +235,10 @@ export default function AddTransactionPage() {
           </div>
 
           {balanceWarning && (
-            <p className="text-warning text-sm text-center bg-warning-bg dark:bg-warning-bg-dark p-2 rounded-lg">
-              {balanceWarning}
-            </p>
+            <p className="text-warning-text text-sm text-center bg-warning-bg p-2 rounded-lg">{balanceWarning}</p>
           )}
 
-          {error && (
-            <p className="text-danger text-sm text-center">{error}</p>
-          )}
+          {error && <p className="text-danger-text text-sm text-center bg-danger-bg p-2 rounded-lg">{error}</p>}
 
           <Button
             type="submit"
@@ -271,11 +252,9 @@ export default function AddTransactionPage() {
 
         <div className="hidden lg:block">
           <div className="bg-card rounded-2xl p-6 border border-card-border sticky top-6">
-            <h2 className="font-semibold text-text-primary mb-4">
-              Saldo Saat Ini
-            </h2>
+            <h2 className="font-semibold text-text-primary mb-4">Saldo Saat Ini</h2>
             <div className="space-y-4">
-              <div className="flex items-center justify-between py-3 border-b border-neutral-100 dark:border-neutral-800">
+              <div className="flex items-center justify-between py-3 border-b border-neutral-200">
                 <span className="text-text-secondary">M-Banking</span>
                 <span className="font-semibold text-text-primary">
                   {formatCurrency(Number(user?.mbanking_balance || 0))}

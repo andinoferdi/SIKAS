@@ -23,17 +23,16 @@ export function Header({ userName }: HeaderProps) {
   }
 
   return (
-    <header className="flex items-center justify-between mb-6">
+    <header className="flex items-center justify-between mb-8 pb-6 border-b border-beige-200">
       <div>
-        <p className="text-text-muted text-sm">Halo,</p>
-        <h1 className="text-xl font-bold text-text-primary">
-          {userName}
-        </h1>
+        <p className="text-sm font-medium text-neutral-600">Halo,</p>
+        <h1 className="text-2xl font-bold text-foreground mt-1">{userName}</h1>
       </div>
       <button
         onClick={handleLogout}
         disabled={loading}
-        className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors text-icon-muted"
+        className="p-2.5 rounded-lg hover:bg-beige-100 active:bg-beige-200 transition-colors text-neutral-600 hover:text-foreground disabled:opacity-50"
+        title="Logout"
       >
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path

@@ -118,6 +118,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
+    const balanceChange = type === "expense" ? -transactionAmount : transactionAmount
+
+    const { data: currentUser } = await supabase
+      .from("users")
+      .select("mbanking_balance, cash_balance")
+      .eq("id", session.userId)
+      .single()
+
+    if (currentUser) {
+      const isMbanking = payment_method === "mbanking"
+      const currentBalance = isMbanking
+        ? Number(currentUser.mbanking_balance)
+        : Number(currentUser.cash_balance)
+      const newBalance = currentBalance + balanceChange
+
+      await supabase
+        .from("users")
+        .update(isMbanking ? { mbanking_balance: newBalance } : { cash_balance: newBalance })
+        .eq("id", session.userId)
+    }
+
     return NextResponse.json({ transaction: data })
   } catch {
     return NextResponse.json(

@@ -1,5 +1,6 @@
-import { Transaction } from "@/types"
+import type { Transaction } from "@/types"
 import { TransactionItem } from "@/blocks/dashboard/components/transaction-item"
+import { List } from "lucide-react"
 
 interface TransactionListProps {
   transactions: Transaction[]
@@ -14,33 +15,22 @@ export function TransactionList({
 }: TransactionListProps) {
   if (transactions.length === 0) {
     return (
-      <div className="text-center py-8">
-        <svg
-          className="w-12 h-12 text-neutral-300 dark:text-neutral-700 mx-auto mb-3"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={1.5}
-            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-          />
-        </svg>
-        <p className="text-text-muted text-sm">{emptyMessage}</p>
+      <div className="text-center py-16">
+        <div className="flex justify-center mb-4">
+          <div className="p-4 bg-neutral-100 rounded-lg">
+            <List className="w-8 h-8 text-neutral-400" />
+          </div>
+        </div>
+        <p className="text-neutral-600 text-sm font-medium">{emptyMessage}</p>
+        <p className="text-neutral-500 text-xs mt-2">Mulai dengan menambah transaksi baru</p>
       </div>
     )
   }
 
   return (
-    <div>
+    <div className="space-y-1">
       {transactions.map((transaction) => (
-        <TransactionItem
-          key={transaction.id}
-          transaction={transaction}
-          onDelete={onDelete}
-        />
+        <TransactionItem key={transaction.id} transaction={transaction} onDelete={onDelete} />
       ))}
     </div>
   )

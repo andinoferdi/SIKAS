@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@radix-ui/react-select": "latest",
+    "@radix-ui/react-tabs": "latest",
     "@supabase/ssr": "latest",
     "@supabase/supabase-js": "latest",
     "bcryptjs": "latest",
@@ -18,7 +19,8 @@
     "lucide-react": "latest",
     "next": "latest",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "sonner": "^2.0.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "latest",

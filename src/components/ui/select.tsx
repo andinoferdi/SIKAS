@@ -21,7 +21,7 @@ const SelectTrigger = React.forwardRef<
     data-slot="select-trigger"
     data-size={size}
     className={cn(
-      "group relative flex w-full items-center justify-between gap-2 rounded-xl border transition-all duration-200",
+      "group relative flex w-full items-center justify-between gap-2 rounded-xl border transition-all duration-200 cursor-pointer",
       "border-input-border bg-input-bg text-text-primary",
       "focus-visible:border-ring-focus focus-visible:ring-2 focus-visible:ring-ring-focus/50",
       "disabled:cursor-not-allowed disabled:opacity-50",
@@ -171,9 +171,9 @@ const SelectItem = React.forwardRef<React.ElementRef<typeof SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
         "relative flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm outline-none select-none",
-        "focus:bg-neutral-100 dark:focus:bg-neutral-800 focus:text-text-primary",
+        "focus:bg-sky-50 focus:text-primary",
         "data-disabled:pointer-events-none data-disabled:opacity-50",
-        "hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors",
+        "hover:bg-sky-50 transition-colors",
         className,
       )}
       {...props}

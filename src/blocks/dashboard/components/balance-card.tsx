@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card"
 import { formatCurrency } from "@/lib/utils/format"
 import { cn } from "@/lib/utils"
+import { CreditCard, Wallet } from "lucide-react"
 
 interface BalanceCardProps {
   title: string
@@ -12,48 +13,27 @@ export function BalanceCard({ title, amount, type }: BalanceCardProps) {
   return (
     <Card
       className={cn(
-        "relative overflow-hidden",
+        "relative overflow-hidden border-0 shadow-sm hover:shadow-md transition-shadow duration-300",
         type === "mbanking"
-          ? "bg-linear-to-br from-gradient-mbanking-from to-gradient-mbanking-to"
-          : "bg-linear-to-br from-gradient-cash-from to-gradient-cash-to"
+          ? "bg-linear-to-br from-gradient-mbanking-from to-gradient-mbanking-to text-primary-foreground"
+          : "bg-linear-to-br from-gradient-cash-from to-gradient-cash-to text-primary-foreground",
       )}
     >
-      <div className="relative z-10">
-        <div className="flex items-center gap-2 mb-2">
-          {type === "mbanking" ? (
-            <svg
-              className="w-5 h-5 text-white/80"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-              />
-            </svg>
-          ) : (
-            <svg
-              className="w-5 h-5 text-white/80"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"
-              />
-            </svg>
-          )}
-          <span className="text-sm text-white/80">{title}</span>
+      <div className="relative z-10 p-4 sm:p-5 lg:p-6 flex flex-col justify-between min-h-35 sm:min-h-40">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="p-2 sm:p-2.5 bg-primary-foreground/20 rounded-lg sm:rounded-xl backdrop-blur-md">
+            {type === "mbanking" ? (
+              <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
+            ) : (
+              <Wallet className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
+            )}
+          </div>
+          <span className="text-sm sm:text-base font-medium text-primary-foreground tracking-wide opacity-90">{title}</span>
         </div>
-        <p className="text-xl font-bold text-white">
-          {formatCurrency(amount)}
-        </p>
+        <div>
+          <p className="text-primary-foreground/80 text-xs sm:text-sm font-medium mb-1">Total Balance</p>
+          <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-primary-foreground tracking-tight">{formatCurrency(amount)}</p>
+        </div>
       </div>
     </Card>
   )

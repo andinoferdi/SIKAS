@@ -58,4 +58,15 @@ export const transactionService = {
       return false
     }
   },
+
+  async searchTransactions(query: string): Promise<Transaction[]> {
+    try {
+      if (!query || query.trim().length < 2) return []
+      const res = await fetch(`/api/transactions/search?q=${encodeURIComponent(query)}`)
+      const data: TransactionsResponse = await res.json()
+      return data.transactions || []
+    } catch {
+      return []
+    }
+  },
 }
