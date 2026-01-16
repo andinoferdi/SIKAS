@@ -16,6 +16,7 @@ export function TransactionItem({ transaction, onDelete }: TransactionItemProps)
   const [isDeleting, setIsDeleting] = useState(false)
 
   const handleDelete = async () => {
+    if (!confirm("Hapus transaksi ini?")) return
     setIsDeleting(true)
     if (onDelete) {
       onDelete(transaction.id)
@@ -66,7 +67,7 @@ export function TransactionItem({ transaction, onDelete }: TransactionItemProps)
           <button
             onClick={handleDelete}
             disabled={isDeleting}
-            className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100 disabled:opacity-50"
+            className="p-2 text-red-500 active:bg-red-50 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
             title="Hapus transaksi"
           >
             {isDeleting ? (

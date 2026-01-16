@@ -47,9 +47,16 @@ export const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(
       "December",
     ]
 
+    const formatToLocalDate = (date: Date) => {
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, "0")
+      const day = String(date.getDate()).padStart(2, "0")
+      return `${year}-${month}-${day}`
+    }
+
     const handleDayClick = (day: number) => {
       const newDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)
-      const formattedDate = newDate.toISOString().split("T")[0]
+      const formattedDate = formatToLocalDate(newDate)
       onChange?.(formattedDate)
       setIsOpen(false)
     }
@@ -129,9 +136,9 @@ export const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(
               ))}
               {days.map((day) => {
                 const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)
-                const dateString = date.toISOString().split("T")[0]
+                const dateString = formatToLocalDate(date)
                 const isSelected = selectedDate && dateString === value
-                const isToday = new Date().toISOString().split("T")[0] === dateString
+                const isToday = formatToLocalDate(new Date()) === dateString
 
                 return (
                   <button

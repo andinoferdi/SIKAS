@@ -62,8 +62,6 @@ export default function TransactionsPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Hapus transaksi ini?")) return
-
     const success = await transactionService.deleteTransaction(id)
     if (success) {
       setTransactions((prev) => prev.filter((t) => t.id !== id))
