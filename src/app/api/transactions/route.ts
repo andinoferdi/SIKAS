@@ -67,39 +67,44 @@ export async function POST(request: NextRequest) {
     const transactionAmount = Number(amount)
     const supabase = await createClient()
 
+    // Fetch current balances first
+    const { data: user, error: userError } = await supabase
+      .from("users")
+      .select("mbanking_balance, cash_balance")
+      .eq("id", session.userId)
+      .single()
+
+    if (userError || !user) {
+      return NextResponse.json({ error: "User tidak ditemukan" }, { status: 404 })
+    }
+
+    const isMbanking = payment_method === "mbanking"
+    const currentBalance = isMbanking
+      ? Number(user.mbanking_balance)
+      : Number(user.cash_balance)
+
+    // Calculate new balance
+    const balanceChange = type === "expense" ? -transactionAmount : transactionAmount
+    const newBalance = currentBalance + balanceChange
+
+    // Validate balance
     if (type === "expense") {
-      const { data: user, error: userError } = await supabase
-        .from("users")
-        .select("mbanking_balance, cash_balance")
-        .eq("id", session.userId)
-        .single()
-
-      if (userError || !user) {
-        return NextResponse.json({ error: "User tidak ditemukan" }, { status: 404 })
-      }
-
-      const currentBalance = payment_method === "mbanking"
-        ? Number(user.mbanking_balance)
-        : Number(user.cash_balance)
-
-      if (transactionAmount > currentBalance) {
+      if (newBalance < 0) {
         return NextResponse.json(
           { error: "Saldo tidak cukup" },
           { status: 400 }
         )
       }
 
-      if (payment_method === "mbanking") {
-        const remainingBalance = currentBalance - transactionAmount
-        if (remainingBalance < MIN_MBANKING_BALANCE) {
-          return NextResponse.json(
-            { error: `Minimal saldo M-Banking harus Rp ${MIN_MBANKING_BALANCE.toLocaleString("id-ID")}` },
-            { status: 400 }
-          )
-        }
+      if (isMbanking && newBalance < MIN_MBANKING_BALANCE) {
+        return NextResponse.json(
+          { error: `Minimal saldo M-Banking harus Rp ${MIN_MBANKING_BALANCE.toLocaleString("id-ID")}` },
+          { status: 400 }
+        )
       }
     }
 
+    // Insert transaction
     const { data, error } = await supabase
       .from("transactions")
       .insert({
@@ -118,25 +123,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    const balanceChange = type === "expense" ? -transactionAmount : transactionAmount
-
-    const { data: currentUser } = await supabase
+    // Update balance
+    const { error: balanceError } = await supabase
       .from("users")
-      .select("mbanking_balance, cash_balance")
+      .update(isMbanking ? { mbanking_balance: newBalance } : { cash_balance: newBalance })
       .eq("id", session.userId)
-      .single()
 
-    if (currentUser) {
-      const isMbanking = payment_method === "mbanking"
-      const currentBalance = isMbanking
-        ? Number(currentUser.mbanking_balance)
-        : Number(currentUser.cash_balance)
-      const newBalance = currentBalance + balanceChange
-
+    if (balanceError) {
+      // Rollback: delete the transaction we just created
       await supabase
-        .from("users")
-        .update(isMbanking ? { mbanking_balance: newBalance } : { cash_balance: newBalance })
-        .eq("id", session.userId)
+        .from("transactions")
+        .delete()
+        .eq("id", data.id)
+
+      return NextResponse.json({ error: "Gagal memperbarui saldo" }, { status: 500 })
     }
 
     return NextResponse.json({ transaction: data })
@@ -147,3 +147,4 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+

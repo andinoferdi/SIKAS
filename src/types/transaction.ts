@@ -23,6 +23,15 @@ export interface CreateTransactionInput {
   transaction_date: string
 }
 
+export interface UpdateTransactionInput {
+  amount: number
+  type: TransactionType
+  category: string
+  description?: string
+  payment_method: PaymentMethod
+  transaction_date: string
+}
+
 
 export interface MonthlySummary {
   total_income: number

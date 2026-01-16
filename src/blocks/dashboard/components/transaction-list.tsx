@@ -5,12 +5,14 @@ import { Receipt } from "lucide-react"
 interface TransactionListProps {
   transactions: Transaction[]
   onDelete?: (id: string) => void
+  onEdit?: (transaction: Transaction) => void
   emptyMessage?: string
 }
 
 export function TransactionList({
   transactions,
   onDelete,
+  onEdit,
   emptyMessage = "Belum ada transaksi",
 }: TransactionListProps) {
   if (transactions.length === 0) {
@@ -28,7 +30,12 @@ export function TransactionList({
   return (
     <div className="divide-y divide-neutral-100">
       {transactions.map((transaction) => (
-        <TransactionItem key={transaction.id} transaction={transaction} onDelete={onDelete} />
+        <TransactionItem
+          key={transaction.id}
+          transaction={transaction}
+          onDelete={onDelete}
+          onEdit={onEdit}
+        />
       ))}
     </div>
   )

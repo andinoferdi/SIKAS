@@ -15,6 +15,7 @@ export async function DELETE(
   const { id } = await params
   const supabase = await createClient()
 
+  // Step 1: Fetch transaction data
   const { data: transaction } = await supabase
     .from("transactions")
     .select("amount, type, payment_method")
@@ -26,36 +27,213 @@ export async function DELETE(
     return NextResponse.json({ error: "Transaksi tidak ditemukan" }, { status: 404 })
   }
 
-  const { error } = await supabase
-    .from("transactions")
-    .delete()
-    .eq("id", id)
-    .eq("user_id", session.userId)
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-
-  const balanceReverse = transaction.type === "expense" ? transaction.amount : -transaction.amount
-
+  // Step 2: Fetch current balance
   const { data: currentUser } = await supabase
     .from("users")
     .select("mbanking_balance, cash_balance")
     .eq("id", session.userId)
     .single()
 
-  if (currentUser) {
-    const isMbanking = transaction.payment_method === "mbanking"
-    const currentBalance = isMbanking
-      ? Number(currentUser.mbanking_balance)
-      : Number(currentUser.cash_balance)
-    const newBalance = currentBalance + balanceReverse
+  if (!currentUser) {
+    return NextResponse.json({ error: "User tidak ditemukan" }, { status: 404 })
+  }
 
+  // Step 3: Calculate new balance
+  const isMbanking = transaction.payment_method === "mbanking"
+  const balanceReverse = transaction.type === "expense" ? transaction.amount : -transaction.amount
+  const currentBalance = isMbanking
+    ? Number(currentUser.mbanking_balance)
+    : Number(currentUser.cash_balance)
+  const newBalance = currentBalance + balanceReverse
+
+  // Step 4: Delete transaction
+  const { error: deleteError } = await supabase
+    .from("transactions")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", session.userId)
+
+  if (deleteError) {
+    return NextResponse.json({ error: deleteError.message }, { status: 500 })
+  }
+
+  // Step 5: Update balance
+  const { error: balanceError } = await supabase
+    .from("users")
+    .update(isMbanking ? { mbanking_balance: newBalance } : { cash_balance: newBalance })
+    .eq("id", session.userId)
+
+  if (balanceError) {
+    // Rollback: re-insert the transaction we just deleted
     await supabase
-      .from("users")
-      .update(isMbanking ? { mbanking_balance: newBalance } : { cash_balance: newBalance })
-      .eq("id", session.userId)
+      .from("transactions")
+      .insert({
+        id,
+        user_id: session.userId,
+        amount: transaction.amount,
+        type: transaction.type,
+        payment_method: transaction.payment_method,
+      })
+
+    return NextResponse.json({ error: "Gagal memperbarui saldo" }, { status: 500 })
   }
 
   return NextResponse.json({ success: true })
+}
+
+
+const MIN_MBANKING_BALANCE = 50000
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await getSession()
+
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  const { id } = await params
+  const supabase = await createClient()
+
+  try {
+    const body = await request.json()
+    const { amount, type, category, description, payment_method, transaction_date } = body
+
+    if (!amount || !type || !category || !payment_method || !transaction_date) {
+      return NextResponse.json({ error: "Data tidak lengkap" }, { status: 400 })
+    }
+
+    const newAmount = Number(amount)
+
+    // Fetch original transaction
+    const { data: oldTransaction } = await supabase
+      .from("transactions")
+      .select("*")
+      .eq("id", id)
+      .eq("user_id", session.userId)
+      .single()
+
+    if (!oldTransaction) {
+      return NextResponse.json({ error: "Transaksi tidak ditemukan" }, { status: 404 })
+    }
+
+    // Fetch current user balances
+    const { data: user } = await supabase
+      .from("users")
+      .select("mbanking_balance, cash_balance")
+      .eq("id", session.userId)
+      .single()
+
+    if (!user) {
+      return NextResponse.json({ error: "User tidak ditemukan" }, { status: 404 })
+    }
+
+    let mbankingBalance = Number(user.mbanking_balance)
+    let cashBalance = Number(user.cash_balance)
+
+    // Step 1: Undo old transaction effect
+    const oldIsMbanking = oldTransaction.payment_method === "mbanking"
+    const oldAmount = Number(oldTransaction.amount)
+    
+    if (oldTransaction.type === "expense") {
+      // Undo expense: add back to balance
+      if (oldIsMbanking) {
+        mbankingBalance += oldAmount
+      } else {
+        cashBalance += oldAmount
+      }
+    } else {
+      // Undo income: subtract from balance
+      if (oldIsMbanking) {
+        mbankingBalance -= oldAmount
+      } else {
+        cashBalance -= oldAmount
+      }
+    }
+
+    // Step 2: Apply new transaction effect
+    const newIsMbanking = payment_method === "mbanking"
+    
+    if (type === "expense") {
+      if (newIsMbanking) {
+        mbankingBalance -= newAmount
+      } else {
+        cashBalance -= newAmount
+      }
+    } else {
+      if (newIsMbanking) {
+        mbankingBalance += newAmount
+      } else {
+        cashBalance += newAmount
+      }
+    }
+
+    // Step 3: Validate final balances
+    if (cashBalance < 0) {
+      return NextResponse.json(
+        { error: "Saldo Cash tidak cukup untuk perubahan ini" },
+        { status: 400 }
+      )
+    }
+
+    if (mbankingBalance < MIN_MBANKING_BALANCE) {
+      return NextResponse.json(
+        { error: `Saldo M-Banking minimal harus Rp ${MIN_MBANKING_BALANCE.toLocaleString("id-ID")}` },
+        { status: 400 }
+      )
+    }
+
+    // Step 4: Update transaction
+    const { data: updatedTransaction, error: updateError } = await supabase
+      .from("transactions")
+      .update({
+        amount: newAmount,
+        type,
+        category,
+        description: description || null,
+        payment_method,
+        transaction_date,
+      })
+      .eq("id", id)
+      .eq("user_id", session.userId)
+      .select()
+      .single()
+
+    if (updateError) {
+      return NextResponse.json({ error: updateError.message }, { status: 500 })
+    }
+
+    // Step 5: Update user balances
+    const { error: balanceError } = await supabase
+      .from("users")
+      .update({
+        mbanking_balance: mbankingBalance,
+        cash_balance: cashBalance,
+      })
+      .eq("id", session.userId)
+
+    if (balanceError) {
+      // Rollback: revert transaction to original values
+      await supabase
+        .from("transactions")
+        .update({
+          amount: oldTransaction.amount,
+          type: oldTransaction.type,
+          category: oldTransaction.category,
+          description: oldTransaction.description,
+          payment_method: oldTransaction.payment_method,
+          transaction_date: oldTransaction.transaction_date,
+        })
+        .eq("id", id)
+        .eq("user_id", session.userId)
+
+      return NextResponse.json({ error: "Gagal memperbarui saldo" }, { status: 500 })
+    }
+
+    return NextResponse.json({ transaction: updatedTransaction })
+  } catch {
+    return NextResponse.json({ error: "Terjadi kesalahan server" }, { status: 500 })
+  }
 }

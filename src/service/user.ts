@@ -1,6 +1,6 @@
 import { User } from "@/types"
 
-interface LoginResponse {
+interface AuthResponse {
   success: boolean
   user?: { id: string; name: string }
   error?: string
@@ -22,12 +22,29 @@ export const userService = {
     }
   },
 
-  async login(userName: string, pin: string): Promise<LoginResponse> {
+  async login(userName: string, pin: string): Promise<AuthResponse> {
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userName, pin }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        return { success: false, error: data.error }
+      }
+      return { success: true, user: data.user }
+    } catch {
+      return { success: false, error: "Terjadi kesalahan" }
+    }
+  },
+
+  async register(name: string, pin: string): Promise<AuthResponse> {
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, pin }),
       })
       const data = await res.json()
       if (!res.ok) {

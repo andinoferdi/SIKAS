@@ -2,16 +2,17 @@
 
 import { formatCurrency, formatShortDate } from "@/lib/utils/format"
 import type { Transaction } from "@/types"
-import { ArrowUpRight, ArrowDownRight, Trash2, Loader2 } from "lucide-react"
+import { ArrowUpRight, ArrowDownRight, Trash2, Loader2, Pencil } from "lucide-react"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 
 interface TransactionItemProps {
   transaction: Transaction
   onDelete?: (id: string) => void
+  onEdit?: (transaction: Transaction) => void
 }
 
-export function TransactionItem({ transaction, onDelete }: TransactionItemProps) {
+export function TransactionItem({ transaction, onDelete, onEdit }: TransactionItemProps) {
   const isIncome = transaction.type === "income"
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -20,6 +21,12 @@ export function TransactionItem({ transaction, onDelete }: TransactionItemProps)
     setIsDeleting(true)
     if (onDelete) {
       onDelete(transaction.id)
+    }
+  }
+
+  const handleEdit = () => {
+    if (onEdit) {
+      onEdit(transaction)
     }
   }
 
@@ -51,7 +58,7 @@ export function TransactionItem({ transaction, onDelete }: TransactionItemProps)
       </div>
 
       {/* Amount & Actions */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <div className="text-right">
           <p className={cn("font-semibold text-sm", isIncome ? "text-emerald-600" : "text-red-500")}>
             {isIncome ? "+" : "-"}
@@ -61,6 +68,17 @@ export function TransactionItem({ transaction, onDelete }: TransactionItemProps)
             {transaction.payment_method === "mbanking" ? "M-Banking" : "Cash"}
           </p>
         </div>
+
+        {/* Edit Button */}
+        {onEdit && (
+          <button
+            onClick={handleEdit}
+            className="p-2 text-sky-500 active:bg-sky-50 rounded-lg transition-colors cursor-pointer"
+            title="Edit transaksi"
+          >
+            <Pencil className="h-4 w-4" />
+          </button>
+        )}
 
         {/* Delete Button */}
         {onDelete && (

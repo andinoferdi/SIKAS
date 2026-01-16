@@ -1,6 +1,7 @@
 import { LandingNav } from "@/components/landing/landing-nav"
 import { HeroSection } from "@/components/landing/hero-section"
 import { Footer } from "@/components/landing/footer"
+import { Chatbot } from "@/components/chatbot"
 
 export default function HomePage() {
   return (
@@ -10,6 +11,7 @@ export default function HomePage() {
         <HeroSection />
       </main>
       <Footer />
+      <Chatbot />
     </div>
   )
 }

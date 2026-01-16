@@ -1,4 +1,4 @@
-import { Transaction, CreateTransactionInput } from "@/types"
+import { Transaction, CreateTransactionInput, UpdateTransactionInput } from "@/types"
 
 interface GetTransactionsOptions {
   month?: string
@@ -67,6 +67,23 @@ export const transactionService = {
       return data.transactions || []
     } catch {
       return []
+    }
+  },
+
+  async updateTransaction(id: string, input: UpdateTransactionInput): Promise<TransactionResponse> {
+    try {
+      const res = await fetch(`/api/transactions/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        return { error: data.error || "Gagal memperbarui transaksi" }
+      }
+      return { transaction: data.transaction }
+    } catch {
+      return { error: "Terjadi kesalahan" }
     }
   },
 }

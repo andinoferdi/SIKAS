@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { TransactionList } from "@/blocks/dashboard/components"
+import { EditTransactionModal } from "@/blocks/dashboard/components/edit-transaction-modal"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui"
 import type { Transaction } from "@/types"
 import { getMonthName, getCurrentMonth, getCurrentYear } from "@/lib/utils/format"
@@ -33,6 +34,7 @@ export default function TransactionsPage() {
 
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
 
   const month = searchParams.get("month") || String(getCurrentMonth())
   const year = searchParams.get("year") || String(getCurrentYear())
@@ -69,6 +71,17 @@ export default function TransactionsPage() {
     } else {
       toast.error("Gagal menghapus transaksi")
     }
+  }
+
+  const handleEdit = (transaction: Transaction) => {
+    setEditingTransaction(transaction)
+  }
+
+  const handleEditSuccess = (updatedTransaction: Transaction) => {
+    setTransactions((prev) =>
+      prev.map((t) => (t.id === updatedTransaction.id ? updatedTransaction : t))
+    )
+    setEditingTransaction(null)
   }
 
   return (
@@ -161,6 +174,7 @@ export default function TransactionsPage() {
           <TransactionList
             transactions={filteredTransactions}
             onDelete={handleDelete}
+            onEdit={handleEdit}
             emptyMessage={
               typeFilter === "all"
                 ? `Tidak ada transaksi di ${getMonthName(Number(month))} ${year}`
@@ -175,6 +189,15 @@ export default function TransactionsPage() {
         <p className="text-center text-sm text-neutral-500">
           {filteredTransactions.length} transaksi ditemukan
         </p>
+      )}
+
+      {/* Edit Modal */}
+      {editingTransaction && (
+        <EditTransactionModal
+          transaction={editingTransaction}
+          onClose={() => setEditingTransaction(null)}
+          onSuccess={handleEditSuccess}
+        />
       )}
     </div>
   )
