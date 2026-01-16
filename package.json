@@ -20,7 +20,7 @@
     "next": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "sonner": "^latest"
+    "sonner": "latest"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "latest",
