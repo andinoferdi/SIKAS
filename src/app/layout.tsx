@@ -11,19 +11,19 @@ const plusJakarta = Plus_Jakarta_Sans({
 })
 
 export const metadata: Metadata = {
-  title: "Keuangan Kita - Smart Expense Management",
+  title: "SIKAS - Sistem Informasi Keuangan Sahabat",
   description:
-    "Kelola keuangan bersama dengan mudah. Track expenses, manage categories, dan pahami spending patterns Anda dengan interface yang indah dan intuitif.",
+    "Sistem manajemen keuangan pribadi untuk Andino dan Sayu. Track expenses, manage categories, dan kelola keuangan bersama dengan mudah.",
   keywords: ["expense tracking", "finance management", "budget", "money management"],
-  authors: [{ name: "Keuangan Kita" }],
-  creator: "Keuangan Kita Team",
+  authors: [{ name: "SIKAS" }],
+  creator: "SIKAS Team",
   openGraph: {
     type: "website",
     locale: "id_ID",
-    url: "https://keuangankita.app",
-    title: "Keuangan Kita - Smart Expense Management",
-    description: "Kelola keuangan bersama dengan mudah dan efisien.",
-    siteName: "Keuangan Kita",
+    url: "https://sikas.app",
+    title: "SIKAS - Sistem Informasi Keuangan Sahabat",
+    description: "Sistem manajemen keuangan pribadi untuk mengelola keuangan bersama.",
+    siteName: "SIKAS",
   },
 }
 
