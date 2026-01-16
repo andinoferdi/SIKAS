@@ -1,6 +1,6 @@
-import { LandingNav } from "@/components/landing/landing-nav"
-import { HeroSection } from "@/components/landing/hero-section"
-import { Footer } from "@/components/landing/footer"
+import { LandingNav } from "@/blocks/landing/home/components/landing-nav"
+import { HeroSection } from "@/blocks/landing/home/components/hero-section"
+import { Footer } from "@/blocks/landing/home/components/footer"
 import { Chatbot } from "@/components/chatbot"
 
 export default function HomePage() {

@@ -43,7 +43,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
             : "bg-sky-500 text-white rounded-tr-sm"
         )}
       >
-        <p className="whitespace-pre-wrap break-words">{message.content}</p>
+        <p className="whitespace-pre-wrap wrap-break-word">{message.content}</p>
         {message.isStreaming && (
           <span className="inline-block w-1.5 h-4 bg-current animate-pulse ml-0.5 -mb-0.5" />
         )}

@@ -8,7 +8,6 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  // Server-side auth check
   const session = await getSession()
 
   if (!session) {

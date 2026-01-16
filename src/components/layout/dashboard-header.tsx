@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 import { Search, LogOut, TrendingUp, TrendingDown, Loader2, X, ChevronDown } from "lucide-react"
 import { toast } from "sonner"
@@ -120,7 +121,18 @@ export function DashboardHeader() {
         <div className="flex h-16 items-center justify-between px-4 lg:px-6">
           {/* Left: Logo (mobile) / Page Title (desktop) */}
           <div className="flex items-center gap-3 min-w-0 flex-1">
-            <span className="lg:hidden text-lg font-bold text-sky-600">SIKAS</span>
+            <div className="lg:hidden flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-sky-500 flex items-center justify-center">
+                <Image
+                  src="/images/logo.png"
+                  alt="SIKAS"
+                  width={20}
+                  height={20}
+                  className="object-contain filter brightness-0 invert"
+                />
+              </div>
+              <span className="text-lg font-bold text-sky-600">SIKAS</span>
+            </div>
             <h1 className="hidden lg:block text-lg font-semibold text-neutral-900 truncate">
               {getPageTitle(pathname)}
             </h1>
