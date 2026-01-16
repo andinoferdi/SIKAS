@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { X, Send, Loader2, Bot } from "lucide-react"
 import { type Message } from "@/types/chatbot"
 import {
@@ -24,8 +24,18 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
   const [isStreaming, setIsStreaming] = useState(false)
   const [showQuickReplies, setShowQuickReplies] = useState(true)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
+
+  // Auto-resize textarea
+  const adjustTextareaHeight = useCallback(() => {
+    const textarea = textareaRef.current
+    if (textarea) {
+      textarea.style.height = "auto"
+      const maxHeight = 120 // Max 5 lines approximately
+      textarea.style.height = `${Math.min(textarea.scrollHeight, maxHeight)}px`
+    }
+  }, [])
 
   // Initialize with greeting message
   useEffect(() => {
@@ -39,12 +49,17 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
-  // Focus input when panel opens
+  // Focus textarea when panel opens
   useEffect(() => {
     if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 100)
+      setTimeout(() => textareaRef.current?.focus(), 100)
     }
   }, [isOpen])
+
+  // Adjust textarea height when input changes
+  useEffect(() => {
+    adjustTextareaHeight()
+  }, [input, adjustTextareaHeight])
 
   const sendMessage = async (content: string) => {
     if (!content.trim() || isLoading) return
@@ -62,6 +77,10 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
 
     setMessages((prev) => [...prev, userMessage])
     setInput("")
+    // Reset textarea height
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto"
+    }
     setIsLoading(true)
     setIsStreaming(true)
 
@@ -153,7 +172,7 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
   if (!isOpen) return null
 
   return (
-    <div className="fixed bottom-24 right-4 sm:right-6 w-[calc(100%-2rem)] sm:w-96 max-h-[70vh] bg-white rounded-2xl shadow-2xl border border-neutral-200 flex flex-col overflow-hidden z-50 animate-in slide-in-from-bottom-4 fade-in-0 duration-300">
+    <div className="fixed bottom-24 right-4 sm:right-6 w-[calc(100%-2rem)] sm:w-100 max-h-[80vh] h-185 bg-white rounded-2xl shadow-2xl border border-neutral-200 flex flex-col overflow-hidden z-50 animate-in slide-in-from-bottom-4 fade-in-0 duration-300">
       {/* Header */}
       <div className="bg-sky-500 px-4 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2.5">
@@ -199,21 +218,22 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
         onSubmit={handleSubmit}
         className="p-3 border-t border-neutral-100 shrink-0"
       >
-        <div className="flex items-center gap-2">
-          <input
-            ref={inputRef}
-            type="text"
+        <div className="flex items-end gap-2">
+          <textarea
+            ref={textareaRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ketik pesan..."
             disabled={isLoading}
-            className="flex-1 px-4 py-2.5 text-sm bg-neutral-100 border-0 rounded-full focus:outline-none focus:ring-2 focus:ring-sky-500 disabled:opacity-50"
+            rows={1}
+            className="flex-1 px-4 py-2.5 text-sm bg-neutral-100 border-0 rounded-2xl focus:outline-none focus:ring-2 focus:ring-sky-500 disabled:opacity-50 resize-none overflow-y-auto"
+            style={{ maxHeight: "120px" }}
           />
           <button
             type="submit"
             disabled={!input.trim() || isLoading}
-            className="w-10 h-10 rounded-full bg-sky-500 text-white flex items-center justify-center hover:bg-sky-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            className="w-10 h-10 shrink-0 rounded-full bg-sky-500 text-white flex items-center justify-center hover:bg-sky-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             {isLoading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
