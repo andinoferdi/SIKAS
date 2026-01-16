@@ -1,7 +1,6 @@
-import { Card } from "@/components/ui/card"
 import { formatCurrency } from "@/lib/utils/format"
 import { cn } from "@/lib/utils"
-import { CreditCard, Wallet } from "lucide-react"
+import { Smartphone, Banknote } from "lucide-react"
 
 interface BalanceCardProps {
   title: string
@@ -10,31 +9,52 @@ interface BalanceCardProps {
 }
 
 export function BalanceCard({ title, amount, type }: BalanceCardProps) {
+  const isMbanking = type === "mbanking"
+
   return (
-    <Card
+    <div
       className={cn(
-        "relative overflow-hidden border-0 shadow-sm hover:shadow-md transition-shadow duration-300",
-        type === "mbanking"
-          ? "bg-linear-to-br from-gradient-mbanking-from to-gradient-mbanking-to text-primary-foreground"
-          : "bg-linear-to-br from-gradient-cash-from to-gradient-cash-to text-primary-foreground",
+        "relative overflow-hidden rounded-2xl p-5 transition-all duration-300 hover:shadow-lg",
+        isMbanking
+          ? "bg-linear-to-br from-sky-500 to-sky-600"
+          : "bg-linear-to-br from-emerald-500 to-emerald-600"
       )}
     >
-      <div className="relative z-10 p-4 sm:p-5 lg:p-6 flex flex-col justify-between min-h-35 sm:min-h-40">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="p-2 sm:p-2.5 bg-primary-foreground/20 rounded-lg sm:rounded-xl backdrop-blur-md">
-            {type === "mbanking" ? (
-              <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
+      {/* Decorative circles */}
+      <div
+        className={cn(
+          "absolute -right-6 -top-6 w-24 h-24 rounded-full opacity-20",
+          isMbanking ? "bg-sky-300" : "bg-emerald-300"
+        )}
+      />
+      <div
+        className={cn(
+          "absolute -right-2 top-12 w-16 h-16 rounded-full opacity-10",
+          isMbanking ? "bg-sky-200" : "bg-emerald-200"
+        )}
+      />
+
+      <div className="relative z-10">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+            {isMbanking ? (
+              <Smartphone className="w-5 h-5 text-white" />
             ) : (
-              <Wallet className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
+              <Banknote className="w-5 h-5 text-white" />
             )}
           </div>
-          <span className="text-sm sm:text-base font-medium text-primary-foreground tracking-wide opacity-90">{title}</span>
+          <span className="text-white/90 text-sm font-medium">{title}</span>
         </div>
+
+        {/* Amount */}
         <div>
-          <p className="text-primary-foreground/80 text-xs sm:text-sm font-medium mb-1">Total Balance</p>
-          <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-primary-foreground tracking-tight">{formatCurrency(amount)}</p>
+          <p className="text-white/70 text-xs font-medium mb-1">Saldo</p>
+          <p className="text-white text-2xl sm:text-3xl font-bold tracking-tight">
+            {formatCurrency(amount)}
+          </p>
         </div>
       </div>
-    </Card>
+    </div>
   )
 }

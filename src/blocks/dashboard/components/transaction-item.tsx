@@ -2,7 +2,7 @@
 
 import { formatCurrency, formatShortDate } from "@/lib/utils/format"
 import type { Transaction } from "@/types"
-import { TrendingUp, TrendingDown, Trash2 } from "lucide-react"
+import { ArrowUpRight, ArrowDownRight, Trash2, Loader2 } from "lucide-react"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 
@@ -23,40 +23,40 @@ export function TransactionItem({ transaction, onDelete }: TransactionItemProps)
   }
 
   return (
-    <div className="flex items-center justify-between py-4 px-3 border-b border-neutral-100 last:border-0 hover:bg-neutral-50 transition-colors duration-200 rounded-lg -mx-2">
-      <div className="flex items-center gap-4 min-w-0 flex-1">
-        {/* Icon */}
-        <div
-          className={cn(
-            "w-12 h-12 rounded-lg flex items-center justify-center shrink-0 border",
-            isIncome ? "bg-success-bg border-success-border" : "bg-danger-bg border-danger-border",
-          )}
-        >
-          {isIncome ? (
-            <TrendingUp className="h-5 w-5 text-success" />
-          ) : (
-            <TrendingDown className="h-5 w-5 text-danger" />
-          )}
-        </div>
-
-        {/* Content */}
-        <div className="min-w-0 flex-1">
-          <p className="font-semibold text-foreground text-sm">{transaction.category}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {formatShortDate(transaction.transaction_date)}
-            {transaction.description && ` • ${transaction.description}`}
-          </p>
-        </div>
+    <div className="flex items-center gap-4 py-4 px-1 group">
+      {/* Icon */}
+      <div
+        className={cn(
+          "w-11 h-11 rounded-xl flex items-center justify-center shrink-0",
+          isIncome ? "bg-emerald-100" : "bg-red-100"
+        )}
+      >
+        {isIncome ? (
+          <ArrowUpRight className="h-5 w-5 text-emerald-600" />
+        ) : (
+          <ArrowDownRight className="h-5 w-5 text-red-500" />
+        )}
       </div>
 
-      {/* Amount & Delete */}
+      {/* Content */}
+      <div className="min-w-0 flex-1">
+        <p className="font-medium text-neutral-900 text-sm truncate">{transaction.category}</p>
+        <p className="text-xs text-neutral-500 mt-0.5 truncate">
+          {formatShortDate(transaction.transaction_date)}
+          {transaction.description && (
+            <span className="text-neutral-400"> - {transaction.description}</span>
+          )}
+        </p>
+      </div>
+
+      {/* Amount & Actions */}
       <div className="flex items-center gap-3">
-        <div className="text-right shrink-0">
-          <p className={cn("font-semibold text-sm", isIncome ? "text-success" : "text-danger")}>
+        <div className="text-right">
+          <p className={cn("font-semibold text-sm", isIncome ? "text-emerald-600" : "text-red-500")}>
             {isIncome ? "+" : "-"}
             {formatCurrency(transaction.amount)}
           </p>
-          <p className="text-xs text-neutral-500 mt-0.5">
+          <p className="text-xs text-neutral-400 mt-0.5">
             {transaction.payment_method === "mbanking" ? "M-Banking" : "Cash"}
           </p>
         </div>
@@ -66,10 +66,14 @@ export function TransactionItem({ transaction, onDelete }: TransactionItemProps)
           <button
             onClick={handleDelete}
             disabled={isDeleting}
-            className="p-2 text-muted-foreground hover:text-danger hover:bg-danger-bg rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+            className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100 disabled:opacity-50"
             title="Hapus transaksi"
           >
-            <Trash2 className="h-4 w-4" />
+            {isDeleting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
           </button>
         )}
       </div>

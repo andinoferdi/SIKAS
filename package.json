@@ -1,6 +1,6 @@
 {
-  "name": "my-app",
-  "version": "0.1.0",
+  "name": "sikas",
+  "version": "1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -20,7 +20,7 @@
     "next": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "sonner": "^2.0.7"
+    "sonner": "^latest"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "latest",

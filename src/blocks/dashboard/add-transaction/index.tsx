@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useEffect, useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -22,7 +21,7 @@ import type { Category, TransactionType, PaymentMethod, User } from "@/types"
 import { cn } from "@/lib/utils"
 import { formatInputCurrency, parseInputCurrency, formatCurrency } from "@/lib/utils/format"
 import { userService, categoryService, transactionService } from "@/service"
-import { DollarSign, Building2 } from "lucide-react"
+import { Banknote, Smartphone, Loader2, AlertCircle } from "lucide-react"
 
 const MIN_MBANKING_BALANCE = 50000
 
@@ -138,139 +137,228 @@ export default function AddTransactionPage() {
   }
 
   return (
-    <div className="p-4 lg:p-6 space-y-6">
-      <h1 className="text-xl lg:text-2xl font-bold text-text-primary">Tambah Transaksi</h1>
+    <div className="p-4 lg:p-6 pb-24 lg:pb-6">
+      <div className="max-w-2xl mx-auto lg:max-w-none">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-xl font-bold text-neutral-900">Tambah Transaksi</h1>
+          <p className="text-sm text-neutral-500 mt-1">Catat transaksi keuangan Anda</p>
+        </div>
 
-      <div className="lg:grid lg:grid-cols-2 lg:gap-8">
-        <form onSubmit={handleSubmit} className="space-y-4 lg:space-y-6">
-          <Tabs value={type} onValueChange={(val) => setType(val as TransactionType)}>
-            <TabsList className="w-full">
-              <TabsTrigger value="expense" className="flex-1">
-                <span className="text-danger">Pengeluaran</span>
-              </TabsTrigger>
-              <TabsTrigger value="income" className="flex-1">
-                <span className="text-success">Pemasukan</span>
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+        <div className="lg:grid lg:grid-cols-5 lg:gap-8">
+          {/* Form */}
+          <div className="lg:col-span-3">
+            <div className="bg-white rounded-2xl border border-neutral-200 p-5 lg:p-6">
+              <form onSubmit={handleSubmit} className="space-y-5">
+                {/* Transaction Type */}
+                <Tabs value={type} onValueChange={(val) => setType(val as TransactionType)}>
+                  <TabsList className="w-full bg-neutral-100 p-1 rounded-xl">
+                    <TabsTrigger
+                      value="expense"
+                      className="flex-1 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                    >
+                      <span className={type === "expense" ? "text-red-500 font-medium" : "text-neutral-600"}>
+                        Pengeluaran
+                      </span>
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="income"
+                      className="flex-1 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                    >
+                      <span className={type === "income" ? "text-emerald-600 font-medium" : "text-neutral-600"}>
+                        Pemasukan
+                      </span>
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
 
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">Jumlah (Rp)</label>
-            <Input
-              type="text"
-              inputMode="numeric"
-              placeholder="0"
-              value={amount}
-              onChange={handleAmountChange}
-              className="text-2xl font-bold"
-            />
-            {type === "expense" && user && (
-              <p className="text-xs text-text-muted mt-1">
-                Saldo {paymentMethod === "mbanking" ? "M-Banking" : "Cash"}: {formatCurrency(getCurrentBalance())}
-              </p>
-            )}
-          </div>
+                {/* Amount */}
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">Jumlah</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 text-lg">Rp</span>
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="0"
+                      value={amount}
+                      onChange={handleAmountChange}
+                      className="text-2xl font-bold pl-12 h-14"
+                    />
+                  </div>
+                  {type === "expense" && user && (
+                    <p className="text-xs text-neutral-500 mt-2">
+                      Saldo {paymentMethod === "mbanking" ? "M-Banking" : "Cash"}: {formatCurrency(getCurrentBalance())}
+                    </p>
+                  )}
+                </div>
 
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">Kategori</label>
-            <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger>
-                <SelectValue placeholder="Pilih kategori" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.name}>
-                    {cat.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+                {/* Category */}
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">Kategori</label>
+                  <Select value={category} onValueChange={setCategory}>
+                    <SelectTrigger className="h-12">
+                      <SelectValue placeholder="Pilih kategori" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.name}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">Metode Pembayaran</label>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setPaymentMethod("cash")}
-                className={cn(
-                  "flex-1 py-3 px-4 rounded-lg border-2 text-sm font-medium transition-all cursor-pointer flex items-center justify-center gap-2",
-                  paymentMethod === "cash"
-                    ? "border-primary bg-sky-50 text-primary shadow-sm"
-                    : "border-neutral-200 text-text-secondary hover:border-neutral-300",
+                {/* Payment Method */}
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">Metode Pembayaran</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod("cash")}
+                      className={cn(
+                        "flex items-center gap-3 p-4 rounded-xl border-2 transition-all cursor-pointer",
+                        paymentMethod === "cash"
+                          ? "border-sky-500 bg-sky-50"
+                          : "border-neutral-200 hover:border-neutral-300"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-10 h-10 rounded-xl flex items-center justify-center",
+                        paymentMethod === "cash" ? "bg-sky-100" : "bg-neutral-100"
+                      )}>
+                        <Banknote className={cn(
+                          "h-5 w-5",
+                          paymentMethod === "cash" ? "text-sky-600" : "text-neutral-400"
+                        )} />
+                      </div>
+                      <span className={cn(
+                        "font-medium text-sm",
+                        paymentMethod === "cash" ? "text-sky-700" : "text-neutral-600"
+                      )}>
+                        Cash
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod("mbanking")}
+                      className={cn(
+                        "flex items-center gap-3 p-4 rounded-xl border-2 transition-all cursor-pointer",
+                        paymentMethod === "mbanking"
+                          ? "border-sky-500 bg-sky-50"
+                          : "border-neutral-200 hover:border-neutral-300"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-10 h-10 rounded-xl flex items-center justify-center",
+                        paymentMethod === "mbanking" ? "bg-sky-100" : "bg-neutral-100"
+                      )}>
+                        <Smartphone className={cn(
+                          "h-5 w-5",
+                          paymentMethod === "mbanking" ? "text-sky-600" : "text-neutral-400"
+                        )} />
+                      </div>
+                      <span className={cn(
+                        "font-medium text-sm",
+                        paymentMethod === "mbanking" ? "text-sky-700" : "text-neutral-600"
+                      )}>
+                        M-Banking
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Date */}
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">Tanggal</label>
+                  <DatePicker value={transactionDate} onChange={setTransactionDate} placeholder="Pilih tanggal" />
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Keterangan <span className="text-neutral-400 font-normal">(opsional)</span>
+                  </label>
+                  <Input
+                    type="text"
+                    placeholder="Contoh: Makan siang"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="h-12"
+                  />
+                </div>
+
+                {/* Warnings */}
+                {balanceWarning && (
+                  <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                    <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
+                    <p className="text-sm text-amber-700">{balanceWarning}</p>
+                  </div>
                 )}
-              >
-                <DollarSign className="h-4 w-4" />
-                <span>Cash</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaymentMethod("mbanking")}
-                className={cn(
-                  "flex-1 py-3 px-4 rounded-lg border-2 text-sm font-medium transition-all cursor-pointer flex items-center justify-center gap-2",
-                  paymentMethod === "mbanking"
-                    ? "border-primary bg-sky-50 text-primary shadow-sm"
-                    : "border-neutral-200 text-text-secondary hover:border-neutral-300",
+
+                {error && !balanceWarning && (
+                  <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-xl">
+                    <AlertCircle className="h-4 w-4 text-red-500 shrink-0" />
+                    <p className="text-sm text-red-600">{error}</p>
+                  </div>
                 )}
-              >
-                <Building2 className="h-4 w-4" />
-                <span>M-Banking</span>
-              </button>
+
+                {/* Submit */}
+                <Button
+                  type="submit"
+                  disabled={loading || !amount || !category || !!balanceWarning}
+                  size="lg"
+                  className="w-full h-12 text-base font-medium"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Menyimpan...
+                    </>
+                  ) : (
+                    "Simpan Transaksi"
+                  )}
+                </Button>
+              </form>
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">Tanggal</label>
-            <DatePicker value={transactionDate} onChange={setTransactionDate} placeholder="Pilih tanggal" />
-          </div>
+          {/* Sidebar Info - Desktop Only */}
+          <div className="hidden lg:block lg:col-span-2">
+            <div className="bg-white rounded-2xl border border-neutral-200 p-5 sticky top-20">
+              <h3 className="font-semibold text-neutral-900 mb-4">Saldo Saat Ini</h3>
 
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">Keterangan (opsional)</label>
-            <Input
-              type="text"
-              placeholder="Contoh: Makan siang"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 bg-sky-50 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-sky-100 flex items-center justify-center">
+                      <Smartphone className="h-4 w-4 text-sky-600" />
+                    </div>
+                    <span className="text-sm text-neutral-600">M-Banking</span>
+                  </div>
+                  <span className="font-semibold text-neutral-900">
+                    {formatCurrency(Number(user?.mbanking_balance || 0))}
+                  </span>
+                </div>
 
-          {balanceWarning && (
-            <p className="text-warning-text text-sm text-center bg-warning-bg p-2 rounded-lg">{balanceWarning}</p>
-          )}
-
-          {error && <p className="text-danger-text text-sm text-center bg-danger-bg p-2 rounded-lg">{error}</p>}
-
-          <Button
-            type="submit"
-            disabled={loading || !amount || !category || !!balanceWarning}
-            size="lg"
-            className="w-full"
-          >
-            {loading ? "Menyimpan..." : "Simpan Transaksi"}
-          </Button>
-        </form>
-
-        <div className="hidden lg:block">
-          <div className="bg-card rounded-2xl p-6 border border-card-border sticky top-6">
-            <h2 className="font-semibold text-text-primary mb-4">Saldo Saat Ini</h2>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between py-3 border-b border-neutral-200">
-                <span className="text-text-secondary">M-Banking</span>
-                <span className="font-semibold text-text-primary">
-                  {formatCurrency(Number(user?.mbanking_balance || 0))}
-                </span>
+                <div className="flex items-center justify-between p-3 bg-emerald-50 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-emerald-100 flex items-center justify-center">
+                      <Banknote className="h-4 w-4 text-emerald-600" />
+                    </div>
+                    <span className="text-sm text-neutral-600">Cash</span>
+                  </div>
+                  <span className="font-semibold text-neutral-900">
+                    {formatCurrency(Number(user?.cash_balance || 0))}
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center justify-between py-3">
-                <span className="text-text-secondary">Cash</span>
-                <span className="font-semibold text-text-primary">
-                  {formatCurrency(Number(user?.cash_balance || 0))}
-                </span>
-              </div>
-            </div>
-            <div className="mt-6 pt-4 border-t border-card-border">
-              <div className="text-xs text-text-muted">
-                <p>• Minimal saldo M-Banking: {formatCurrency(MIN_MBANKING_BALANCE)}</p>
-                <p className="mt-1">• Saldo tidak boleh negatif</p>
+
+              <div className="mt-5 pt-4 border-t border-neutral-100">
+                <p className="text-xs text-neutral-500 leading-relaxed">
+                  Minimal saldo M-Banking: {formatCurrency(MIN_MBANKING_BALANCE)}
+                </p>
               </div>
             </div>
           </div>

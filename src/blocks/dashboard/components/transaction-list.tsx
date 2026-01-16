@@ -1,6 +1,6 @@
 import type { Transaction } from "@/types"
 import { TransactionItem } from "@/blocks/dashboard/components/transaction-item"
-import { List } from "lucide-react"
+import { Receipt } from "lucide-react"
 
 interface TransactionListProps {
   transactions: Transaction[]
@@ -15,20 +15,18 @@ export function TransactionList({
 }: TransactionListProps) {
   if (transactions.length === 0) {
     return (
-      <div className="text-center py-16">
-        <div className="flex justify-center mb-4">
-          <div className="p-4 bg-neutral-100 rounded-lg">
-            <List className="w-8 h-8 text-neutral-400" />
-          </div>
+      <div className="text-center py-12">
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-neutral-100 mb-4">
+          <Receipt className="w-7 h-7 text-neutral-400" />
         </div>
-        <p className="text-neutral-600 text-sm font-medium">{emptyMessage}</p>
-        <p className="text-neutral-500 text-xs mt-2">Mulai dengan menambah transaksi baru</p>
+        <p className="text-neutral-700 text-sm font-medium">{emptyMessage}</p>
+        <p className="text-neutral-500 text-xs mt-1">Mulai dengan menambah transaksi baru</p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-1">
+    <div className="divide-y divide-neutral-100">
       {transactions.map((transaction) => (
         <TransactionItem key={transaction.id} transaction={transaction} onDelete={onDelete} />
       ))}

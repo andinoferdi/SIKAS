@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Home, List, Plus } from "lucide-react"
+import { Home, Receipt, Plus } from "lucide-react"
 
 const NAV_ITEMS = [
   {
@@ -12,15 +12,15 @@ const NAV_ITEMS = [
     icon: Home,
   },
   {
-    href: "/dashboard/transactions",
-    label: "Transaksi",
-    icon: List,
-  },
-  {
     href: "/dashboard/add",
     label: "Tambah",
     icon: Plus,
     isMain: true,
+  },
+  {
+    href: "/dashboard/transactions",
+    label: "Transaksi",
+    icon: Receipt,
   },
 ]
 
@@ -28,8 +28,8 @@ export function BottomNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border px-4 pb-safe">
-      <div className="max-w-md mx-auto flex items-center justify-around h-20 gap-2">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-neutral-200 px-6 pb-safe z-40">
+      <div className="max-w-md mx-auto flex items-center justify-around h-16">
         {NAV_ITEMS.map((item) => {
           const isActive = pathname === item.href
           const Icon = item.icon
@@ -39,9 +39,14 @@ export function BottomNav() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex items-center justify-center w-16 h-16 -mt-8 rounded-full bg-linear-to-br from-sky-500 to-sky-600 text-white shadow-lg hover:shadow-xl hover:from-sky-600 hover:to-sky-700 transition-all duration-200 active:scale-95"
+                className={cn(
+                  "flex items-center justify-center w-14 h-14 -mt-7 rounded-2xl shadow-lg transition-all duration-200 active:scale-95",
+                  isActive
+                    ? "bg-sky-600 shadow-sky-500/30"
+                    : "bg-sky-500 hover:bg-sky-600 shadow-sky-500/20"
+                )}
               >
-                <Icon className="h-6 w-6" />
+                <Icon className="h-6 w-6 text-white" strokeWidth={2.5} />
               </Link>
             )
           }
@@ -51,12 +56,16 @@ export function BottomNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center gap-1.5 py-2.5 px-4 rounded-lg transition-all duration-200",
-                isActive ? "text-sky-600 font-medium bg-sky-50" : "text-muted-foreground hover:bg-muted",
+                "flex flex-col items-center gap-1 py-2 px-4 rounded-xl transition-all duration-200",
+                isActive
+                  ? "text-sky-600"
+                  : "text-neutral-400 hover:text-neutral-600"
               )}
             >
-              <Icon className="h-5 w-5" />
-              <span className="text-xs font-medium">{item.label}</span>
+              <Icon className={cn("h-5 w-5", isActive && "text-sky-600")} />
+              <span className={cn("text-xs font-medium", isActive && "text-sky-600")}>
+                {item.label}
+              </span>
             </Link>
           )
         })}
