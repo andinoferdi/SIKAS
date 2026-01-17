@@ -8,7 +8,7 @@ import { EditTransactionModal } from "@/blocks/dashboard/components/edit-transac
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui"
 import type { Transaction } from "@/types"
 import { getMonthName, getCurrentMonth, getCurrentYear } from "@/lib/utils/format"
-import { transactionService } from "@/service"
+import { transactionService } from "@/services"
 import { Calendar, ArrowUpRight, ArrowDownRight, LayoutList } from "lucide-react"
 import { cn } from "@/lib/utils"
 

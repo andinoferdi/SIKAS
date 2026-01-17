@@ -8,7 +8,7 @@ import {
   generateMessageId,
   getGreetingMessage,
   QUICK_REPLIES,
-} from "@/service/chatbot"
+} from "@/services/chatbot"
 import { ChatMessage } from "./chat-message"
 import { QuickReplies } from "./quick-replies"
 

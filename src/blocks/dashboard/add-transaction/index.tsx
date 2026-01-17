@@ -20,7 +20,7 @@ import {
 import type { Category, TransactionType, PaymentMethod, User } from "@/types"
 import { cn } from "@/lib/utils"
 import { formatInputCurrency, parseInputCurrency, formatCurrency } from "@/lib/utils/format"
-import { userService, categoryService, transactionService } from "@/service"
+import { userService, categoryService, transactionService } from "@/services"
 import { Banknote, Smartphone, Loader2, AlertCircle } from "lucide-react"
 
 const MIN_MBANKING_BALANCE = 50000

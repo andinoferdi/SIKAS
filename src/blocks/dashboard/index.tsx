@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { BalanceCard, SummaryCard, TransactionList } from "@/blocks/dashboard/components"
 import type { User, Transaction, MonthlySummary } from "@/types"
-import { userService, transactionService, summaryService } from "@/service"
+import { userService, transactionService, summaryService } from "@/services"
 import { ChevronRight } from "lucide-react"
 
 export default function DashboardPage() {

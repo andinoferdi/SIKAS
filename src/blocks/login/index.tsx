@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { userService } from "@/service"
+import { userService } from "@/services"
 import { Loader2, Eye, EyeOff, ArrowLeft, User, Lock } from "lucide-react"
 
 export default function LoginPage() {

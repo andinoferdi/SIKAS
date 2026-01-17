@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { useState } from "react"
-import { userService } from "@/service"
+import { userService } from "@/services"
 
 interface HeaderProps {
   userName: string
