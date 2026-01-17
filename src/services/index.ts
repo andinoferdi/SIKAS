@@ -1,3 +1,4 @@
+export { fetcher } from "@/services/base"
 export { userService } from "@/services/user"
 export { transactionService } from "@/services/transaction"
 export { categoryService } from "@/services/category"

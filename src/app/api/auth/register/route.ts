@@ -7,7 +7,6 @@ export async function POST(request: NextRequest) {
   try {
     const { name, pin } = await request.json()
 
-    // Validate name
     if (!name || typeof name !== "string") {
       return NextResponse.json(
         { error: "Nama harus diisi" },
@@ -31,7 +30,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate PIN
     if (!pin || typeof pin !== "string") {
       return NextResponse.json(
         { error: "PIN harus diisi" },
@@ -55,7 +53,6 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient()
 
-    // Check if user already exists
     const { data: existingUser, error: checkError } = await supabase
       .from("users")
       .select("id")
@@ -69,7 +66,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Only throw error if it's not "no rows returned"
     if (checkError && checkError.code !== "PGRST116") {
       return NextResponse.json(
         { error: "Terjadi kesalahan saat memeriksa data" },
@@ -77,10 +73,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Hash PIN
     const hashedPin = await hashPin(pin)
 
-    // Create new user
     const { data: newUser, error: insertError } = await supabase
       .from("users")
       .insert({
@@ -100,7 +94,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create session
     await createSession(newUser.id, newUser.name)
 
     return NextResponse.json({

@@ -104,7 +104,6 @@ export const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(
 
         {isOpen && (
           <div className="absolute top-full left-0 right-0 mt-2 bg-card border border-card-border rounded-lg shadow-lg z-50 p-4 min-w-80">
-            {/* Month/Year Header */}
             <div className="flex items-center justify-between mb-4">
               <button type="button" onClick={handlePrevMonth} className="p-2 hover:bg-muted rounded-lg transition-colors">
                 <ChevronLeft className="w-4 h-4 text-text-muted" />
@@ -117,7 +116,6 @@ export const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(
               </button>
             </div>
 
-            {/* Weekday Headers */}
             <div className="grid grid-cols-7 gap-2 mb-2">
               {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
                 <div
@@ -129,7 +127,6 @@ export const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(
               ))}
             </div>
 
-            {/* Days Grid */}
             <div className="grid grid-cols-7 gap-2">
               {emptyDays.map((_, i) => (
                 <div key={`empty-${i}`} />
@@ -160,7 +157,6 @@ export const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(
               })}
             </div>
 
-            {/* Close Button */}
             <div className="mt-4 pt-4 border-t border-border">
               <Button type="button" variant="outline" size="sm" onClick={() => setIsOpen(false)} className="w-full">
                 Close

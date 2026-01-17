@@ -16,3 +16,11 @@ export interface UpdateCategoryInput {
   name?: string
   type?: TransactionType
 }
+
+export interface CategoriesResponse {
+  categories: Category[]
+}
+
+export interface CategoryResponse {
+  category: Category
+}

@@ -18,13 +18,12 @@ export function ChatMessage({ message }: ChatMessageProps) {
         isBot ? "flex-row" : "flex-row-reverse"
       )}
     >
-      {/* Avatar */}
       <div
         className={cn(
           "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
           isBot
-            ? "bg-sky-500 text-white"
-            : "bg-neutral-200 text-neutral-600"
+            ? "bg-primary text-on-surface"
+            : "bg-muted text-muted-foreground"
         )}
       >
         {isBot ? (
@@ -34,13 +33,12 @@ export function ChatMessage({ message }: ChatMessageProps) {
         )}
       </div>
 
-      {/* Message bubble */}
       <div
         className={cn(
           "max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
           isBot
-            ? "bg-neutral-100 text-neutral-800 rounded-tl-sm"
-            : "bg-sky-500 text-white rounded-tr-sm"
+            ? "bg-muted text-card-foreground rounded-tl-sm"
+            : "bg-primary text-on-surface rounded-tr-sm"
         )}
       >
         <p className="whitespace-pre-wrap wrap-break-word">{message.content}</p>

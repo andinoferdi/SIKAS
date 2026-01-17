@@ -67,7 +67,6 @@ export async function POST(request: NextRequest) {
     const transactionAmount = Number(amount)
     const supabase = await createClient()
 
-    // Fetch current balances first
     const { data: user, error: userError } = await supabase
       .from("users")
       .select("mbanking_balance, cash_balance")
@@ -83,11 +82,9 @@ export async function POST(request: NextRequest) {
       ? Number(user.mbanking_balance)
       : Number(user.cash_balance)
 
-    // Calculate new balance
     const balanceChange = type === "expense" ? -transactionAmount : transactionAmount
     const newBalance = currentBalance + balanceChange
 
-    // Validate balance
     if (type === "expense") {
       if (newBalance < 0) {
         return NextResponse.json(
@@ -104,7 +101,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Insert transaction
     const { data, error } = await supabase
       .from("transactions")
       .insert({
@@ -123,14 +119,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    // Update balance
     const { error: balanceError } = await supabase
       .from("users")
       .update(isMbanking ? { mbanking_balance: newBalance } : { cash_balance: newBalance })
       .eq("id", session.userId)
 
     if (balanceError) {
-      // Rollback: delete the transaction we just created
       await supabase
         .from("transactions")
         .delete()

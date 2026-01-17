@@ -12,3 +12,11 @@ export interface SessionUser {
   id: string
   name: string
 }
+
+export interface AuthResponse {
+  user: SessionUser
+}
+
+export interface UserResponse {
+  user: User
+}

@@ -83,11 +83,11 @@ export function DashboardHeader() {
 
   const handleLogout = async () => {
     setLogoutLoading(true)
-    const success = await userService.logout()
-    if (success) {
+    try {
+      await userService.logout()
       toast.success("Berhasil logout")
       router.push("/login")
-    } else {
+    } catch {
       toast.error("Gagal logout")
       setLogoutLoading(false)
     }
@@ -114,15 +114,14 @@ export function DashboardHeader() {
     <>
       <header
         className={cn(
-          "sticky top-0 z-40 bg-white border-b transition-all duration-200",
-          scrolled ? "border-neutral-200 shadow-sm" : "border-transparent"
+          "sticky top-0 z-40 bg-card border-b transition-all duration-200",
+          scrolled ? "border-border shadow-sm" : "border-transparent"
         )}
       >
         <div className="flex h-16 items-center justify-between px-4 lg:px-6">
-          {/* Left: Logo (mobile) / Page Title (desktop) */}
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="lg:hidden flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-sky-500 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                 <Image
                   src="/images/logo.png"
                   alt="SIKAS"
@@ -131,66 +130,62 @@ export function DashboardHeader() {
                   className="object-contain filter brightness-0 invert"
                 />
               </div>
-              <span className="text-lg font-bold text-sky-600">SIKAS</span>
+              <span className="text-lg font-bold text-primary">SIKAS</span>
             </div>
-            <h1 className="hidden lg:block text-lg font-semibold text-neutral-900 truncate">
+            <h1 className="hidden lg:block text-lg font-semibold text-foreground truncate">
               {getPageTitle(pathname)}
             </h1>
           </div>
 
-          {/* Right: Actions */}
           <div className="flex items-center gap-2">
-            {/* Mobile Search Button */}
             <button
               onClick={() => setMobileSearchOpen(true)}
-              className="md:hidden p-2.5 rounded-xl hover:bg-neutral-100 transition-colors"
+              className="md:hidden p-2.5 rounded-xl hover:bg-muted transition-colors"
               aria-label="Search"
             >
-              <Search className="h-5 w-5 text-neutral-600" />
+              <Search className="h-5 w-5 text-muted-foreground" />
             </button>
 
-            {/* Desktop Search */}
             <div ref={searchRef} className="hidden md:block relative">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
                   type="text"
                   placeholder="Cari transaksi..."
                   value={searchValue}
                   onChange={handleSearchChange}
                   onFocus={() => searchResults.length > 0 && setShowSearchResults(true)}
-                  className="w-56 lg:w-64 h-10 pl-9 pr-9 bg-neutral-100 border-0 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:bg-white transition-all"
+                  className="w-56 lg:w-64 h-10 pl-9 pr-9 bg-muted border-0 rounded-xl text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-card transition-all"
                 />
                 {searchLoading && (
-                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400 animate-spin" />
+                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin" />
                 )}
                 {!searchLoading && searchValue && (
                   <button
                     onClick={handleClearSearch}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
                     <X className="h-4 w-4" />
                   </button>
                 )}
               </div>
 
-              {/* Search Results Dropdown */}
               {showSearchResults && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-lg border border-neutral-200 overflow-hidden z-50">
+                <div className="absolute top-full left-0 right-0 mt-2 bg-card rounded-xl shadow-lg border border-border overflow-hidden z-50">
                   {searchResults.length > 0 ? (
                     <div className="max-h-80 overflow-y-auto">
                       {searchResults.map((transaction) => (
                         <button
                           key={transaction.id}
                           onClick={handleResultClick}
-                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-neutral-50 transition-colors text-left border-b border-neutral-100 last:border-0"
+                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left border-b border-border last:border-0 cursor-pointer"
                         >
                           <div
                             className={cn(
                               "w-9 h-9 rounded-lg flex items-center justify-center shrink-0",
                               transaction.type === "income"
-                                ? "bg-emerald-100 text-emerald-600"
-                                : "bg-red-100 text-red-500"
+                                ? "bg-success-bg text-success"
+                                : "bg-danger-bg text-danger"
                             )}
                           >
                             {transaction.type === "income" ? (
@@ -200,10 +195,10 @@ export function DashboardHeader() {
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-neutral-900 truncate">
+                            <p className="text-sm font-medium text-foreground truncate">
                               {transaction.category}
                             </p>
-                            <p className="text-xs text-neutral-500 truncate">
+                            <p className="text-xs text-muted-foreground truncate">
                               {formatShortDate(transaction.transaction_date)}
                               {transaction.description && ` - ${transaction.description}`}
                             </p>
@@ -211,7 +206,7 @@ export function DashboardHeader() {
                           <p
                             className={cn(
                               "text-sm font-semibold shrink-0",
-                              transaction.type === "income" ? "text-emerald-600" : "text-red-500"
+                              transaction.type === "income" ? "text-success" : "text-danger"
                             )}
                           >
                             {transaction.type === "income" ? "+" : "-"}
@@ -222,7 +217,7 @@ export function DashboardHeader() {
                     </div>
                   ) : (
                     <div className="px-4 py-8 text-center">
-                      <p className="text-sm text-neutral-500">
+                      <p className="text-sm text-muted-foreground">
                         Tidak ada hasil untuk &ldquo;{searchValue}&rdquo;
                       </p>
                     </div>
@@ -231,30 +226,28 @@ export function DashboardHeader() {
               )}
             </div>
 
-            {/* User Dropdown */}
             <div ref={dropdownRef} className="relative">
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center gap-2 p-1.5 pr-3 rounded-xl hover:bg-neutral-100 transition-colors cursor-pointer"
+                className="flex items-center gap-2 p-1.5 pr-3 rounded-xl hover:bg-muted transition-colors cursor-pointer"
               >
-                <div className="h-8 w-8 rounded-full bg-linear-to-br from-sky-400 to-sky-600 flex items-center justify-center text-white text-sm font-medium shrink-0">
+                <div className="h-8 w-8 rounded-full bg-linear-to-br from-primary/80 to-primary flex items-center justify-center text-primary-foreground text-sm font-medium shrink-0">
                   {user?.name?.[0]?.toUpperCase() || "U"}
                 </div>
-                <span className="hidden sm:block text-sm font-medium text-neutral-700 max-w-24 truncate">
+                <span className="hidden sm:block text-sm font-medium text-foreground max-w-24 truncate">
                   {user?.name || "User"}
                 </span>
                 <ChevronDown className={cn(
-                  "hidden sm:block h-4 w-4 text-neutral-400 transition-transform",
+                  "hidden sm:block h-4 w-4 text-muted-foreground transition-transform",
                   dropdownOpen && "rotate-180"
                 )} />
               </button>
 
-              {/* Dropdown Menu */}
               {dropdownOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-neutral-200 py-1 z-50">
-                  <div className="px-4 py-3 border-b border-neutral-100">
-                    <p className="text-sm font-medium text-neutral-900">{user?.name || "User"}</p>
-                    <p className="text-xs text-neutral-500 mt-0.5">Akun Personal</p>
+                <div className="absolute right-0 mt-2 w-56 bg-card rounded-xl shadow-lg border border-border py-1 z-50">
+                  <div className="px-4 py-3 border-b border-border">
+                    <p className="text-sm font-medium text-foreground">{user?.name || "User"}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Akun Personal</p>
                   </div>
 
                   <div className="py-1">
@@ -264,7 +257,7 @@ export function DashboardHeader() {
                         setDropdownOpen(false)
                       }}
                       disabled={logoutLoading}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-danger hover:bg-destructive/10 transition-colors disabled:opacity-50 cursor-pointer"
                     >
                       {logoutLoading ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -281,54 +274,51 @@ export function DashboardHeader() {
         </div>
       </header>
 
-      {/* Mobile Search Overlay */}
       {mobileSearchOpen && (
-        <div className="fixed inset-0 z-50 bg-white md:hidden">
+        <div className="fixed inset-0 z-50 bg-card md:hidden">
           <div className="flex flex-col h-full">
-            {/* Mobile Search Header */}
-            <div className="flex items-center gap-3 px-4 py-3 border-b border-neutral-200">
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
               <button
                 onClick={() => {
                   setMobileSearchOpen(false)
                   handleClearSearch()
                 }}
-                className="p-2 -ml-2 rounded-lg hover:bg-neutral-100"
+                className="p-2 -ml-2 rounded-lg hover:bg-muted"
               >
-                <X className="h-5 w-5 text-neutral-600" />
+                <X className="h-5 w-5 text-muted-foreground" />
               </button>
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
                   type="text"
                   placeholder="Cari transaksi..."
                   value={searchValue}
                   onChange={handleSearchChange}
                   autoFocus
-                  className="w-full h-10 pl-9 pr-4 bg-neutral-100 border-0 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                  className="w-full h-10 pl-9 pr-4 bg-muted border-0 rounded-xl text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
               </div>
             </div>
 
-            {/* Mobile Search Results */}
             <div className="flex-1 overflow-y-auto">
               {searchLoading ? (
                 <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-6 w-6 text-sky-500 animate-spin" />
+                  <Loader2 className="h-6 w-6 text-primary animate-spin" />
                 </div>
               ) : searchResults.length > 0 ? (
-                <div className="divide-y divide-neutral-100">
+                <div className="divide-y divide-border">
                   {searchResults.map((transaction) => (
                     <button
                       key={transaction.id}
                       onClick={handleResultClick}
-                      className="w-full flex items-center gap-3 px-4 py-4 hover:bg-neutral-50 transition-colors text-left"
+                      className="w-full flex items-center gap-3 px-4 py-4 hover:bg-muted transition-colors text-left cursor-pointer"
                     >
                       <div
                         className={cn(
                           "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
                           transaction.type === "income"
-                            ? "bg-emerald-100 text-emerald-600"
-                            : "bg-red-100 text-red-500"
+                            ? "bg-success-bg text-success"
+                            : "bg-danger-bg text-danger"
                         )}
                       >
                         {transaction.type === "income" ? (
@@ -338,10 +328,10 @@ export function DashboardHeader() {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-neutral-900 truncate">
+                        <p className="text-sm font-medium text-foreground truncate">
                           {transaction.category}
                         </p>
-                        <p className="text-xs text-neutral-500 truncate">
+                        <p className="text-xs text-muted-foreground truncate">
                           {formatShortDate(transaction.transaction_date)}
                           {transaction.description && ` - ${transaction.description}`}
                         </p>
@@ -349,7 +339,7 @@ export function DashboardHeader() {
                       <p
                         className={cn(
                           "text-sm font-semibold shrink-0",
-                          transaction.type === "income" ? "text-emerald-600" : "text-red-500"
+                          transaction.type === "income" ? "text-success" : "text-danger"
                         )}
                       >
                         {transaction.type === "income" ? "+" : "-"}
@@ -360,19 +350,19 @@ export function DashboardHeader() {
                 </div>
               ) : searchValue.length >= 2 ? (
                 <div className="flex flex-col items-center justify-center py-12 px-4">
-                  <div className="w-16 h-16 rounded-full bg-neutral-100 flex items-center justify-center mb-4">
-                    <Search className="h-7 w-7 text-neutral-400" />
+                  <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                    <Search className="h-7 w-7 text-muted-foreground" />
                   </div>
-                  <p className="text-sm text-neutral-500 text-center">
+                  <p className="text-sm text-muted-foreground text-center">
                     Tidak ada hasil untuk &ldquo;{searchValue}&rdquo;
                   </p>
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 px-4">
-                  <div className="w-16 h-16 rounded-full bg-neutral-100 flex items-center justify-center mb-4">
-                    <Search className="h-7 w-7 text-neutral-400" />
+                  <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                    <Search className="h-7 w-7 text-muted-foreground" />
                   </div>
-                  <p className="text-sm text-neutral-500 text-center">
+                  <p className="text-sm text-muted-foreground text-center">
                     Ketik minimal 2 karakter untuk mencari
                   </p>
                 </div>

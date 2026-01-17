@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useMemo } from "react"
+import { useState, useMemo } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { TransactionList } from "@/blocks/dashboard/components"
@@ -8,7 +8,7 @@ import { EditTransactionModal } from "@/blocks/dashboard/components/edit-transac
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui"
 import type { Transaction } from "@/types"
 import { getMonthName, getCurrentMonth, getCurrentYear } from "@/lib/utils/format"
-import { transactionService } from "@/services"
+import { useTransactions, useDeleteTransaction } from "@/hooks"
 import { Calendar, ArrowUpRight, ArrowDownRight, LayoutList } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -32,26 +32,15 @@ export default function TransactionsPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [loading, setLoading] = useState(true)
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
 
   const month = searchParams.get("month") || String(getCurrentMonth())
   const year = searchParams.get("year") || String(getCurrentYear())
   const typeFilter = searchParams.get("type") || "all"
 
-  useEffect(() => {
-    const fetchTransactions = async () => {
-      setLoading(true)
-      const data = await transactionService.getTransactions({ month, year })
-      setTransactions(data)
-      setLoading(false)
-    }
+  const { data: transactions = [], isLoading } = useTransactions({ month, year })
+  const deleteMutation = useDeleteTransaction()
 
-    fetchTransactions()
-  }, [month, year])
-
-  // Filter transactions by type (client-side)
   const filteredTransactions = useMemo(() => {
     if (typeFilter === "all") return transactions
     return transactions.filter((t) => t.type === typeFilter)
@@ -63,43 +52,38 @@ export default function TransactionsPage() {
     router.push(`/dashboard/transactions?${params.toString()}`)
   }
 
-  const handleDelete = async (id: string) => {
-    const success = await transactionService.deleteTransaction(id)
-    if (success) {
-      setTransactions((prev) => prev.filter((t) => t.id !== id))
-      toast.success("Transaksi berhasil dihapus")
-    } else {
-      toast.error("Gagal menghapus transaksi")
-    }
+  const handleDelete = (id: string) => {
+    deleteMutation.mutate(id, {
+      onSuccess: () => toast.success("Transaksi berhasil dihapus"),
+      onError: () => toast.error("Gagal menghapus transaksi"),
+    })
   }
 
   const handleEdit = (transaction: Transaction) => {
     setEditingTransaction(transaction)
   }
 
-  const handleEditSuccess = (updatedTransaction: Transaction) => {
-    setTransactions((prev) =>
-      prev.map((t) => (t.id === updatedTransaction.id ? updatedTransaction : t))
-    )
+  const handleEditSuccess = () => {
     setEditingTransaction(null)
+    toast.success("Transaksi berhasil diperbarui")
   }
 
   return (
     <div className="p-4 lg:p-6 pb-24 lg:pb-6 space-y-5">
-      {/* Header */}
+      
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-neutral-900">Riwayat Transaksi</h1>
-          <p className="text-sm text-neutral-500 mt-1">
+          <h1 className="text-xl font-bold text-foreground">Riwayat Transaksi</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             {getMonthName(Number(month))} {year}
           </p>
         </div>
 
-        {/* Date Filters */}
+     
         <div className="flex gap-2">
           <Select value={month} onValueChange={(value) => handleFilterChange("month", value)}>
-            <SelectTrigger className="w-full sm:w-36 h-10 bg-white cursor-pointer">
-              <Calendar className="h-4 w-4 text-neutral-400 mr-2" />
+            <SelectTrigger className="w-full sm:w-36 h-10 bg-card cursor-pointer">
+              <Calendar className="h-4 w-4 text-muted-foreground mr-2" />
               <SelectValue placeholder="Bulan" />
             </SelectTrigger>
             <SelectContent>
@@ -111,7 +95,7 @@ export default function TransactionsPage() {
             </SelectContent>
           </Select>
           <Select value={year} onValueChange={(value) => handleFilterChange("year", value)}>
-            <SelectTrigger className="w-24 h-10 bg-white cursor-pointer">
+            <SelectTrigger className="w-24 h-10 bg-card cursor-pointer">
               <SelectValue placeholder="Tahun" />
             </SelectTrigger>
             <SelectContent>
@@ -125,8 +109,8 @@ export default function TransactionsPage() {
         </div>
       </div>
 
-      {/* Type Filter Tabs */}
-      <div className="flex gap-2 p-1 bg-neutral-100 rounded-xl">
+   
+      <div className="flex gap-2 p-1 bg-muted rounded-xl">
         {TYPE_FILTERS.map((filter) => {
           const Icon = filter.icon
           const isActive = typeFilter === filter.value
@@ -137,14 +121,14 @@ export default function TransactionsPage() {
               className={cn(
                 "flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-sm font-medium transition-all cursor-pointer",
                 isActive
-                  ? "bg-white text-neutral-900 shadow-sm"
-                  : "text-neutral-500 hover:text-neutral-700"
+                  ? "bg-card text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               <Icon className={cn(
                 "h-4 w-4",
-                isActive && filter.value === "income" && "text-emerald-600",
-                isActive && filter.value === "expense" && "text-red-500"
+                isActive && filter.value === "income" && "text-success",
+                isActive && filter.value === "expense" && "text-danger"
               )} />
               <span className="hidden sm:inline">{filter.label}</span>
             </button>
@@ -152,20 +136,20 @@ export default function TransactionsPage() {
         })}
       </div>
 
-      {/* Transaction List Card */}
-      <div className="bg-white rounded-2xl p-4 lg:p-5 border border-neutral-200">
-        {loading ? (
+    
+      <div className="bg-card rounded-2xl p-4 lg:p-5 border border-border">
+        {isLoading ? (
           <div className="space-y-4">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="flex items-center gap-4 py-3 animate-pulse">
-                <div className="w-11 h-11 rounded-xl bg-neutral-200" />
+                <div className="w-11 h-11 rounded-xl bg-muted" />
                 <div className="flex-1">
-                  <div className="h-4 bg-neutral-200 rounded w-28 mb-2" />
-                  <div className="h-3 bg-neutral-200 rounded w-36" />
+                  <div className="h-4 bg-muted rounded w-28 mb-2" />
+                  <div className="h-3 bg-muted rounded w-36" />
                 </div>
                 <div className="text-right">
-                  <div className="h-4 bg-neutral-200 rounded w-20 mb-2" />
-                  <div className="h-3 bg-neutral-200 rounded w-14" />
+                  <div className="h-4 bg-muted rounded w-20 mb-2" />
+                  <div className="h-3 bg-muted rounded w-14" />
                 </div>
               </div>
             ))}
@@ -184,14 +168,14 @@ export default function TransactionsPage() {
         )}
       </div>
 
-      {/* Transaction Count */}
-      {!loading && filteredTransactions.length > 0 && (
-        <p className="text-center text-sm text-neutral-500">
+     
+      {!isLoading && filteredTransactions.length > 0 && (
+        <p className="text-center text-sm text-muted-foreground">
           {filteredTransactions.length} transaksi ditemukan
         </p>
       )}
 
-      {/* Edit Modal */}
+      
       {editingTransaction && (
         <EditTransactionModal
           transaction={editingTransaction}

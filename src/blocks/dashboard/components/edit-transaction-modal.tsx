@@ -1,7 +1,8 @@
 "use client"
 
-import type React from "react"
-import { useEffect, useState, useMemo } from "react"
+import { useMemo } from "react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import {
   Button,
@@ -16,55 +17,60 @@ import {
   TabsTrigger,
   DatePicker,
 } from "@/components/ui"
-import type { Category, TransactionType, PaymentMethod, User, Transaction } from "@/types"
+import type { TransactionType, Transaction } from "@/types"
 import { cn } from "@/lib/utils"
 import { formatInputCurrency, parseInputCurrency, formatCurrency } from "@/lib/utils/format"
-import { userService, categoryService, transactionService } from "@/services"
+import { useCurrentUser, useCategories, useUpdateTransaction } from "@/hooks"
+import { transactionFormSchema, type TransactionFormData } from "@/lib/validations"
 import { Banknote, Smartphone, Loader2, AlertCircle, X } from "lucide-react"
 
 const MIN_MBANKING_BALANCE = 50000
+/* eslint-disable react-hooks/incompatible-library */
 
 interface EditTransactionModalProps {
   transaction: Transaction
   onClose: () => void
-  onSuccess: (updatedTransaction: Transaction) => void
+  onSuccess: () => void
 }
 
 export function EditTransactionModal({ transaction, onClose, onSuccess }: EditTransactionModalProps) {
-  const [type, setType] = useState<TransactionType>(transaction.type)
-  const [amount, setAmount] = useState(formatInputCurrency(String(transaction.amount)))
-  const [category, setCategory] = useState(transaction.category)
-  const [description, setDescription] = useState(transaction.description || "")
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(transaction.payment_method)
-  const [transactionDate, setTransactionDate] = useState(transaction.transaction_date)
+  const { data: user } = useCurrentUser()
+  const updateMutation = useUpdateTransaction()
 
-  const [categories, setCategories] = useState<Category[]>([])
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors },
+    setError: setFormError,
+  } = useForm<TransactionFormData>({
+    resolver: zodResolver(transactionFormSchema),
+    defaultValues: {
+      type: transaction.type,
+      amount: formatInputCurrency(String(transaction.amount)),
+      category: transaction.category,
+      description: transaction.description || "",
+      payment_method: transaction.payment_method,
+      transaction_date: transaction.transaction_date,
+    },
+  })
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      const userData = await userService.getCurrentUser()
-      if (userData) setUser(userData)
-    }
-    fetchUser()
-  }, [])
+  const type = watch("type")
+  const amount = watch("amount")
+  const paymentMethod = watch("payment_method")
+  const category = watch("category")
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      const data = await categoryService.getCategories(type)
-      setCategories(data)
-      // Only reset category if type changed and current category not in new list
-      if (!data.find(c => c.name === category)) {
-        if (data.length > 0) {
-          setCategory(data[0].name)
-        }
-      }
-    }
-    fetchCategories()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [type])
+  const { data: categories = [] } = useCategories(type)
+
+  const validCategory = useMemo(() => {
+    if (categories.find(c => c.name === category)) return category
+    return categories.length > 0 ? categories[0].name : category
+  }, [categories, category])
+
+  if (validCategory !== category && validCategory) {
+    setValue("category", validCategory)
+  }
 
   const balanceWarning = useMemo(() => {
     if (!user) return ""
@@ -79,7 +85,6 @@ export function EditTransactionModal({ transaction, onClose, onSuccess }: EditTr
     let mbankingBalance = Number(user.mbanking_balance)
     let cashBalance = Number(user.cash_balance)
 
-    // Undo old transaction
     if (oldType === "expense") {
       if (oldPaymentMethod === "mbanking") {
         mbankingBalance += oldAmount
@@ -94,7 +99,6 @@ export function EditTransactionModal({ transaction, onClose, onSuccess }: EditTr
       }
     }
 
-    // Apply new transaction
     if (type === "expense") {
       if (paymentMethod === "mbanking") {
         mbankingBalance -= numericAmount
@@ -109,7 +113,6 @@ export function EditTransactionModal({ transaction, onClose, onSuccess }: EditTr
       }
     }
 
-    // Validate
     if (cashBalance < 0) {
       return "Saldo Cash tidak cukup untuk perubahan ini"
     }
@@ -121,75 +124,63 @@ export function EditTransactionModal({ transaction, onClose, onSuccess }: EditTr
     return ""
   }, [amount, paymentMethod, type, user, transaction])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const onSubmit = (data: TransactionFormData) => {
+    const numericAmount = parseInputCurrency(data.amount)
 
-    const numericAmount = parseInputCurrency(amount)
-
-    if (!numericAmount || !category || !transactionDate) {
-      const errorMessage = "Lengkapi semua data"
-      setError(errorMessage)
-      toast.error(errorMessage)
+    if (!numericAmount) {
+      toast.error("Jumlah tidak valid")
       return
     }
 
     if (balanceWarning) {
-      setError(balanceWarning)
+      setFormError("root", { message: balanceWarning })
       toast.error(balanceWarning)
       return
     }
 
-    setLoading(true)
-    setError("")
-
-    const result = await transactionService.updateTransaction(transaction.id, {
-      amount: numericAmount,
-      type,
-      category,
-      description: description || undefined,
-      payment_method: paymentMethod,
-      transaction_date: transactionDate,
-    })
-
-    setLoading(false)
-
-    if (result.error) {
-      setError(result.error)
-      toast.error(result.error)
-      return
-    }
-
-    if (result.transaction) {
-      toast.success("Transaksi berhasil diperbarui")
-      onSuccess(result.transaction)
-    }
-  }
-
-  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.replace(/\D/g, "")
-    setAmount(formatInputCurrency(raw))
+    updateMutation.mutate(
+      {
+        id: transaction.id,
+        input: {
+          amount: numericAmount,
+          type: data.type,
+          category: data.category,
+          description: data.description || undefined,
+          payment_method: data.payment_method,
+          transaction_date: data.transaction_date,
+        },
+      },
+      {
+        onSuccess: () => {
+          toast.success("Transaksi berhasil diperbarui")
+          onSuccess()
+        },
+        onError: (error) => {
+          const errorMsg = error?.message || "Terjadi kesalahan"
+          setFormError("root", { message: errorMsg })
+          toast.error(errorMsg)
+        },
+      }
+    )
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-neutral-200">
-          <h2 className="text-lg font-semibold text-neutral-900">Edit Transaksi</h2>
+    <div className="fixed inset-0 bg-overlay flex items-center justify-center z-50 p-4">
+      <div className="bg-card rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-6 border-b border-border">
+          <h2 className="text-lg font-semibold text-foreground">Edit Transaksi</h2>
           <button
             onClick={onClose}
-            className="p-2 text-neutral-400 hover:text-neutral-600 rounded-lg transition-colors"
+            className="p-2 text-muted-foreground hover:text-foreground rounded-lg transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Transaction Type */}
+        <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-2">Tipe</label>
-            <Tabs value={type} onValueChange={(v) => setType(v as TransactionType)}>
+            <label className="block text-sm font-medium text-card-foreground mb-2">Tipe</label>
+            <Tabs value={type} onValueChange={(v) => setValue("type", v as TransactionType)}>
               <TabsList className="w-full">
                 <TabsTrigger value="expense" className="flex-1">Pengeluaran</TabsTrigger>
                 <TabsTrigger value="income" className="flex-1">Pemasukan</TabsTrigger>
@@ -197,26 +188,30 @@ export function EditTransactionModal({ transaction, onClose, onSuccess }: EditTr
             </Tabs>
           </div>
 
-          {/* Amount */}
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-2">Jumlah</label>
+            <label className="block text-sm font-medium text-card-foreground mb-2">Jumlah</label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">Rp</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">Rp</span>
               <Input
                 type="text"
                 inputMode="numeric"
-                value={amount}
-                onChange={handleAmountChange}
                 placeholder="0"
+                {...register("amount")}
+                onChange={(e) => {
+                  const formatted = formatInputCurrency(e.target.value)
+                  setValue("amount", formatted)
+                }}
                 className="pl-10"
               />
             </div>
+            {errors.amount && (
+              <p className="text-xs text-danger-text mt-1">{errors.amount.message}</p>
+            )}
           </div>
 
-          {/* Category */}
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-2">Kategori</label>
-            <Select value={category} onValueChange={setCategory}>
+            <label className="block text-sm font-medium text-card-foreground mb-2">Kategori</label>
+            <Select value={category || validCategory} onValueChange={(val) => setValue("category", val)}>
               <SelectTrigger>
                 <SelectValue placeholder="Pilih kategori" />
               </SelectTrigger>
@@ -228,31 +223,31 @@ export function EditTransactionModal({ transaction, onClose, onSuccess }: EditTr
                 ))}
               </SelectContent>
             </Select>
+            {errors.category && (
+              <p className="text-xs text-danger-text mt-1">{errors.category.message}</p>
+            )}
           </div>
 
-          {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-2">Deskripsi (opsional)</label>
+            <label className="block text-sm font-medium text-card-foreground mb-2">Deskripsi (opsional)</label>
             <Input
               type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
               placeholder="Tambahkan catatan"
+              {...register("description")}
             />
           </div>
 
-          {/* Payment Method */}
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-2">Metode Pembayaran</label>
+            <label className="block text-sm font-medium text-card-foreground mb-2">Metode Pembayaran</label>
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
-                onClick={() => setPaymentMethod("cash")}
+                onClick={() => setValue("payment_method", "cash")}
                 className={cn(
-                  "flex items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all",
+                  "flex items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all cursor-pointer",
                   paymentMethod === "cash"
-                    ? "border-sky-500 bg-sky-50 text-sky-700"
-                    : "border-neutral-200 hover:border-neutral-300 text-neutral-600"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border hover:border-muted-foreground/30 text-muted-foreground"
                 )}
               >
                 <Banknote className="h-5 w-5" />
@@ -260,12 +255,12 @@ export function EditTransactionModal({ transaction, onClose, onSuccess }: EditTr
               </button>
               <button
                 type="button"
-                onClick={() => setPaymentMethod("mbanking")}
+                onClick={() => setValue("payment_method", "mbanking")}
                 className={cn(
-                  "flex items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all",
+                  "flex items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all cursor-pointer",
                   paymentMethod === "mbanking"
-                    ? "border-sky-500 bg-sky-50 text-sky-700"
-                    : "border-neutral-200 hover:border-neutral-300 text-neutral-600"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border hover:border-muted-foreground/30 text-muted-foreground"
                 )}
               >
                 <Smartphone className="h-5 w-5" />
@@ -274,33 +269,29 @@ export function EditTransactionModal({ transaction, onClose, onSuccess }: EditTr
             </div>
           </div>
 
-          {/* Date */}
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-2">Tanggal</label>
+            <label className="block text-sm font-medium text-card-foreground mb-2">Tanggal</label>
             <DatePicker
-              value={transactionDate}
-              onChange={(date) => setTransactionDate(date)}
+              value={watch("transaction_date")}
+              onChange={(date) => setValue("transaction_date", date)}
               placeholder="Pilih tanggal"
             />
           </div>
 
-          {/* Balance Warning */}
           {balanceWarning && (
-            <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl">
-              <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
-              <p className="text-sm text-red-600">{balanceWarning}</p>
+            <div className="flex items-start gap-3 p-4 bg-danger-bg border border-danger-border rounded-xl">
+              <AlertCircle className="h-5 w-5 text-danger shrink-0 mt-0.5" />
+              <p className="text-sm text-danger-text">{balanceWarning}</p>
             </div>
           )}
 
-          {/* Error */}
-          {error && !balanceWarning && (
-            <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl">
-              <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
-              <p className="text-sm text-red-600">{error}</p>
+          {errors.root && !balanceWarning && (
+            <div className="flex items-start gap-3 p-4 bg-danger-bg border border-danger-border rounded-xl">
+              <AlertCircle className="h-5 w-5 text-danger shrink-0 mt-0.5" />
+              <p className="text-sm text-danger-text">{errors.root.message}</p>
             </div>
           )}
 
-          {/* Actions */}
           <div className="flex gap-3 pt-2">
             <Button
               type="button"
@@ -312,10 +303,10 @@ export function EditTransactionModal({ transaction, onClose, onSuccess }: EditTr
             </Button>
             <Button
               type="submit"
-              disabled={loading || !!balanceWarning}
+              disabled={updateMutation.isPending || !!balanceWarning}
               className="flex-1"
             >
-              {loading ? (
+              {updateMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
                   Menyimpan...

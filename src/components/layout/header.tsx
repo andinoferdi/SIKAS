@@ -14,24 +14,24 @@ export function Header({ userName }: HeaderProps) {
 
   const handleLogout = async () => {
     setLoading(true)
-    const success = await userService.logout()
-    if (success) {
+    try {
+      await userService.logout()
       router.push("/login")
-    } else {
+    } catch {
       setLoading(false)
     }
   }
 
   return (
-    <header className="flex items-center justify-between mb-8 pb-6 border-b border-beige-200">
+    <header className="flex items-center justify-between mb-8 pb-6 border-b border-border">
       <div>
-        <p className="text-sm font-medium text-neutral-600">Halo,</p>
+        <p className="text-sm font-medium text-muted-foreground">Halo,</p>
         <h1 className="text-2xl font-bold text-foreground mt-1">{userName}</h1>
       </div>
       <button
         onClick={handleLogout}
         disabled={loading}
-        className="p-2.5 rounded-lg hover:bg-beige-100 active:bg-beige-200 transition-colors text-neutral-600 hover:text-foreground disabled:opacity-50"
+        className="p-2.5 rounded-lg hover:bg-muted active:bg-muted/80 transition-colors text-muted-foreground hover:text-foreground disabled:opacity-50"
         title="Logout"
       >
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

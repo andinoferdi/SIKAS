@@ -3,7 +3,6 @@ import { createClient } from "@/lib/supabase/server"
 import { getSession } from "@/lib/auth/session"
 
 export async function DELETE(
-  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession()
@@ -15,7 +14,6 @@ export async function DELETE(
   const { id } = await params
   const supabase = await createClient()
 
-  // Step 1: Fetch transaction data
   const { data: transaction } = await supabase
     .from("transactions")
     .select("amount, type, payment_method")
@@ -27,7 +25,6 @@ export async function DELETE(
     return NextResponse.json({ error: "Transaksi tidak ditemukan" }, { status: 404 })
   }
 
-  // Step 2: Fetch current balance
   const { data: currentUser } = await supabase
     .from("users")
     .select("mbanking_balance, cash_balance")
@@ -38,7 +35,6 @@ export async function DELETE(
     return NextResponse.json({ error: "User tidak ditemukan" }, { status: 404 })
   }
 
-  // Step 3: Calculate new balance
   const isMbanking = transaction.payment_method === "mbanking"
   const balanceReverse = transaction.type === "expense" ? transaction.amount : -transaction.amount
   const currentBalance = isMbanking
@@ -46,7 +42,6 @@ export async function DELETE(
     : Number(currentUser.cash_balance)
   const newBalance = currentBalance + balanceReverse
 
-  // Step 4: Delete transaction
   const { error: deleteError } = await supabase
     .from("transactions")
     .delete()
@@ -57,14 +52,12 @@ export async function DELETE(
     return NextResponse.json({ error: deleteError.message }, { status: 500 })
   }
 
-  // Step 5: Update balance
   const { error: balanceError } = await supabase
     .from("users")
     .update(isMbanking ? { mbanking_balance: newBalance } : { cash_balance: newBalance })
     .eq("id", session.userId)
 
   if (balanceError) {
-    // Rollback: re-insert the transaction we just deleted
     await supabase
       .from("transactions")
       .insert({
@@ -107,7 +100,6 @@ export async function PUT(
 
     const newAmount = Number(amount)
 
-    // Fetch original transaction
     const { data: oldTransaction } = await supabase
       .from("transactions")
       .select("*")
@@ -119,7 +111,6 @@ export async function PUT(
       return NextResponse.json({ error: "Transaksi tidak ditemukan" }, { status: 404 })
     }
 
-    // Fetch current user balances
     const { data: user } = await supabase
       .from("users")
       .select("mbanking_balance, cash_balance")
@@ -133,19 +124,16 @@ export async function PUT(
     let mbankingBalance = Number(user.mbanking_balance)
     let cashBalance = Number(user.cash_balance)
 
-    // Step 1: Undo old transaction effect
     const oldIsMbanking = oldTransaction.payment_method === "mbanking"
     const oldAmount = Number(oldTransaction.amount)
     
     if (oldTransaction.type === "expense") {
-      // Undo expense: add back to balance
       if (oldIsMbanking) {
         mbankingBalance += oldAmount
       } else {
         cashBalance += oldAmount
       }
     } else {
-      // Undo income: subtract from balance
       if (oldIsMbanking) {
         mbankingBalance -= oldAmount
       } else {
@@ -153,7 +141,6 @@ export async function PUT(
       }
     }
 
-    // Step 2: Apply new transaction effect
     const newIsMbanking = payment_method === "mbanking"
     
     if (type === "expense") {
@@ -170,7 +157,6 @@ export async function PUT(
       }
     }
 
-    // Step 3: Validate final balances
     if (cashBalance < 0) {
       return NextResponse.json(
         { error: "Saldo Cash tidak cukup untuk perubahan ini" },
@@ -185,7 +171,6 @@ export async function PUT(
       )
     }
 
-    // Step 4: Update transaction
     const { data: updatedTransaction, error: updateError } = await supabase
       .from("transactions")
       .update({
@@ -205,7 +190,6 @@ export async function PUT(
       return NextResponse.json({ error: updateError.message }, { status: 500 })
     }
 
-    // Step 5: Update user balances
     const { error: balanceError } = await supabase
       .from("users")
       .update({
@@ -215,7 +199,6 @@ export async function PUT(
       .eq("id", session.userId)
 
     if (balanceError) {
-      // Rollback: revert transaction to original values
       await supabase
         .from("transactions")
         .update({

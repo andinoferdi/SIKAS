@@ -32,9 +32,26 @@ export interface UpdateTransactionInput {
   transaction_date: string
 }
 
+export interface GetTransactionsOptions {
+  month?: string
+  year?: string
+  limit?: number
+}
+
+export interface TransactionsResponse {
+  transactions: Transaction[]
+}
+
+export interface TransactionResponse {
+  transaction: Transaction
+}
 
 export interface MonthlySummary {
   total_income: number
   total_expense: number
   net: number
+}
+
+export interface SummaryResponse {
+  summary: MonthlySummary
 }

@@ -15,15 +15,15 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         className={cn(
           "inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
           {
-            "bg-sky-500 text-white hover:bg-sky-600 active:bg-sky-700 shadow-sm hover:shadow-md focus:ring-sky-500/50":
+            "bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 shadow-sm hover:shadow-md focus:ring-primary/50":
               variant === "primary",
-            "bg-neutral-100 text-neutral-900 hover:bg-neutral-200 active:bg-neutral-300 focus:ring-neutral-500/50":
+            "bg-secondary text-secondary-foreground hover:bg-secondary/80 active:bg-secondary/70 focus:ring-muted-foreground/50":
               variant === "secondary",
-            "border border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 hover:border-neutral-300 active:bg-neutral-100 focus:ring-neutral-500/50":
+            "border border-border bg-card text-foreground hover:bg-muted hover:border-muted-foreground/30 active:bg-muted/80 focus:ring-muted-foreground/50":
               variant === "outline",
-            "bg-transparent text-neutral-700 hover:bg-neutral-100 active:bg-neutral-200 focus:ring-neutral-500/50":
+            "bg-transparent text-foreground hover:bg-muted active:bg-muted/80 focus:ring-muted-foreground/50":
               variant === "ghost",
-            "bg-red-500 text-white hover:bg-red-600 active:bg-red-700 shadow-sm hover:shadow-md focus:ring-red-500/50":
+            "bg-destructive text-destructive-foreground hover:bg-destructive/90 active:bg-destructive/80 shadow-sm hover:shadow-md focus:ring-destructive/50":
               variant === "danger",
           },
           {

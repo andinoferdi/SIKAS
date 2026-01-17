@@ -9,10 +9,12 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-select": "latest",
     "@radix-ui/react-tabs": "latest",
     "@supabase/ssr": "latest",
     "@supabase/supabase-js": "latest",
+    "@tanstack/react-query": "^5.90.18",
     "bcryptjs": "latest",
     "clsx": "latest",
     "jose": "latest",
@@ -20,7 +22,10 @@
     "next": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "sonner": "latest"
+    "react-hook-form": "^7.71.1",
+    "sonner": "latest",
+    "zod": "^4.3.5",
+    "zustand": "^5.0.10"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "latest",

@@ -28,12 +28,11 @@ export function Sidebar() {
   const pathname = usePathname()
 
   return (
-    <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-white border-r border-neutral-200">
+    <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-card border-r border-border">
       <div className="flex flex-col h-full">
-        {/* Logo Section */}
-        <div className="p-5 border-b border-neutral-100">
+        <div className="p-5 border-b border-border/50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 relative flex items-center justify-center rounded-xl bg-sky-500 shrink-0">
+            <div className="w-10 h-10 relative flex items-center justify-center rounded-xl bg-primary shrink-0">
               <Image
                 src="/images/logo.png"
                 alt="SIKAS"
@@ -43,13 +42,12 @@ export function Sidebar() {
               />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-neutral-900">SIKAS</h1>
-              <p className="text-xs text-neutral-500">Keuangan Bersama</p>
+              <h1 className="text-lg font-bold text-foreground">SIKAS</h1>
+              <p className="text-xs text-muted-foreground">Keuangan Bersama</p>
             </div>
           </div>
         </div>
 
-        {/* Navigation Items */}
         <nav className="flex-1 p-3">
           <div className="space-y-1">
             {NAV_ITEMS.map((item) => {
@@ -63,14 +61,14 @@ export function Sidebar() {
                   className={cn(
                     "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
                     isActive
-                      ? "bg-sky-50 text-sky-700"
-                      : "text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   )}
                 >
                   <Icon
                     className={cn(
                       "w-5 h-5 transition-colors",
-                      isActive ? "text-sky-600" : "text-neutral-400"
+                      isActive ? "text-primary" : "text-muted-foreground"
                     )}
                   />
                   {item.label}
@@ -80,9 +78,8 @@ export function Sidebar() {
           </div>
         </nav>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-neutral-100">
-          <p className="text-xs text-neutral-400 text-center">SIKAS v1.0</p>
+        <div className="p-4 border-t border-border/50">
+          <p className="text-xs text-muted-foreground text-center">SIKAS v1.0</p>
         </div>
       </div>
     </aside>

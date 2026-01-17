@@ -2,7 +2,9 @@ import type React from "react"
 import type { Metadata, Viewport } from "next"
 import { Plus_Jakarta_Sans } from "next/font/google"
 import { Toaster } from "sonner"
+import { Providers } from "@/components/providers"
 import "@/app/globals.css"
+
 
 const plusJakarta = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta",
@@ -44,8 +46,10 @@ export default function RootLayout({
   return (
     <html lang="id" suppressHydrationWarning>
       <body className={`${plusJakarta.variable} font-sans antialiased`}>
-        {children}
-        <Toaster position="top-center" richColors closeButton />
+        <Providers>
+          {children}
+          <Toaster position="top-center" richColors closeButton />
+        </Providers>
       </body>
     </html>
   )

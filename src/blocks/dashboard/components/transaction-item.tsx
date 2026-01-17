@@ -32,60 +32,57 @@ export function TransactionItem({ transaction, onDelete, onEdit }: TransactionIt
 
   return (
     <div className="flex items-center gap-4 py-4 px-1 group">
-      {/* Icon */}
       <div
         className={cn(
           "w-11 h-11 rounded-xl flex items-center justify-center shrink-0",
-          isIncome ? "bg-emerald-100" : "bg-red-100"
+          isIncome ? "bg-success-bg" : "bg-danger-bg"
         )}
       >
         {isIncome ? (
-          <ArrowUpRight className="h-5 w-5 text-emerald-600" />
+          <ArrowUpRight className="h-5 w-5 text-success" />
         ) : (
-          <ArrowDownRight className="h-5 w-5 text-red-500" />
+          <ArrowDownRight className="h-5 w-5 text-danger" />
         )}
       </div>
 
-      {/* Content */}
       <div className="min-w-0 flex-1">
-        <p className="font-medium text-neutral-900 text-sm truncate">{transaction.category}</p>
-        <p className="text-xs text-neutral-500 mt-0.5 truncate">
+        <p className="font-medium text-foreground text-sm truncate">{transaction.category}</p>
+        <p className="text-xs text-muted-foreground mt-0.5 truncate">
           {formatShortDate(transaction.transaction_date)}
           {transaction.description && (
-            <span className="text-neutral-400"> - {transaction.description}</span>
+            <span className="text-muted-foreground/70"> - {transaction.description}</span>
           )}
         </p>
       </div>
 
-      {/* Amount & Actions */}
       <div className="flex items-center gap-2">
         <div className="text-right">
-          <p className={cn("font-semibold text-sm", isIncome ? "text-emerald-600" : "text-red-500")}>
+          <p className={cn("font-semibold text-sm", isIncome ? "text-success" : "text-danger")}>
             {isIncome ? "+" : "-"}
             {formatCurrency(transaction.amount)}
           </p>
-          <p className="text-xs text-neutral-400 mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5">
             {transaction.payment_method === "mbanking" ? "M-Banking" : "Cash"}
           </p>
         </div>
 
-        {/* Edit Button */}
+ 
         {onEdit && (
           <button
             onClick={handleEdit}
-            className="p-2 text-sky-500 active:bg-sky-50 rounded-lg transition-colors cursor-pointer"
+            className="p-2 text-primary active:bg-primary/10 rounded-lg transition-colors cursor-pointer"
             title="Edit transaksi"
           >
             <Pencil className="h-4 w-4" />
           </button>
         )}
 
-        {/* Delete Button */}
+
         {onDelete && (
           <button
             onClick={handleDelete}
             disabled={isDeleting}
-            className="p-2 text-red-500 active:bg-red-50 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
+            className="p-2 text-danger active:bg-danger-bg rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
             title="Hapus transaksi"
           >
             {isDeleting ? (

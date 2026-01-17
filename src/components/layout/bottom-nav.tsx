@@ -28,7 +28,7 @@ export function BottomNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-neutral-200 px-6 pb-safe z-40">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border px-6 pb-safe z-40">
       <div className="max-w-md mx-auto flex items-center justify-around h-16">
         {NAV_ITEMS.map((item) => {
           const isActive = pathname === item.href
@@ -42,11 +42,11 @@ export function BottomNav() {
                 className={cn(
                   "flex items-center justify-center w-14 h-14 -mt-7 rounded-2xl shadow-lg transition-all duration-200 active:scale-95",
                   isActive
-                    ? "bg-sky-600 shadow-sky-500/30"
-                    : "bg-sky-500 hover:bg-sky-600 shadow-sky-500/20"
+                    ? "bg-primary/90 shadow-primary/30"
+                    : "bg-primary hover:bg-primary/90 shadow-primary/20"
                 )}
               >
-                <Icon className="h-6 w-6 text-white" strokeWidth={2.5} />
+                <Icon className="h-6 w-6 text-primary-foreground" strokeWidth={2.5} />
               </Link>
             )
           }
@@ -58,12 +58,12 @@ export function BottomNav() {
               className={cn(
                 "flex flex-col items-center gap-1 py-2 px-4 rounded-xl transition-all duration-200",
                 isActive
-                  ? "text-sky-600"
-                  : "text-neutral-400 hover:text-neutral-600"
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <Icon className={cn("h-5 w-5", isActive && "text-sky-600")} />
-              <span className={cn("text-xs font-medium", isActive && "text-sky-600")}>
+              <Icon className={cn("h-5 w-5", isActive && "text-primary")} />
+              <span className={cn("text-xs font-medium", isActive && "text-primary")}>
                 {item.label}
               </span>
             </Link>

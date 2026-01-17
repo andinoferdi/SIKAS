@@ -1,78 +1,42 @@
-import { Category, CreateCategoryInput, UpdateCategoryInput } from "@/types/category"
-import { TransactionType } from "@/types"
-
-interface CategoriesResponse {
-  categories?: Category[]
-  error?: string
-}
-
-interface CategoryResponse {
-  category?: Category
-  error?: string
-}
+import { fetcher } from "./base"
+import type {
+  Category,
+  CreateCategoryInput,
+  UpdateCategoryInput,
+  CategoriesResponse,
+  CategoryResponse,
+} from "@/types/category"
+import type { TransactionType } from "@/types"
 
 export const categoryService = {
   async getCategories(type?: TransactionType): Promise<Category[]> {
-    try {
-      const url = type ? `/api/categories?type=${type}` : "/api/categories"
-      const res = await fetch(url)
-      const data: CategoriesResponse = await res.json()
-      return data.categories || []
-    } catch {
-      return []
-    }
+    const url = type ? `/api/categories?type=${type}` : "/api/categories"
+    const data = await fetcher<CategoriesResponse>(url)
+    return data.categories || []
   },
 
-  async getCategoryById(id: string): Promise<Category | null> {
-    try {
-      const res = await fetch(`/api/categories/${id}`)
-      const data: CategoryResponse = await res.json()
-      return data.category || null
-    } catch {
-      return null
-    }
+  async getCategoryById(id: string): Promise<Category> {
+    const data = await fetcher<CategoryResponse>(`/api/categories/${id}`)
+    return data.category
   },
 
-  async createCategory(input: CreateCategoryInput): Promise<CategoryResponse> {
-    try {
-      const res = await fetch("/api/categories", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        return { error: data.error || "Gagal membuat kategori" }
-      }
-      return { category: data.category }
-    } catch {
-      return { error: "Terjadi kesalahan" }
-    }
+  async createCategory(input: CreateCategoryInput): Promise<Category> {
+    const data = await fetcher<CategoryResponse>("/api/categories", {
+      method: "POST",
+      body: JSON.stringify(input),
+    })
+    return data.category
   },
 
-  async updateCategory(id: string, input: UpdateCategoryInput): Promise<CategoryResponse> {
-    try {
-      const res = await fetch(`/api/categories/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        return { error: data.error || "Gagal mengupdate kategori" }
-      }
-      return { category: data.category }
-    } catch {
-      return { error: "Terjadi kesalahan" }
-    }
+  async updateCategory(id: string, input: UpdateCategoryInput): Promise<Category> {
+    const data = await fetcher<CategoryResponse>(`/api/categories/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(input),
+    })
+    return data.category
   },
 
-  async deleteCategory(id: string): Promise<boolean> {
-    try {
-      const res = await fetch(`/api/categories/${id}`, { method: "DELETE" })
-      return res.ok
-    } catch {
-      return false
-    }
+  async deleteCategory(id: string): Promise<void> {
+    await fetcher<{ success: boolean }>(`/api/categories/${id}`, { method: "DELETE" })
   },
 }
