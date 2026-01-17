@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getSession } from "@/lib/auth/session"
+import { createTransactionApiSchema } from "@/lib/validations"
 
 export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
@@ -92,13 +93,18 @@ export async function PUT(
 
   try {
     const body = await request.json()
-    const { amount, type, category, description, payment_method, transaction_date } = body
+    
+    const validation = createTransactionApiSchema.safeParse(body)
 
-    if (!amount || !type || !category || !payment_method || !transaction_date) {
-      return NextResponse.json({ error: "Data tidak lengkap" }, { status: 400 })
+    if (!validation.success) {
+      const firstError = validation.error.issues[0]
+      return NextResponse.json(
+        { error: firstError.message },
+        { status: 400 }
+      )
     }
 
-    const newAmount = Number(amount)
+    const { amount, type, category, description, payment_method, transaction_date } = validation.data
 
     const { data: oldTransaction } = await supabase
       .from("transactions")
@@ -145,15 +151,15 @@ export async function PUT(
     
     if (type === "expense") {
       if (newIsMbanking) {
-        mbankingBalance -= newAmount
+        mbankingBalance -= amount
       } else {
-        cashBalance -= newAmount
+        cashBalance -= amount
       }
     } else {
       if (newIsMbanking) {
-        mbankingBalance += newAmount
+        mbankingBalance += amount
       } else {
-        cashBalance += newAmount
+        cashBalance += amount
       }
     }
 
@@ -174,7 +180,7 @@ export async function PUT(
     const { data: updatedTransaction, error: updateError } = await supabase
       .from("transactions")
       .update({
-        amount: newAmount,
+        amount,
         type,
         category,
         description: description || null,
@@ -216,7 +222,8 @@ export async function PUT(
     }
 
     return NextResponse.json({ transaction: updatedTransaction })
-  } catch {
+  } catch (error) {
+    console.error("Update transaction error:", error)
     return NextResponse.json({ error: "Terjadi kesalahan server" }, { status: 500 })
   }
 }

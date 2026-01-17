@@ -2,54 +2,24 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { hashPin } from "@/lib/auth/pin"
 import { createSession } from "@/lib/auth/session"
+import { registerSchema } from "@/lib/validations"
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, pin } = await request.json()
+    const body = await request.json()
+    
+    const validation = registerSchema.omit({ confirmPin: true }).safeParse(body)
 
-    if (!name || typeof name !== "string") {
+    if (!validation.success) {
+      const firstError = validation.error.issues[0]
       return NextResponse.json(
-        { error: "Nama harus diisi" },
+        { error: firstError.message },
         { status: 400 }
       )
     }
 
+    const { name, pin } = validation.data
     const trimmedName = name.trim()
-
-    if (trimmedName.length < 2) {
-      return NextResponse.json(
-        { error: "Nama minimal 2 karakter" },
-        { status: 400 }
-      )
-    }
-
-    if (!/^[a-zA-Z\s]+$/.test(trimmedName)) {
-      return NextResponse.json(
-        { error: "Nama hanya boleh huruf dan spasi" },
-        { status: 400 }
-      )
-    }
-
-    if (!pin || typeof pin !== "string") {
-      return NextResponse.json(
-        { error: "PIN harus diisi" },
-        { status: 400 }
-      )
-    }
-
-    if (pin.length < 4 || pin.length > 6) {
-      return NextResponse.json(
-        { error: "PIN harus 4-6 digit" },
-        { status: 400 }
-      )
-    }
-
-    if (!/^\d+$/.test(pin)) {
-      return NextResponse.json(
-        { error: "PIN harus berupa angka" },
-        { status: 400 }
-      )
-    }
 
     const supabase = await createClient()
 

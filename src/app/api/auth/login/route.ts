@@ -2,24 +2,23 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { hashPin, verifyPin } from "@/lib/auth/pin"
 import { createSession } from "@/lib/auth/session"
+import { loginSchema } from "@/lib/validations"
 
 export async function POST(request: NextRequest) {
   try {
-    const { userName, pin } = await request.json()
+    const body = await request.json()
+    
+    const validation = loginSchema.safeParse(body)
 
-    if (!userName || !pin) {
+    if (!validation.success) {
+      const firstError = validation.error.issues[0]
       return NextResponse.json(
-        { error: "Nama dan PIN harus diisi" },
+        { error: firstError.message },
         { status: 400 }
       )
     }
 
-    if (pin.length < 4 || pin.length > 6) {
-      return NextResponse.json(
-        { error: "PIN harus 4-6 digit" },
-        { status: 400 }
-      )
-    }
+    const { name: userName, pin } = validation.data
 
     const supabase = await createClient()
     const { data: user, error } = await supabase
@@ -57,7 +56,8 @@ export async function POST(request: NextRequest) {
       success: true,
       user: { id: user.id, name: user.name }
     })
-  } catch {
+  } catch (error) {
+    console.error("Login error:", error)
     return NextResponse.json(
       { error: "Terjadi kesalahan server" },
       { status: 500 }

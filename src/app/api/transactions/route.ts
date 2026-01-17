@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getSession } from "@/lib/auth/session"
+import { createTransactionApiSchema } from "@/lib/validations"
 
 export async function GET(request: NextRequest) {
   const session = await getSession()
@@ -55,16 +56,18 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { amount, type, category, description, payment_method, transaction_date } = body
+    
+    const validation = createTransactionApiSchema.safeParse(body)
 
-    if (!amount || !type || !category || !payment_method || !transaction_date) {
+    if (!validation.success) {
+      const firstError = validation.error.issues[0]
       return NextResponse.json(
-        { error: "Data tidak lengkap" },
+        { error: firstError.message },
         { status: 400 }
       )
     }
 
-    const transactionAmount = Number(amount)
+    const { amount, type, category, description, payment_method, transaction_date } = validation.data
     const supabase = await createClient()
 
     const { data: user, error: userError } = await supabase
@@ -82,7 +85,7 @@ export async function POST(request: NextRequest) {
       ? Number(user.mbanking_balance)
       : Number(user.cash_balance)
 
-    const balanceChange = type === "expense" ? -transactionAmount : transactionAmount
+    const balanceChange = type === "expense" ? -amount : amount
     const newBalance = currentBalance + balanceChange
 
     if (type === "expense") {
@@ -105,7 +108,7 @@ export async function POST(request: NextRequest) {
       .from("transactions")
       .insert({
         user_id: session.userId,
-        amount: transactionAmount,
+        amount,
         type,
         category,
         description: description || null,
@@ -134,7 +137,8 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ transaction: data })
-  } catch {
+  } catch (error) {
+    console.error("Transaction error:", error)
     return NextResponse.json(
       { error: "Terjadi kesalahan server" },
       { status: 500 }
