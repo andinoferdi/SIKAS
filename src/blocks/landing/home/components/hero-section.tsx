@@ -135,7 +135,7 @@ export function HeroSection() {
                             </div>
                             <div>
                               <p className="text-sm font-medium text-foreground">Makan</p>
-                              <p className="text-xs text-neutral-500">Hari ini</p>
+                              <p className="text-xs text-muted-foreground">Hari ini</p>
                             </div>
                           </div>
                           <p className="text-sm font-semibold text-danger">-Rp 50.000</p>
@@ -157,7 +157,7 @@ export function HeroSection() {
                   </div>
                 </div>
 
-                <div className="absolute -right-4 bottom-1/4 bg-card rounded-xl p-3 shadow-lg border border-neutral-100 hidden sm:block">
+                <div className="absolute -right-4 bottom-1/4 bg-card rounded-xl p-3 shadow-lg border border-border hidden sm:block">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                       <Wallet className="w-4 h-4 text-primary" />

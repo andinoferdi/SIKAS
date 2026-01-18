@@ -18,17 +18,17 @@ export function TransactionList({
   if (transactions.length === 0) {
     return (
       <div className="text-center py-12">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-neutral-100 mb-4">
-          <Receipt className="w-7 h-7 text-neutral-400" />
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-muted mb-4">
+          <Receipt className="w-7 h-7 text-muted-foreground" />
         </div>
-        <p className="text-neutral-700 text-sm font-medium">{emptyMessage}</p>
-        <p className="text-neutral-500 text-xs mt-1">Mulai dengan menambah transaksi baru</p>
+        <p className="text-foreground text-sm font-medium">{emptyMessage}</p>
+        <p className="text-muted-foreground text-xs mt-1">Mulai dengan menambah transaksi baru</p>
       </div>
     )
   }
 
   return (
-    <div className="divide-y divide-neutral-100">
+    <div className="divide-y divide-border">
       {transactions.map((transaction) => (
         <TransactionItem
           key={transaction.id}

@@ -108,7 +108,7 @@ const SelectContent = React.forwardRef<
                 <button
                   type="button"
                   onClick={() => onSearchChange?.("")}
-                  className="rounded p-1 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                  className="rounded p-1 hover:bg-accent/50"
                   aria-label="Clear search"
                 >
                   <XIcon className="size-3.5 text-icon-muted" />

@@ -1,4 +1,4 @@
-import { fetcher } from "./base"
+import { fetcher } from "@/services/base"
 import type {
   Category,
   CreateCategoryInput,

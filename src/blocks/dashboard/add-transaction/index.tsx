@@ -24,10 +24,10 @@ import { formatInputCurrency, parseInputCurrency, formatCurrency } from "@/lib/u
 import { useCurrentUser, useCategories, useCreateTransaction } from "@/hooks"
 import { transactionFormSchema, type TransactionFormData } from "@/lib/validations"
 import { Banknote, Smartphone, Loader2, AlertCircle } from "lucide-react"
+/* eslint-disable react-hooks/incompatible-library */
+
 
 const MIN_MBANKING_BALANCE = 50000
-
-/* eslint-disable react-hooks/incompatible-library */
 export default function AddTransactionPage() {
   const router = useRouter()
 

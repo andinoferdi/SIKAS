@@ -30,7 +30,7 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
     const textarea = textareaRef.current
     if (textarea) {
       textarea.style.height = "auto"
-      const maxHeight = 120 
+      const maxHeight = 260
       textarea.style.height = `${Math.min(textarea.scrollHeight, maxHeight)}px`
     }
   }, [])
@@ -157,7 +157,7 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
   if (!isOpen) return null
 
   return (
-    <div className="fixed bottom-24 right-4 sm:right-6 w-[calc(100%-2rem)] sm:w-100 max-h-[80vh] h-185 bg-card rounded-2xl shadow-2xl border border-border flex flex-col overflow-hidden z-50 animate-in slide-in-from-bottom-4 fade-in-0 duration-300">
+    <div className="fixed bottom-24 right-4 sm:right-6 w-100 max-h-[90vh] h-182 bg-card rounded-2xl shadow-2xl border border-border flex flex-col overflow-hidden z-50 animate-in slide-in-from-bottom-4 fade-in-0 duration-300">
       <div className="bg-primary px-4 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-full bg-on-surface-subtle flex items-center justify-center">
@@ -195,35 +195,37 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
         <div ref={messagesEndRef} />
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="p-2 border-t border-border shrink-0"
-      >
-        <div className="relative flex items-end bg-muted border border-border rounded-xl focus-within:ring-2 focus-within:ring-primary focus-within:border-transparent">
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ketik pesan..."
-            disabled={isLoading}
-            rows={1}
-            className="flex-1 px-3 py-3 pr-12 text-sm bg-transparent border-0 focus:outline-none disabled:opacity-50 resize-none overflow-y-auto"
-            style={{ maxHeight: "120px" }}
-          />
-          <button
-            type="submit"
-            disabled={!input.trim() || isLoading}
-            className="absolute right-2 bottom-2 w-8 h-8 shrink-0 rounded-full bg-primary text-on-surface flex items-center justify-center hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-          >
-            {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Send className="w-4 h-4" />
-            )}
-          </button>
+      <div className="border-t border-border shrink-0">
+        <div className="flex items-end">
+          <form onSubmit={handleSubmit} className="flex-1">
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Tulis pesan Anda..."
+              disabled={isLoading}
+              rows={1}
+              className="w-full px-4 py-3 text-sm bg-transparent border-0 focus:outline-none disabled:opacity-50 resize-none"
+              style={{ maxHeight: "260px", overflowY: "auto" }}
+            />
+          </form>
+          <div className="flex items-center pr-2 pb-2">
+            <button
+              type="button"
+              onClick={() => sendMessage(input)}
+              disabled={!input.trim() || isLoading}
+              className="p-2 text-primary hover:text-primary/80 transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+            >
+              {isLoading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Send className="w-5 h-5" />
+              )}
+            </button>
+          </div>
         </div>
-      </form>
+      </div>
     </div>
   )
 }

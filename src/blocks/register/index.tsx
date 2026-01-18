@@ -14,8 +14,6 @@ import { registerSchema, type RegisterFormData } from "@/lib/validations"
 import { Loader2, Eye, EyeOff, ArrowLeft, User, Lock, CheckCircle2 } from "lucide-react"
 
 /* eslint-disable react-hooks/incompatible-library */
-
-
 export default function RegisterPage() {
   const [showPin, setShowPin] = useState(false)
   const [showConfirmPin, setShowConfirmPin] = useState(false)
