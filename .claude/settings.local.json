@@ -8,7 +8,8 @@
       "mcp__chrome-devtools__wait_for",
       "mcp__chrome-devtools__new_page",
       "mcp__chrome-devtools__select_page",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(npm run build:*)"
     ]
   }
 }

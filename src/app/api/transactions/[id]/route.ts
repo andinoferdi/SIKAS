@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth/session"
 import { createTransactionApiSchema } from "@/lib/validations"
 
 export async function DELETE(
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession()
