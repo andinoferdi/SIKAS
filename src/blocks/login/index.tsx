@@ -56,13 +56,13 @@ export default function LoginPage() {
         </Link>
 
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
             <Image
               src="/images/logo.png"
               alt="SIKAS"
-              width={40}
-              height={40}
-              className="object-contain filter brightness-0 invert"
+              width={44}
+              height={44}
+              className="object-contain"
             />
           </div>
           <h1 className="text-2xl font-bold text-foreground">Masuk ke SIKAS</h1>

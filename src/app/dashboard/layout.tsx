@@ -2,6 +2,7 @@ import type React from "react"
 import { redirect } from "next/navigation"
 import { getSession } from "@/lib/auth/session"
 import { BottomNav, Sidebar, DashboardHeader } from "@/components/layout"
+import { Chatbot } from "@/components/chatbot"
 
 export default async function DashboardLayout({
   children,
@@ -24,6 +25,7 @@ export default async function DashboardLayout({
       </div>
 
       <BottomNav />
+      <Chatbot />
     </div>
   )
 }

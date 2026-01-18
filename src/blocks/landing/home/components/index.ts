@@ -1,3 +1,6 @@
 export * from "@/blocks/landing/home/components/landing-nav"
 export * from "@/blocks/landing/home/components/hero-section"
+export * from "@/blocks/landing/home/components/stats-section"
+export * from "@/blocks/landing/home/components/features-section"
+export * from "@/blocks/landing/home/components/cta-section"
 export * from "@/blocks/landing/home/components/footer"

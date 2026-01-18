@@ -10,7 +10,7 @@ export const userService = {
   async login(userName: string, pin: string): Promise<{ id: string; name: string }> {
     const data = await fetcher<AuthResponse>("/api/auth/login", {
       method: "POST",
-      body: JSON.stringify({ userName, pin }),
+      body: JSON.stringify({ name: userName, pin }),
     })
     return data.user
   },

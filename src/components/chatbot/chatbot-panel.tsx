@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
+import { usePathname } from "next/navigation"
 import { X, Send, Loader2, Bot } from "lucide-react"
 import { type Message } from "@/types/chatbot"
 import {
@@ -8,9 +9,61 @@ import {
   generateMessageId,
   getGreetingMessage,
   QUICK_REPLIES,
+  retrieveContext,
 } from "@/services/chatbot"
+import type { EnhancedRAGContext, ChatbotAction, ActionPayload } from "@/types/rag"
 import { ChatMessage } from "./chat-message"
 import { QuickReplies } from "./quick-replies"
+
+function parseActions(
+  content: string
+): Array<{ action: ChatbotAction; payload: ActionPayload }> {
+  const actions: Array<{ action: ChatbotAction; payload: ActionPayload }> = []
+  const actionRegex = /\[ACTION:(\w+)\]([\s\S]*?)\[\/ACTION\]/g
+  let match
+
+  while ((match = actionRegex.exec(content)) !== null) {
+    const actionType = match[1] as ChatbotAction
+    try {
+      const payload = JSON.parse(match[2].trim())
+      actions.push({ action: actionType, payload })
+    } catch (e) {
+      console.error("Failed to parse action payload:", e)
+    }
+  }
+
+  return actions
+}
+
+function cleanContentForDisplay(content: string): string {
+  return content.replace(/\[ACTION:\w+\][\s\S]*?\[\/ACTION\]/g, "").trim()
+}
+
+async function executeAction(
+  action: ChatbotAction,
+  payload: ActionPayload
+): Promise<{ success: boolean; message: string; data?: unknown }> {
+  try {
+    const response = await fetch("/api/chatbot/actions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, payload }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      return { success: false, message: data.error || "Action failed" }
+    }
+
+    return { success: true, message: data.message || "Action completed", data }
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Unknown error",
+    }
+  }
+}
 
 interface ChatbotPanelProps {
   isOpen: boolean
@@ -18,6 +71,9 @@ interface ChatbotPanelProps {
 }
 
 export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
+  const pathname = usePathname()
+  const isOnDashboard = pathname?.startsWith("/dashboard") ?? false
+
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -88,10 +144,36 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
     abortControllerRef.current = new AbortController()
 
     try {
+      let ragContext: EnhancedRAGContext | undefined
+      try {
+        ragContext = await retrieveContext(content.trim(), 0.4, 3, isOnDashboard)
+        if (ragContext.relevantDocs.length > 0) {
+          console.log("RAG Context found:", {
+            query: ragContext.query,
+            avgSimilarity: (ragContext.avgSimilarity * 100).toFixed(1) + "%",
+            hasUserContext: !!ragContext.userContext,
+            docs: ragContext.relevantDocs.map((d) => ({
+              category: d.category,
+              similarity: (d.similarity * 100).toFixed(1) + "%",
+              preview: d.content.substring(0, 50) + "...",
+            })),
+          })
+        } else {
+          console.log("No RAG context found for:", content.trim())
+        }
+        if (ragContext.userContext) {
+          console.log("User context included:", ragContext.userContext.userName)
+        }
+      } catch (ragError) {
+        console.warn("RAG retrieval failed:", ragError)
+      }
+
+      let fullContent = ""
       await handleModelFallback(
         [...messages, userMessage],
         0,
         (chunk) => {
+          fullContent += chunk
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === assistantMessageId
@@ -100,14 +182,59 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
             )
           )
         },
-        abortControllerRef.current.signal
+        abortControllerRef.current.signal,
+        ragContext 
       )
 
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === assistantMessageId ? { ...msg, isStreaming: false } : msg
+      const actions = parseActions(fullContent)
+      if (actions.length > 0) {
+        console.log("Actions detected:", actions)
+        for (const { action, payload } of actions) {
+          const result = await executeAction(action, payload)
+          console.log(`Action ${action} result:`, result)
+
+          if (result.success) {
+            const actionMessage: Message = {
+              id: generateMessageId(),
+              role: "assistant",
+              content: `✅ ${result.message}`,
+              timestamp: new Date(),
+            }
+            setMessages((prev) => [...prev, actionMessage])
+          } else {
+            const errorMessage: Message = {
+              id: generateMessageId(),
+              role: "assistant",
+              content: `❌ ${result.message}`,
+              timestamp: new Date(),
+            }
+            setMessages((prev) => [...prev, errorMessage])
+          }
+        }
+
+        const cleanedContent = cleanContentForDisplay(fullContent)
+        if (cleanedContent !== fullContent) {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === assistantMessageId
+                ? { ...msg, content: cleanedContent, isStreaming: false }
+                : msg
+            )
+          )
+        } else {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === assistantMessageId ? { ...msg, isStreaming: false } : msg
+            )
+          )
+        }
+      } else {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === assistantMessageId ? { ...msg, isStreaming: false } : msg
+          )
         )
-      )
+      }
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
         setMessages((prev) =>

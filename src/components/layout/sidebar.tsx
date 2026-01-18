@@ -32,13 +32,13 @@ export function Sidebar() {
       <div className="flex flex-col h-full">
         <div className="p-5 border-b border-border/50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 relative flex items-center justify-center rounded-xl bg-primary shrink-0">
+            <div className="w-10 h-10 relative flex items-center justify-center rounded-xl bg-primary/10 shrink-0">
               <Image
                 src="/images/logo.png"
                 alt="SIKAS"
-                width={28}
-                height={28}
-                className="object-contain filter brightness-0 invert"
+                width={32}
+                height={32}
+                className="object-contain"
               />
             </div>
             <div>

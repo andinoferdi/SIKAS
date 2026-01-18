@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { ChatbotButton } from "./chatbot-button"
-import { ChatbotPanel } from "./chatbot-panel"
+import { ChatbotButton } from "@/components/chatbot/chatbot-button"
+import { ChatbotPanel } from "@/components/chatbot/chatbot-panel"
 
 export function Chatbot() {
   const [isOpen, setIsOpen] = useState(false)

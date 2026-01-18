@@ -1,4 +1,11 @@
-import { LandingNav, HeroSection, Footer } from "@/blocks/landing/home/components"
+import {
+  LandingNav,
+  HeroSection,
+  StatsSection,
+  FeaturesSection,
+  CtaSection,
+  Footer,
+} from "@/blocks/landing/home/components"
 import { Chatbot } from "@/components/chatbot"
 
 export default function HomePage() {
@@ -7,6 +14,9 @@ export default function HomePage() {
       <LandingNav />
       <main className="flex-1">
         <HeroSection />
+        <StatsSection />
+        <FeaturesSection />
+        <CtaSection />
       </main>
       <Footer />
       <Chatbot />
