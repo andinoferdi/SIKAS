@@ -15,7 +15,7 @@ export function ChatbotButton({ isOpen, onClick }: ChatbotButtonProps) {
       className={cn(
         "fixed bottom-4 right-4 sm:right-6 w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 z-50 cursor-pointer",
         isOpen
-          ? "bg-foreground hover:bg-card-foreground rotate-0"
+          ? "bg-foreground hover:bg-card-foreground rotate-0 hidden lg:flex"
           : "bg-primary hover:bg-primary/90 hover:scale-110"
       )}
       aria-label={isOpen ? "Tutup chat" : "Buka chat"}

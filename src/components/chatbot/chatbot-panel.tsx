@@ -157,7 +157,7 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
   if (!isOpen) return null
 
   return (
-    <div className="fixed bottom-24 right-4 sm:right-6 w-100 max-h-[90vh] h-182 bg-card rounded-2xl shadow-2xl border border-border flex flex-col overflow-hidden z-50 animate-in slide-in-from-bottom-4 fade-in-0 duration-300">
+    <div className="fixed inset-0 sm:inset-auto sm:bottom-24 sm:right-6 w-full sm:w-100 h-full sm:h-182 sm:max-h-[90vh] bg-card sm:rounded-2xl shadow-2xl sm:border sm:border-border flex flex-col overflow-hidden z-50 animate-in slide-in-from-bottom-4 fade-in-0 duration-300">
       <div className="bg-primary px-4 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-full bg-on-surface-subtle flex items-center justify-center">
