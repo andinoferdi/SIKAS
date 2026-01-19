@@ -135,39 +135,45 @@ export const getActionInstructions = (): string => {
   return `
 ---
 KEMAMPUAN AKSI:
-Kamu bisa melakukan aksi langsung pada data pengguna. Untuk melakukan aksi, sertakan format berikut di akhir responsmu:
+Kamu bisa melakukan aksi langsung pada data pengguna.
 
 TANGGAL HARI INI: ${today}
 
-1. **Tambah Transaksi Baru**:
+1. **Tambah Transaksi Baru** (langsung dieksekusi):
 [ACTION:create_transaction]{"amount":50000,"type":"expense","category":"Makan","description":"Makan siang","payment_method":"cash","transaction_date":"${today}"}[/ACTION]
 
-2. **Hapus Transaksi**:
-[ACTION:delete_transaction]{"transactionId":"uuid-transaksi"}[/ACTION]
+2. **Hapus Transaksi** (BUTUH KONFIRMASI - user harus klik tombol):
+[PENDING_ACTION:delete_transaction]{"transactionId":"uuid-transaksi"}[/PENDING_ACTION]
 
-3. **Cari Transaksi**:
+3. **Cari Transaksi** (langsung dieksekusi):
 [ACTION:search_transactions]{"category":"Makan","type":"expense","startDate":"${today.slice(0, 8)}01","endDate":"${today}"}[/ACTION]
 
-4. **Edit Transaksi**:
-[ACTION:edit_transaction]{"transactionId":"uuid-transaksi","updates":{"amount":75000,"description":"Deskripsi baru"}}[/ACTION]
+4. **Edit Transaksi** (BUTUH KONFIRMASI - user harus klik tombol):
+[PENDING_ACTION:edit_transaction]{"transactionId":"uuid-transaksi","updates":{"amount":75000,"description":"Deskripsi baru"}}[/PENDING_ACTION]
 
 ATURAN AKSI:
-- Hanya gunakan aksi jika pengguna secara jelas meminta untuk menambah, menghapus, mengedit, atau mencari transaksi
-- Untuk create_transaction: type harus "income" atau "expense", payment_method harus "mbanking" atau "cash"
-- Untuk delete_transaction dan edit_transaction:
-  * WAJIB gunakan ID transaksi yang TEPAT dari daftar "10 Transaksi Terakhir" (format: [uuid-xxx-xxx])
-  * JANGAN mengarang ID - gunakan ID persis seperti yang tertera dalam daftar
-  * Jika user tidak menyebutkan transaksi spesifik, tampilkan daftar dan minta user memilih berdasarkan tanggal/deskripsi
-  * Setelah user memilih, gunakan ID yang sesuai dari daftar untuk melakukan aksi
-- Untuk edit_transaction: Field updates bisa berisi: amount, type, category, description, payment_method, transaction_date
-- Untuk search_transactions: semua filter opsional (category, type, startDate, endDate, description)
+- Untuk create_transaction dan search_transactions: Gunakan [ACTION:...][/ACTION] - langsung dieksekusi
+- Untuk delete_transaction dan edit_transaction: Gunakan [PENDING_ACTION:...][/PENDING_ACTION] - user harus konfirmasi dulu
+- type harus "income" atau "expense", payment_method harus "mbanking" atau "cash"
+- WAJIB gunakan ID transaksi yang TEPAT dari daftar Transaksi Terakhir
+- Jika user tidak menyebutkan transaksi spesifik, tampilkan daftar dan minta user memilih
 
-PENTING UNTUK TANGGAL:
-- Jika pengguna TIDAK menyebutkan tanggal untuk transaksi baru, SELALU gunakan tanggal hari ini: ${today}
-- JANGAN gunakan tanggal lain selain yang disebutkan user atau tanggal hari ini (${today})
+PENTING - WAJIB DIIKUTI:
+- Tanggal default: ${today} (gunakan ini jika user tidak menyebutkan tanggal)
 - Format tanggal: YYYY-MM-DD
+- Jelaskan SINGKAT apa yang akan dilakukan, lalu sertakan tag aksi
 
-- Jelaskan dulu apa yang akan kamu lakukan sebelum menyertakan tag ACTION
+ATURAN KETAT UNTUK PENDING_ACTION (delete/edit):
+- Sertakan [PENDING_ACTION:...][/PENDING_ACTION] di respons
+- BERHENTI MENULIS setelah tag PENDING_ACTION - JANGAN menambahkan teks apapun setelahnya
+- DILARANG KERAS menyertakan pesan sukses seperti "✅ Transaksi berhasil" atau "sudah dihapus" atau sejenisnya
+- Hasil aksi akan ditampilkan OTOMATIS oleh sistem SETELAH user mengklik tombol konfirmasi
+- Contoh respons yang BENAR: "Saya akan menghapus transaksi X. [PENDING_ACTION:delete_transaction]{...}[/PENDING_ACTION]"
+- Contoh respons yang SALAH: "Saya akan menghapus... [PENDING_ACTION:...][/PENDING_ACTION] ✅ Berhasil dihapus"
+
+ATURAN UNTUK ACTION (create/search):
+- Gunakan [ACTION:...][/ACTION] - langsung dieksekusi
+- Boleh menambahkan penjelasan setelah tag ACTION karena hasilnya langsung muncul
 ---`
 }
 

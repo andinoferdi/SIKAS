@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect, useCallback } from "react"
 import { usePathname } from "next/navigation"
-import { X, Send, Loader2, Bot } from "lucide-react"
+import { useQueryClient } from "@tanstack/react-query"
+import { X, Send, Loader2, Bot, ImageIcon, Check, XCircle } from "lucide-react"
 import { type Message } from "@/types/chatbot"
 import {
   handleModelFallback,
@@ -14,6 +15,12 @@ import {
 import type { EnhancedRAGContext, ChatbotAction, ActionPayload } from "@/types/rag"
 import { ChatMessage } from "./chat-message"
 import { QuickReplies } from "./quick-replies"
+
+interface PendingAction {
+  action: ChatbotAction
+  payload: ActionPayload
+  description: string
+}
 
 function parseActions(
   content: string
@@ -35,8 +42,32 @@ function parseActions(
   return actions
 }
 
+function parsePendingActions(content: string): PendingAction[] {
+  const actions: PendingAction[] = []
+  const pendingRegex = /\[PENDING_ACTION:(\w+)\]([\s\S]*?)\[\/PENDING_ACTION\]/g
+  let match
+
+  while ((match = pendingRegex.exec(content)) !== null) {
+    const actionType = match[1] as ChatbotAction
+    try {
+      const payload = JSON.parse(match[2].trim())
+      const description = actionType === "delete_transaction"
+        ? "Hapus transaksi ini?"
+        : "Ubah transaksi ini?"
+      actions.push({ action: actionType, payload, description })
+    } catch (e) {
+      console.error("Failed to parse pending action payload:", e)
+    }
+  }
+
+  return actions
+}
+
 function cleanContentForDisplay(content: string): string {
-  return content.replace(/\[ACTION:\w+\][\s\S]*?\[\/ACTION\]/g, "").trim()
+  return content
+    .replace(/\[ACTION:\w+\][\s\S]*?\[\/ACTION\]/g, "")
+    .replace(/\[PENDING_ACTION:\w+\][\s\S]*?\[\/PENDING_ACTION\]/g, "")
+    .trim()
 }
 
 async function executeAction(
@@ -73,14 +104,24 @@ interface ChatbotPanelProps {
 export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
   const pathname = usePathname()
   const isOnDashboard = pathname?.startsWith("/dashboard") ?? false
+  const queryClient = useQueryClient()
 
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [showQuickReplies, setShowQuickReplies] = useState(true)
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const invalidateQueries = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["transactions"] })
+    queryClient.invalidateQueries({ queryKey: ["summary"] })
+    queryClient.invalidateQueries({ queryKey: ["user", "current"] })
+  }, [queryClient])
 
   const adjustTextareaHeight = useCallback(() => {
     const textarea = textareaRef.current
@@ -174,7 +215,6 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
         0,
         (chunk) => {
           fullContent += chunk
-          // Clean ACTION tags in real-time during streaming so users never see them
           const displayContent = cleanContentForDisplay(fullContent)
           setMessages((prev) =>
             prev.map((msg) =>
@@ -189,6 +229,8 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
       )
 
       const actions = parseActions(fullContent)
+      const pendingActions = parsePendingActions(fullContent)
+
       if (actions.length > 0) {
         console.log("Actions detected:", actions)
         for (const { action, payload } of actions) {
@@ -196,6 +238,7 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
           console.log(`Action ${action} result:`, result)
 
           if (result.success) {
+            invalidateQueries()
             const actionMessage: Message = {
               id: generateMessageId(),
               role: "assistant",
@@ -213,30 +256,21 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
             setMessages((prev) => [...prev, errorMessage])
           }
         }
-
-        const cleanedContent = cleanContentForDisplay(fullContent)
-        if (cleanedContent !== fullContent) {
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === assistantMessageId
-                ? { ...msg, content: cleanedContent, isStreaming: false }
-                : msg
-            )
-          )
-        } else {
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === assistantMessageId ? { ...msg, isStreaming: false } : msg
-            )
-          )
-        }
-      } else {
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === assistantMessageId ? { ...msg, isStreaming: false } : msg
-          )
-        )
       }
+
+      if (pendingActions.length > 0) {
+        console.log("Pending actions detected:", pendingActions)
+        setPendingAction(pendingActions[0])
+      }
+
+      const cleanedContent = cleanContentForDisplay(fullContent)
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === assistantMessageId
+            ? { ...msg, content: cleanedContent, isStreaming: false }
+            : msg
+        )
+      )
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
         setMessages((prev) =>
@@ -283,6 +317,110 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
     }
   }
 
+  const handleConfirmAction = async () => {
+    if (!pendingAction) return
+
+    const result = await executeAction(pendingAction.action, pendingAction.payload)
+    if (result.success) {
+      invalidateQueries()
+      const successMessage: Message = {
+        id: generateMessageId(),
+        role: "assistant",
+        content: `✅ ${result.message}`,
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, successMessage])
+    } else {
+      const errorMessage: Message = {
+        id: generateMessageId(),
+        role: "assistant",
+        content: `❌ ${result.message}`,
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, errorMessage])
+    }
+    setPendingAction(null)
+  }
+
+  const handleCancelAction = () => {
+    const cancelMessage: Message = {
+      id: generateMessageId(),
+      role: "assistant",
+      content: "Baik, aksi dibatalkan.",
+      timestamp: new Date(),
+    }
+    setMessages((prev) => [...prev, cancelMessage])
+    setPendingAction(null)
+  }
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith("image/")) {
+      const errorMsg: Message = {
+        id: generateMessageId(),
+        role: "assistant",
+        content: "❌ File harus berupa gambar (JPG, PNG, dll)",
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, errorMsg])
+      return
+    }
+
+    setUploadingImage(true)
+    setShowQuickReplies(false)
+
+    const userMessage: Message = {
+      id: generateMessageId(),
+      role: "user",
+      content: `📷 Mengunggah nota: ${file.name}`,
+      timestamp: new Date(),
+    }
+    setMessages((prev) => [...prev, userMessage])
+
+    try {
+      const formData = new FormData()
+      formData.append("image", file)
+
+      const response = await fetch("/api/chatbot/analyze-receipt", {
+        method: "POST",
+        body: formData,
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Gagal menganalisis gambar")
+      }
+
+      const resultMessage: Message = {
+        id: generateMessageId(),
+        role: "assistant",
+        content: data.message,
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, resultMessage])
+
+      if (data.transaction) {
+        invalidateQueries()
+      }
+    } catch (error) {
+      const errorMessage: Message = {
+        id: generateMessageId(),
+        role: "assistant",
+        content: `❌ ${error instanceof Error ? error.message : "Gagal menganalisis gambar"}`,
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, errorMessage])
+    } finally {
+      setUploadingImage(false)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
+    }
+  }
+
   if (!isOpen) return null
 
   return (
@@ -321,6 +459,28 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
           </div>
         )}
 
+        {pendingAction && (
+          <div className="bg-muted/50 rounded-lg p-3 mx-1">
+            <p className="text-sm text-foreground mb-3">{pendingAction.description}</p>
+            <div className="flex gap-2">
+              <button
+                onClick={handleConfirmAction}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground text-sm rounded-md hover:bg-primary/90 transition-colors cursor-pointer"
+              >
+                <Check className="w-4 h-4" />
+                Ya, Lanjutkan
+              </button>
+              <button
+                onClick={handleCancelAction}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-destructive/10 text-destructive text-sm rounded-md hover:bg-destructive/20 transition-colors cursor-pointer"
+              >
+                <XCircle className="w-4 h-4" />
+                Batal
+              </button>
+            </div>
+          </div>
+        )}
+
         <div ref={messagesEndRef} />
       </div>
 
@@ -333,17 +493,37 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Tulis pesan Anda..."
-              disabled={isLoading}
+              disabled={isLoading || uploadingImage}
               rows={1}
               className="w-full px-4 py-3 text-sm bg-transparent border-0 focus:outline-none disabled:opacity-50 resize-none"
               style={{ maxHeight: "260px", overflowY: "auto" }}
             />
           </form>
-          <div className="flex items-center pr-2 pb-2">
+          <div className="flex items-center gap-1 pr-2 pb-2">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+              ref={fileInputRef}
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isLoading || uploadingImage}
+              className="p-2 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+              title="Upload nota/struk"
+            >
+              {uploadingImage ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <ImageIcon className="w-5 h-5" />
+              )}
+            </button>
             <button
               type="button"
               onClick={() => sendMessage(input)}
-              disabled={!input.trim() || isLoading}
+              disabled={!input.trim() || isLoading || uploadingImage}
               className="p-2 text-primary hover:text-primary/80 transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
             >
               {isLoading ? (
