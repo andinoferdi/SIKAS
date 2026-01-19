@@ -158,14 +158,14 @@ export function CtaSection() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6">
               <div className="bg-card rounded-xl p-4">
-                <p className="text-xs text-muted-foreground mb-1">Total Tabungan</p>
-                <p className="text-lg font-bold text-foreground">{formatCurrency(targetAmount)}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground mb-1 truncate">Total Tabungan</p>
+                <p className="text-base sm:text-lg font-bold text-foreground truncate">{formatCurrency(targetAmount)}</p>
               </div>
               <div className="bg-card rounded-xl p-4">
-                <p className="text-xs text-muted-foreground mb-1">Per Bulan</p>
-                <p className="text-lg font-bold text-primary">{formatCurrency(monthlyAmount)}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground mb-1 truncate">Per Bulan</p>
+                <p className="text-base sm:text-lg font-bold text-primary truncate">{formatCurrency(monthlyAmount)}</p>
               </div>
             </div>
 
