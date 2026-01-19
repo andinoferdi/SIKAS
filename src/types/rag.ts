@@ -65,7 +65,7 @@ export interface EnhancedRAGContext extends RAGContext {
 }
 
 // Action types for chatbot
-export type ChatbotAction = "create_transaction" | "delete_transaction" | "search_transactions"
+export type ChatbotAction = "create_transaction" | "delete_transaction" | "edit_transaction" | "search_transactions"
 
 export interface CreateTransactionPayload {
   amount: number
@@ -80,6 +80,18 @@ export interface DeleteTransactionPayload {
   transactionId: string
 }
 
+export interface EditTransactionPayload {
+  transactionId: string
+  updates: {
+    amount?: number
+    type?: "income" | "expense"
+    category?: string
+    description?: string
+    payment_method?: "mbanking" | "cash"
+    transaction_date?: string
+  }
+}
+
 export interface SearchTransactionsPayload {
   category?: string
   type?: "income" | "expense"
@@ -88,7 +100,7 @@ export interface SearchTransactionsPayload {
   description?: string
 }
 
-export type ActionPayload = CreateTransactionPayload | DeleteTransactionPayload | SearchTransactionsPayload
+export type ActionPayload = CreateTransactionPayload | DeleteTransactionPayload | EditTransactionPayload | SearchTransactionsPayload
 
 export interface ChatbotActionRequest {
   action: ChatbotAction

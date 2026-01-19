@@ -202,10 +202,11 @@ export function formatUserContextForPrompt(context: UserChatContext): string {
 
   if (recentTransactions.length > 0) {
     prompt += `### 10 Transaksi Terakhir\n`
+    prompt += `(Gunakan ID untuk edit/hapus transaksi)\n`
     for (const tx of recentTransactions) {
       const typeLabel = tx.type === "income" ? "+" : "-"
       const date = new Date(tx.transaction_date).toLocaleDateString("id-ID")
-      prompt += `- ${date}: ${typeLabel}${formatRp(tx.amount)} - ${tx.category}`
+      prompt += `- [${tx.id}] ${date}: ${typeLabel}${formatRp(tx.amount)} - ${tx.category}`
       if (tx.description) {
         prompt += ` (${tx.description})`
       }

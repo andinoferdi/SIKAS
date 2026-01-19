@@ -136,29 +136,48 @@ CONTOH JAWABAN:
 
 Selalu mulai dengan sapaan ramah dan tawarkan bantuan!`
 
-export const ACTION_INSTRUCTIONS = `
+// Function to generate ACTION_INSTRUCTIONS with current date
+export const getActionInstructions = (): string => {
+  const today = new Date().toISOString().split("T")[0] // e.g., "2026-01-19"
+
+  return `
 ---
 KEMAMPUAN AKSI:
 Kamu bisa melakukan aksi langsung pada data pengguna. Untuk melakukan aksi, sertakan format berikut di akhir responsmu:
 
+TANGGAL HARI INI: ${today}
+
 1. **Tambah Transaksi Baru**:
-[ACTION:create_transaction]{"amount":50000,"type":"expense","category":"Makan","description":"Makan siang","payment_method":"cash","transaction_date":"2024-01-18"}[/ACTION]
+[ACTION:create_transaction]{"amount":50000,"type":"expense","category":"Makan","description":"Makan siang","payment_method":"cash","transaction_date":"${today}"}[/ACTION]
 
 2. **Hapus Transaksi**:
 [ACTION:delete_transaction]{"transactionId":"uuid-transaksi"}[/ACTION]
 
 3. **Cari Transaksi**:
-[ACTION:search_transactions]{"category":"Makan","type":"expense","startDate":"2024-01-01","endDate":"2024-01-31"}[/ACTION]
+[ACTION:search_transactions]{"category":"Makan","type":"expense","startDate":"${today.slice(0, 8)}01","endDate":"${today}"}[/ACTION]
+
+4. **Edit Transaksi**:
+[ACTION:edit_transaction]{"transactionId":"uuid-transaksi","updates":{"amount":75000,"description":"Deskripsi baru"}}[/ACTION]
 
 ATURAN AKSI:
-- Hanya gunakan aksi jika pengguna secara jelas meminta untuk menambah, menghapus, atau mencari transaksi
+- Hanya gunakan aksi jika pengguna secara jelas meminta untuk menambah, menghapus, mengedit, atau mencari transaksi
 - Untuk create_transaction: type harus "income" atau "expense", payment_method harus "mbanking" atau "cash"
-- Untuk delete_transaction: selalu minta konfirmasi ID transaksi dari pengguna
+- Untuk delete_transaction dan edit_transaction:
+  * WAJIB gunakan ID transaksi yang TEPAT dari daftar "10 Transaksi Terakhir" (format: [uuid-xxx-xxx])
+  * JANGAN mengarang ID - gunakan ID persis seperti yang tertera dalam daftar
+  * Jika user tidak menyebutkan transaksi spesifik, tampilkan daftar dan minta user memilih berdasarkan tanggal/deskripsi
+  * Setelah user memilih, gunakan ID yang sesuai dari daftar untuk melakukan aksi
+- Untuk edit_transaction: Field updates bisa berisi: amount, type, category, description, payment_method, transaction_date
 - Untuk search_transactions: semua filter opsional (category, type, startDate, endDate, description)
-- Jika pengguna tidak menyebutkan tanggal untuk transaksi baru, gunakan tanggal hari ini
+
+PENTING UNTUK TANGGAL:
+- Jika pengguna TIDAK menyebutkan tanggal untuk transaksi baru, SELALU gunakan tanggal hari ini: ${today}
+- JANGAN gunakan tanggal lain selain yang disebutkan user atau tanggal hari ini (${today})
 - Format tanggal: YYYY-MM-DD
+
 - Jelaskan dulu apa yang akan kamu lakukan sebelum menyertakan tag ACTION
 ---`
+}
 
 export const createSystemPrompt = (ragContext?: RAGContext | EnhancedRAGContext): Message => {
   let systemContent = BASE_SYSTEM_PROMPT
@@ -167,7 +186,7 @@ export const createSystemPrompt = (ragContext?: RAGContext | EnhancedRAGContext)
   const hasUserContext = enhancedContext?.userContext !== undefined
 
   if (hasUserContext) {
-    systemContent += ACTION_INSTRUCTIONS
+    systemContent += getActionInstructions()
   }
 
   if (hasUserContext && enhancedContext?.formattedUserContext) {

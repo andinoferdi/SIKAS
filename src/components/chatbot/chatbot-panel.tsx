@@ -174,16 +174,18 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
         0,
         (chunk) => {
           fullContent += chunk
+          // Clean ACTION tags in real-time during streaming so users never see them
+          const displayContent = cleanContentForDisplay(fullContent)
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === assistantMessageId
-                ? { ...msg, content: msg.content + chunk }
+                ? { ...msg, content: displayContent }
                 : msg
             )
           )
         },
         abortControllerRef.current.signal,
-        ragContext 
+        ragContext
       )
 
       const actions = parseActions(fullContent)
