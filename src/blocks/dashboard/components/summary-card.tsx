@@ -23,26 +23,26 @@ export function SummaryCard({ income, expense, month = getCurrentMonth(), year =
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="flex items-center gap-3 p-4 rounded-xl bg-success-bg border border-success-border">
-          <div className="w-10 h-10 rounded-xl bg-success-bg-dark flex items-center justify-center shrink-0">
-            <TrendingUp className="h-5 w-5 text-success" />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="flex items-center gap-2.5 p-3.5 rounded-xl bg-success-bg border border-success-border">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-success-bg-dark flex items-center justify-center shrink-0">
+            <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-success" />
           </div>
-          <div className="min-w-0">
+          <div className="flex-1 overflow-hidden">
             <p className="text-xs font-medium text-success-text mb-0.5">Pemasukan</p>
-            <p className="text-base sm:text-lg font-bold text-success-text truncate">
+            <p className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-success-text truncate">
               +{formatCurrency(income)}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 p-4 rounded-xl bg-danger-bg border border-danger-border">
-          <div className="w-10 h-10 rounded-xl bg-danger-bg-dark flex items-center justify-center shrink-0">
-            <TrendingDown className="h-5 w-5 text-danger" />
+        <div className="flex items-center gap-2.5 p-3.5 rounded-xl bg-danger-bg border border-danger-border">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-danger-bg-dark flex items-center justify-center shrink-0">
+            <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 text-danger" />
           </div>
-          <div className="min-w-0">
+          <div className="flex-1 overflow-hidden">
             <p className="text-xs font-medium text-danger-text mb-0.5">Pengeluaran</p>
-            <p className="text-base sm:text-lg font-bold text-danger-text truncate">
+            <p className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-danger-text truncate">
               -{formatCurrency(expense)}
             </p>
           </div>
@@ -50,7 +50,7 @@ export function SummaryCard({ income, expense, month = getCurrentMonth(), year =
 
         <div
           className={cn(
-            "flex items-center gap-3 p-4 rounded-xl border",
+            "flex items-center gap-2.5 p-3.5 rounded-xl border",
             net >= 0
               ? "bg-primary/5 border-primary/20"
               : "bg-warning-bg border-warning-border"
@@ -58,17 +58,17 @@ export function SummaryCard({ income, expense, month = getCurrentMonth(), year =
         >
           <div
             className={cn(
-              "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
+              "w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0",
               net >= 0 ? "bg-primary/10" : "bg-warning-bg-dark"
             )}
           >
-            <Scale className={cn("h-5 w-5", net >= 0 ? "text-primary" : "text-warning")} />
+            <Scale className={cn("h-4 w-4 sm:h-5 sm:w-5", net >= 0 ? "text-primary" : "text-warning")} />
           </div>
-          <div className="min-w-0">
+          <div className="flex-1 overflow-hidden">
             <p className={cn("text-xs font-medium mb-0.5", net >= 0 ? "text-primary" : "text-warning-text")}>
               Selisih
             </p>
-            <p className={cn("text-base sm:text-lg font-bold truncate", net >= 0 ? "text-primary" : "text-warning-text")}>
+            <p className={cn("text-xs sm:text-sm md:text-base lg:text-lg font-bold truncate", net >= 0 ? "text-primary" : "text-warning-text")}>
               {net >= 0 ? "+" : ""}
               {formatCurrency(net)}
             </p>
