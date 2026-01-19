@@ -42,6 +42,7 @@ export function CtaSection() {
     setter(value)
   }
 
+
   const targetNum = parseInt(targetAmount) || 0
   const monthlyNum = parseInt(monthlyAmount) || 1
   const monthsNeeded = Math.ceil(targetNum / monthlyNum)
@@ -106,11 +107,11 @@ export function CtaSection() {
                 </div>
               </div>
 
-              <Link href="/register" className="block">
-                <Button className="w-full h-12 text-base font-semibold rounded-xl">
-                  Mulai Menabung Sekarang
-                </Button>
-              </Link>
+              <Button 
+                className="w-full h-12 text-base font-semibold rounded-xl"
+              >
+                Hitung Simulasi
+              </Button>
             </div>
           </div>
 

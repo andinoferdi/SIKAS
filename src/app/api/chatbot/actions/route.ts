@@ -12,6 +12,29 @@ import type {
 
 const MIN_MBANKING_BALANCE = 50000
 
+async function resolveTransactionId(
+  userId: string,
+  shortOrFullId: string
+): Promise<string | null> {
+  const supabase = await createClient()
+
+  if (shortOrFullId.length === 36) {
+    return shortOrFullId
+  }
+
+  const { data: transactions } = await supabase
+    .from("transactions")
+    .select("id")
+    .eq("user_id", userId)
+    .order("transaction_date", { ascending: false })
+    .limit(20)
+
+  if (!transactions) return null
+
+  const match = transactions.find((tx) => tx.id.endsWith(shortOrFullId))
+  return match?.id || null
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getSession()
@@ -54,7 +77,6 @@ async function handleCreateTransaction(
 ): Promise<NextResponse> {
   const supabase = await createClient()
 
-  // Validate required fields
   if (!payload.amount || !payload.type || !payload.category || !payload.payment_method) {
     return NextResponse.json(
       { error: "Data transaksi tidak lengkap" },
@@ -62,7 +84,6 @@ async function handleCreateTransaction(
     )
   }
 
-  // Get user balances
   const { data: user, error: userError } = await supabase
     .from("users")
     .select("mbanking_balance, cash_balance")
@@ -81,7 +102,6 @@ async function handleCreateTransaction(
   const balanceChange = payload.type === "expense" ? -payload.amount : payload.amount
   const newBalance = currentBalance + balanceChange
 
-  // Validate balance for expenses
   if (payload.type === "expense") {
     if (newBalance < 0) {
       return NextResponse.json({ error: "Saldo tidak cukup" }, { status: 400 })
@@ -95,7 +115,6 @@ async function handleCreateTransaction(
     }
   }
 
-  // Create transaction
   const { data: transaction, error: txError } = await supabase
     .from("transactions")
     .insert({
@@ -114,14 +133,12 @@ async function handleCreateTransaction(
     return NextResponse.json({ error: txError.message }, { status: 500 })
   }
 
-  // Update user balance
   const { error: balanceError } = await supabase
     .from("users")
     .update(isMbanking ? { mbanking_balance: newBalance } : { cash_balance: newBalance })
     .eq("id", userId)
 
   if (balanceError) {
-    // Rollback transaction if balance update fails
     await supabase.from("transactions").delete().eq("id", transaction.id)
     return NextResponse.json({ error: "Gagal memperbarui saldo" }, { status: 500 })
   }
@@ -143,11 +160,15 @@ async function handleDeleteTransaction(
     return NextResponse.json({ error: "ID transaksi tidak diberikan" }, { status: 400 })
   }
 
-  // Get the transaction first
+  const fullId = await resolveTransactionId(userId, payload.transactionId)
+  if (!fullId) {
+    return NextResponse.json({ error: "Transaksi tidak ditemukan" }, { status: 404 })
+  }
+
   const { data: transaction, error: fetchError } = await supabase
     .from("transactions")
     .select("*")
-    .eq("id", payload.transactionId)
+    .eq("id", fullId)
     .eq("user_id", userId)
     .single()
 
@@ -155,7 +176,6 @@ async function handleDeleteTransaction(
     return NextResponse.json({ error: "Transaksi tidak ditemukan" }, { status: 404 })
   }
 
-  // Get user balances
   const { data: user, error: userError } = await supabase
     .from("users")
     .select("mbanking_balance, cash_balance")
@@ -166,19 +186,16 @@ async function handleDeleteTransaction(
     return NextResponse.json({ error: "User tidak ditemukan" }, { status: 404 })
   }
 
-  // Calculate balance reversal
   const isMbanking = transaction.payment_method === "mbanking"
   const currentBalance = isMbanking
     ? Number(user.mbanking_balance)
     : Number(user.cash_balance)
 
-  // Reverse the balance change
   const balanceChange = transaction.type === "expense"
     ? Number(transaction.amount)
     : -Number(transaction.amount)
   const newBalance = currentBalance + balanceChange
 
-  // Validate that reversal won't cause negative balance or below minimum for mbanking
   if (transaction.type === "income") {
     if (newBalance < 0) {
       return NextResponse.json(
@@ -195,25 +212,22 @@ async function handleDeleteTransaction(
     }
   }
 
-  // Delete the transaction
   const { error: deleteError } = await supabase
     .from("transactions")
     .delete()
-    .eq("id", payload.transactionId)
+    .eq("id", fullId)
     .eq("user_id", userId)
 
   if (deleteError) {
     return NextResponse.json({ error: deleteError.message }, { status: 500 })
   }
 
-  // Update the balance
   const { error: balanceError } = await supabase
     .from("users")
     .update(isMbanking ? { mbanking_balance: newBalance } : { cash_balance: newBalance })
     .eq("id", userId)
 
   if (balanceError) {
-    // Try to restore the transaction (best effort)
     await supabase.from("transactions").insert(transaction)
     return NextResponse.json({ error: "Gagal memperbarui saldo" }, { status: 500 })
   }
@@ -238,11 +252,15 @@ async function handleEditTransaction(
     return NextResponse.json({ error: "Tidak ada data yang diubah" }, { status: 400 })
   }
 
-  // Get the existing transaction
+  const fullId = await resolveTransactionId(userId, payload.transactionId)
+  if (!fullId) {
+    return NextResponse.json({ error: "Transaksi tidak ditemukan" }, { status: 404 })
+  }
+
   const { data: existingTx, error: fetchError } = await supabase
     .from("transactions")
     .select("*")
-    .eq("id", payload.transactionId)
+    .eq("id", fullId)
     .eq("user_id", userId)
     .single()
 
@@ -250,7 +268,6 @@ async function handleEditTransaction(
     return NextResponse.json({ error: "Transaksi tidak ditemukan" }, { status: 404 })
   }
 
-  // Get user balances
   const { data: user, error: userError } = await supabase
     .from("users")
     .select("mbanking_balance, cash_balance")
@@ -261,7 +278,6 @@ async function handleEditTransaction(
     return NextResponse.json({ error: "User tidak ditemukan" }, { status: 404 })
   }
 
-  // Determine old and new values
   const oldAmount = Number(existingTx.amount)
   const oldType = existingTx.type as "income" | "expense"
   const oldPaymentMethod = existingTx.payment_method as "mbanking" | "cash"
@@ -270,30 +286,20 @@ async function handleEditTransaction(
   const newType = payload.updates.type ?? oldType
   const newPaymentMethod = payload.updates.payment_method ?? oldPaymentMethod
 
-  // Calculate balance changes
-  // First, reverse the old transaction
   const oldIsMbanking = oldPaymentMethod === "mbanking"
-  const oldBalanceKey = oldIsMbanking ? "mbanking_balance" : "cash_balance"
-  let oldBalance = Number(user[oldBalanceKey])
   const oldBalanceChange = oldType === "expense" ? oldAmount : -oldAmount
-  oldBalance += oldBalanceChange
 
-  // Then, apply the new transaction
   const newIsMbanking = newPaymentMethod === "mbanking"
-  const newBalanceKey = newIsMbanking ? "mbanking_balance" : "cash_balance"
 
-  // If payment method changed, we need to handle both balances
   let newMbankingBalance = Number(user.mbanking_balance)
   let newCashBalance = Number(user.cash_balance)
 
-  // Reverse old
   if (oldIsMbanking) {
     newMbankingBalance += oldBalanceChange
   } else {
     newCashBalance += oldBalanceChange
   }
 
-  // Apply new
   const newBalanceChangeAmount = newType === "expense" ? -newAmount : newAmount
   if (newIsMbanking) {
     newMbankingBalance += newBalanceChangeAmount
@@ -301,7 +307,6 @@ async function handleEditTransaction(
     newCashBalance += newBalanceChangeAmount
   }
 
-  // Validate new balances
   if (newMbankingBalance < 0 || newCashBalance < 0) {
     return NextResponse.json({ error: "Saldo tidak cukup untuk perubahan ini" }, { status: 400 })
   }
@@ -313,7 +318,6 @@ async function handleEditTransaction(
     )
   }
 
-  // Prepare update data
   const updateData: Record<string, unknown> = {}
   if (payload.updates.amount !== undefined) updateData.amount = payload.updates.amount
   if (payload.updates.type !== undefined) updateData.type = payload.updates.type
@@ -322,18 +326,16 @@ async function handleEditTransaction(
   if (payload.updates.payment_method !== undefined) updateData.payment_method = payload.updates.payment_method
   if (payload.updates.transaction_date !== undefined) updateData.transaction_date = payload.updates.transaction_date
 
-  // Update the transaction
   const { error: updateError } = await supabase
     .from("transactions")
     .update(updateData)
-    .eq("id", payload.transactionId)
+    .eq("id", fullId)
     .eq("user_id", userId)
 
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 500 })
   }
 
-  // Update user balances
   const { error: balanceError } = await supabase
     .from("users")
     .update({
@@ -343,7 +345,6 @@ async function handleEditTransaction(
     .eq("id", userId)
 
   if (balanceError) {
-    // Try to rollback transaction update
     await supabase
       .from("transactions")
       .update({
@@ -354,11 +355,10 @@ async function handleEditTransaction(
         payment_method: existingTx.payment_method,
         transaction_date: existingTx.transaction_date,
       })
-      .eq("id", payload.transactionId)
+      .eq("id", fullId)
     return NextResponse.json({ error: "Gagal memperbarui saldo" }, { status: 500 })
   }
 
-  // Build change description
   const changes: string[] = []
   if (payload.updates.amount !== undefined) changes.push(`jumlah menjadi Rp ${newAmount.toLocaleString("id-ID")}`)
   if (payload.updates.type !== undefined) changes.push(`jenis menjadi ${newType === "income" ? "pemasukan" : "pengeluaran"}`)

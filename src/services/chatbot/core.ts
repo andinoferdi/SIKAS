@@ -1,32 +1,25 @@
 import { type Message, type StreamChunk, type QuickReply } from "@/types/chatbot"
 import type { RAGContext, EnhancedRAGContext } from "@/types/rag"
+import { pruneConversationHistory, estimateMessagesTokens } from "./token-utils"
 
 const API_KEY = process.env.NEXT_PUBLIC_OPENROUTER_API_KEY
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
 const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || "SIKAS"
 
 export const MODELS = [
-  "meta-llama/llama-4-maverick:free",
-  "mistralai/mistral-small-3.2-24b-instruct:free",
-  "google/gemini-2.0-flash-exp:free",
-  "meta-llama/llama-4-scout:free",
-  "mistralai/mistral-small-3.1-24b-instruct:free",
-  "qwen/qwen2.5-vl-32b-instruct:free",
-  "google/gemma-3-27b-it:free",
-  "google/gemma-3-12b-it:free",
-  "google/gemma-3-4b-it:free",
+  "mistralai/devstral-2512:free",
+  "nvidia/nemotron-3-nano-30b-a3b:free",
+  "xiaomi/mimo-v2-flash:free",
+  "arcee-ai/trinity-mini:free",
+  "tngtech/tng-r1t-chimera:free",
 ]
 
 export const MODEL_DISPLAY_NAMES = [
-  "Llama 4 Maverick",
-  "Mistral Small 3.2",
-  "Gemini 2.0 Flash",
-  "Llama 4 Scout",
-  "Mistral Small 3.1",
-  "Qwen 2.5 VL",
-  "Gemma 3 27B",
-  "Gemma 3 12B",
-  "Gemma 3 4B",
+  "Devstral 2512",
+  "Nemotron Nano 30B",
+  "Mimo V2 Flash",
+  "Trinity Mini",
+  "TNG R1T Chimera",
 ]
 
 export const QUICK_REPLIES: QuickReply[] = [
@@ -136,9 +129,8 @@ CONTOH JAWABAN:
 
 Selalu mulai dengan sapaan ramah dan tawarkan bantuan!`
 
-// Function to generate ACTION_INSTRUCTIONS with current date
 export const getActionInstructions = (): string => {
-  const today = new Date().toISOString().split("T")[0] // e.g., "2026-01-19"
+  const today = new Date().toISOString().split("T")[0]
 
   return `
 ---
@@ -283,10 +275,19 @@ export const sendChatMessage = async (
   }
 
   const systemPrompt = createSystemPrompt(ragContext)
-  const apiMessages = [
-    systemPrompt,
-    ...messages.filter((m) => m.role !== "system"),
-  ]
+
+  const prunedMessages = pruneConversationHistory(
+    messages.filter((m) => m.role !== "system")
+  )
+
+  const apiMessages = [systemPrompt, ...prunedMessages]
+
+  if (process.env.NODE_ENV === "development") {
+    const estimatedTokens = estimateMessagesTokens(apiMessages)
+    console.log(
+      `[Token Estimate] ~${estimatedTokens} tokens for ${apiMessages.length} messages`
+    )
+  }
 
   const response = await fetch(
     "https://openrouter.ai/api/v1/chat/completions",
@@ -314,19 +315,22 @@ export const sendChatMessage = async (
 
   if (!response.ok) {
     const errorText = await response.text()
-    let errorMessage = `API Error (${response.status}): ${errorText}`
 
-    if (response.status === 401) {
-      errorMessage = "Autentikasi gagal. Periksa API key Anda."
-    } else if (response.status === 402) {
-      errorMessage = "Saldo tidak cukup. Mencoba model lain..."
+    if (response.status === 404) {
+      throw new Error(`MODEL_NOT_FOUND: ${MODELS[modelIndex]} tidak tersedia`)
     } else if (response.status === 429) {
-      errorMessage = "Terlalu banyak permintaan. Silakan coba lagi nanti."
+      throw new Error(`RATE_LIMITED: Terlalu banyak permintaan`)
+    } else if (response.status === 402) {
+      throw new Error(`INSUFFICIENT_CREDITS: Saldo tidak cukup`)
+    } else if (response.status === 502 || response.status === 503) {
+      throw new Error(`MODEL_DOWN: Server model sedang bermasalah`)
+    } else if (response.status === 401) {
+      throw new Error("Autentikasi gagal. Periksa API key Anda.")
     } else if (response.status >= 500) {
-      errorMessage = "Server sedang bermasalah. Silakan coba lagi nanti."
+      throw new Error(`SERVER_ERROR: ${errorText}`)
     }
 
-    throw new Error(errorMessage)
+    throw new Error(`API Error (${response.status}): ${errorText}`)
   }
 
   const reader = response.body?.getReader()
@@ -365,13 +369,19 @@ export const handleModelFallback = async (
   ragContext?: RAGContext | EnhancedRAGContext
 ): Promise<{ content: string; model: string; finalIndex: number }> => {
   let lastError: Error | null = null
-  const failedModels: string[] = []
+  const unavailableModels: Set<number> = new Set()
+  const rateLimitedModels: Set<number> = new Set()
+  let retryDelay = 1000
 
   const order: number[] = []
   for (let i = startModelIndex; i < MODELS.length; i++) order.push(i)
   for (let i = 0; i < startModelIndex; i++) order.push(i)
 
   for (const i of order) {
+    if (unavailableModels.has(i)) {
+      continue
+    }
+
     try {
       const result = await sendChatMessage(messages, i, onStream, signal, ragContext)
       return { content: result.content, model: result.model, finalIndex: i }
@@ -383,24 +393,42 @@ export const handleModelFallback = async (
       const errorMessage =
         error instanceof Error ? error.message : String(error)
 
-      if (
-        errorMessage.includes("429") ||
-        errorMessage.includes("402") ||
-        errorMessage.includes("Rate limit")
-      ) {
-        failedModels.push(MODEL_DISPLAY_NAMES[i])
+      if (errorMessage.startsWith("MODEL_NOT_FOUND:")) {
+        unavailableModels.add(i)
+        console.warn(`Model ${MODELS[i]} not available, skipping`)
+        continue
+      }
 
-        if (failedModels.length === MODELS.length) {
+      if (
+        errorMessage.startsWith("RATE_LIMITED:") ||
+        errorMessage.startsWith("INSUFFICIENT_CREDITS:")
+      ) {
+        rateLimitedModels.add(i)
+
+        const availableModels = order.filter(idx => !unavailableModels.has(idx))
+        if (rateLimitedModels.size >= availableModels.length) {
           throw new Error(
-            "Chatbot sedang tidak tersedia. Silakan coba lagi nanti."
+            "Semua model sedang sibuk. Silakan coba lagi dalam beberapa menit."
           )
         }
 
-        await new Promise((resolve) => setTimeout(resolve, 1000))
+        await new Promise((resolve) => setTimeout(resolve, retryDelay))
+        retryDelay = Math.min(retryDelay * 2, 8000)
+        continue
+      }
+
+      if (errorMessage.startsWith("MODEL_DOWN:") || errorMessage.startsWith("SERVER_ERROR:")) {
+        console.warn(`Model ${MODELS[i]} temporarily down, trying next`)
+        await new Promise((resolve) => setTimeout(resolve, 500))
         continue
       }
 
       lastError = error instanceof Error ? error : new Error(errorMessage)
+
+      if (errorMessage.includes("Autentikasi gagal")) {
+        throw lastError
+      }
+
       continue
     }
   }
@@ -412,7 +440,7 @@ export const handleModelFallback = async (
 }
 
 export const generateMessageId = (): string => {
-  return `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  return `msg_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
 }
 
 export const getGreetingMessage = (): Message => {

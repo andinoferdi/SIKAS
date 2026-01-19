@@ -30,7 +30,7 @@ export function SummaryCard({ income, expense, month = getCurrentMonth(), year =
           </div>
           <div className="flex-1 overflow-hidden">
             <p className="text-xs font-medium text-success-text mb-0.5">Pemasukan</p>
-            <p className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-success-text truncate">
+            <p className="text-xs sm:text-sm font-bold text-success-text truncate">
               +{formatCurrency(income)}
             </p>
           </div>
@@ -42,7 +42,7 @@ export function SummaryCard({ income, expense, month = getCurrentMonth(), year =
           </div>
           <div className="flex-1 overflow-hidden">
             <p className="text-xs font-medium text-danger-text mb-0.5">Pengeluaran</p>
-            <p className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-danger-text truncate">
+            <p className="text-xs sm:text-sm font-bold text-danger-text truncate">
               -{formatCurrency(expense)}
             </p>
           </div>
@@ -68,7 +68,7 @@ export function SummaryCard({ income, expense, month = getCurrentMonth(), year =
             <p className={cn("text-xs font-medium mb-0.5", net >= 0 ? "text-primary" : "text-warning-text")}>
               Selisih
             </p>
-            <p className={cn("text-xs sm:text-sm md:text-base lg:text-lg font-bold truncate", net >= 0 ? "text-primary" : "text-warning-text")}>
+            <p className={cn("text-xs sm:text-sm font-bold truncate", net >= 0 ? "text-primary" : "text-warning-text")}>
               {net >= 0 ? "+" : ""}
               {formatCurrency(net)}
             </p>

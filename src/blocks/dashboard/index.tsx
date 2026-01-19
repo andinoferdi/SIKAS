@@ -19,11 +19,12 @@ export default function DashboardPage() {
           <div className="h-7 bg-muted rounded-lg w-48 animate-pulse" />
           <div className="h-4 bg-muted rounded w-64 animate-pulse" />
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => (
+        <div className="grid grid-cols-2 gap-4">
+          {[...Array(2)].map((_, i) => (
             <div key={i} className="h-28 bg-muted rounded-2xl animate-pulse" />
           ))}
         </div>
+        <div className="h-40 bg-muted rounded-2xl animate-pulse" />
         <div className="h-48 bg-muted rounded-2xl animate-pulse" />
       </div>
     )
@@ -52,23 +53,15 @@ export default function DashboardPage() {
         <h1 className="text-xl font-bold text-foreground">{user.name}</h1>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         <BalanceCard title="M-Banking" amount={user.mbanking_balance} type="mbanking" />
         <BalanceCard title="Cash" amount={user.cash_balance} type="cash" />
-        <div className="col-span-2 hidden lg:block">
-          <SummaryCard
-            income={summary?.total_income || 0}
-            expense={summary?.total_expense || 0}
-          />
-        </div>
       </div>
 
-      <div className="lg:hidden">
-        <SummaryCard
-          income={summary?.total_income || 0}
-          expense={summary?.total_expense || 0}
-        />
-      </div>
+      <SummaryCard
+        income={summary?.total_income || 0}
+        expense={summary?.total_expense || 0}
+      />
 
       <section>
         <div className="flex items-center justify-between mb-4">

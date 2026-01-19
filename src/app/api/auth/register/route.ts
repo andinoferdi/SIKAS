@@ -4,7 +4,6 @@ import { hashPin } from "@/lib/auth/pin"
 import { createSession } from "@/lib/auth/session"
 import { z } from "zod"
 
-// API-specific schema (without confirmPin refinement)
 const registerApiSchema = z.object({
   name: z.string().min(2, "Nama minimal 2 karakter").regex(/^[a-zA-Z\s]+$/, "Nama hanya boleh huruf dan spasi"),
   pin: z.string().min(4, "PIN minimal 4 digit").max(6, "PIN maksimal 6 digit").regex(/^\d+$/, "PIN hanya boleh angka"),

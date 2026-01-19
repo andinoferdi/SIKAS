@@ -142,11 +142,9 @@ export default function AddTransactionPage() {
         </div>
 
         <div className="lg:grid lg:grid-cols-5 lg:gap-8">
-          {/* Form */}
           <div className="lg:col-span-3">
             <div className="bg-card rounded-2xl border border-border p-5 lg:p-6">
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-                {/* Transaction Type */}
                 <Tabs value={type} onValueChange={(val) => setValue("type", val as TransactionType)}>
                   <TabsList className="w-full bg-muted p-1 rounded-xl">
                     <TabsTrigger
@@ -168,7 +166,6 @@ export default function AddTransactionPage() {
                   </TabsList>
                 </Tabs>
 
-                {/* Amount */}
                 <div>
                   <label className="block text-sm font-medium text-card-foreground mb-2">Jumlah</label>
                   <div className="relative">
@@ -192,7 +189,6 @@ export default function AddTransactionPage() {
                   )}
                 </div>
 
-                {/* Category */}
                 <div>
                   <label className="block text-sm font-medium text-card-foreground mb-2">Kategori</label>
                   <Select value={category || defaultCategory} onValueChange={(val) => setValue("category", val)}>
@@ -209,7 +205,6 @@ export default function AddTransactionPage() {
                   </Select>
                 </div>
 
-                {/* Payment Method */}
                 <div>
                   <label className="block text-sm font-medium text-card-foreground mb-2">Metode Pembayaran</label>
                   <div className="grid grid-cols-2 gap-3">
@@ -268,13 +263,11 @@ export default function AddTransactionPage() {
                   </div>
                 </div>
 
-                {/* Date */}
                 <div>
                   <label className="block text-sm font-medium text-card-foreground mb-2">Tanggal</label>
                   <DatePicker value={watch("transaction_date")} onChange={(val) => setValue("transaction_date", val)} placeholder="Pilih tanggal" />
                 </div>
 
-                {/* Description */}
                 <div>
                   <label className="block text-sm font-medium text-card-foreground mb-2">
                     Keterangan <span className="text-muted-foreground font-normal">(opsional)</span>
@@ -287,7 +280,6 @@ export default function AddTransactionPage() {
                   />
                 </div>
 
-                {/* Warnings */}
                 {balanceWarning && (
                   <div className="flex items-center gap-2 p-3 bg-warning-bg border border-warning-border rounded-xl">
                     <AlertCircle className="h-4 w-4 text-warning shrink-0" />
@@ -302,7 +294,6 @@ export default function AddTransactionPage() {
                   </div>
                 )}
 
-                {/* Submit */}
                 <Button
                   type="submit"
                   disabled={createMutation.isPending || !amount || !category || !!balanceWarning}
@@ -322,7 +313,6 @@ export default function AddTransactionPage() {
             </div>
           </div>
 
-          {/* Sidebar Info - Desktop Only */}
           <div className="hidden lg:block lg:col-span-2">
             <div className="bg-card rounded-2xl border border-border p-5 sticky top-20">
               <h3 className="font-semibold text-foreground mb-4">Saldo Saat Ini</h3>

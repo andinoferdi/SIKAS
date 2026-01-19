@@ -164,52 +164,28 @@ export async function searchUserTransactions(
 
 
 export function formatUserContextForPrompt(context: UserChatContext): string {
-  const { userName, balances, allTimeSummary, monthlySummary, recentTransactions } = context
+  const { userName, balances, monthlySummary, recentTransactions } = context
 
-  const formatRp = (amount: number) => `Rp ${amount.toLocaleString("id-ID")}`
-
-  let prompt = `## Data Pengguna: ${userName}\n\n`
-
-  prompt += `### Saldo Saat Ini\n`
-  prompt += `- M-Banking: ${formatRp(balances.mbanking)}\n`
-  prompt += `- Tunai: ${formatRp(balances.cash)}\n`
-  prompt += `- Total: ${formatRp(balances.mbanking + balances.cash)}\n\n`
-
-  prompt += `### Ringkasan Sepanjang Waktu\n`
-  prompt += `- Total Pemasukan: ${formatRp(allTimeSummary.totalIncome)}\n`
-  prompt += `- Total Pengeluaran: ${formatRp(allTimeSummary.totalExpense)}\n`
-  prompt += `- Selisih: ${formatRp(allTimeSummary.totalIncome - allTimeSummary.totalExpense)}\n\n`
-
-  if (allTimeSummary.byCategory.length > 0) {
-    prompt += `### Top Kategori (Sepanjang Waktu)\n`
-    const topCategories = allTimeSummary.byCategory.slice(0, 5)
-    for (const cat of topCategories) {
-      const [type, name] = cat.category.split(":")
-      const typeLabel = type === "income" ? "Pemasukan" : "Pengeluaran"
-      prompt += `- ${name} (${typeLabel}): ${formatRp(cat.total)} (${cat.count} transaksi)\n`
-    }
-    prompt += "\n"
+  const formatRp = (amount: number) => {
+    if (amount >= 1000000) return `Rp${(amount / 1000000).toFixed(1)}jt`
+    if (amount >= 1000) return `Rp${(amount / 1000).toFixed(0)}rb`
+    return `Rp${amount}`
   }
 
-  const monthNames = [
-    "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-    "Juli", "Agustus", "September", "Oktober", "November", "Desember"
-  ]
-  prompt += `### Ringkasan ${monthNames[monthlySummary.month - 1]} ${monthlySummary.year}\n`
-  prompt += `- Pemasukan: ${formatRp(monthlySummary.total_income)}\n`
-  prompt += `- Pengeluaran: ${formatRp(monthlySummary.total_expense)}\n`
-  prompt += `- Selisih: ${formatRp(monthlySummary.net)}\n\n`
+  let prompt = `## ${userName}\n`
+  prompt += `Saldo: M-Banking ${formatRp(balances.mbanking)} | Cash ${formatRp(balances.cash)}\n`
+
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]
+  prompt += `${monthNames[monthlySummary.month - 1]} ${monthlySummary.year}: +${formatRp(monthlySummary.total_income)} -${formatRp(monthlySummary.total_expense)} = ${formatRp(monthlySummary.net)}\n`
 
   if (recentTransactions.length > 0) {
-    prompt += `### 10 Transaksi Terakhir\n`
-    prompt += `(Gunakan ID untuk edit/hapus transaksi)\n`
-    for (const tx of recentTransactions) {
-      const typeLabel = tx.type === "income" ? "+" : "-"
-      const date = new Date(tx.transaction_date).toLocaleDateString("id-ID")
-      prompt += `- [${tx.id}] ${date}: ${typeLabel}${formatRp(tx.amount)} - ${tx.category}`
-      if (tx.description) {
-        prompt += ` (${tx.description})`
-      }
+    prompt += `\n### Transaksi Terakhir (ID untuk edit/hapus)\n`
+    for (const tx of recentTransactions.slice(0, 8)) {
+      const sign = tx.type === "income" ? "+" : "-"
+      const date = new Date(tx.transaction_date).toLocaleDateString("id-ID", { day: "2-digit", month: "short" })
+      const shortId = tx.id.slice(-8)
+      prompt += `[${shortId}] ${date}: ${sign}${formatRp(tx.amount)} ${tx.category}`
+      if (tx.description) prompt += ` (${tx.description})`
       prompt += ` [${tx.payment_method}]\n`
     }
   }

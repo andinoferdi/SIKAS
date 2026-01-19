@@ -13,7 +13,6 @@ export async function POST(request: Request) {
       )
     }
 
-    // Import embeddings dynamically to avoid SSR issues
     const { searchKnowledge } = await import("@/services/chatbot/embeddings")
 
     const relevantDocs = await searchKnowledge(query.trim(), threshold, limit)
@@ -30,7 +29,6 @@ export async function POST(request: Request) {
       avgSimilarity,
     }
 
-    // Include user context if requested and user is authenticated
     if (includeUserContext) {
       const session = await getSession()
       if (session) {
@@ -43,7 +41,6 @@ export async function POST(request: Request) {
           ragContext.formattedUserContext = formatUserContextForPrompt(userContext)
         } catch (error) {
           console.error("Failed to get user context:", error)
-          // Continue without user context
         }
       }
     }
