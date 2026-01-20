@@ -29,7 +29,7 @@ export const dashboardNavItems: MenuItem[] = [
     icon: Receipt,
   },
   {
-    href: "/dashboard/add",
+    href: "/dashboard/transactions/add",
     label: "Tambah Transaksi",
     icon: PlusCircle,
   },
@@ -42,7 +42,7 @@ export const bottomNavItems: MenuItem[] = [
     icon: Home,
   },
   {
-    href: "/dashboard/add",
+    href: "/dashboard/transactions/add",
     label: "Tambah",
     icon: Plus,
     isMain: true,
@@ -63,6 +63,10 @@ export const landingNavItems: LandingMenuItem[] = [
     href: "#tentang",
     label: "Tentang",
   },
+  {
+    href: "/faq",
+    label: "FAQ",
+  },
 ]
 
 export const footerSections: FooterSection[] = [
@@ -70,8 +74,8 @@ export const footerSections: FooterSection[] = [
     title: "Navigasi",
     items: [
       { href: "/", label: "Beranda" },
-      { href: "#fitur", label: "Fitur" },
-      { href: "#tentang", label: "Tentang" },
+      { href: "/faq", label: "Pusat Bantuan" },
+      { href: "/guide", label: "Panduan" },
     ],
   },
   {

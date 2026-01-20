@@ -153,7 +153,7 @@ FITUR UTAMA SIKAS:
    - Ringkasan bulanan: total pemasukan, pengeluaran, dan selisih
    - Daftar transaksi terakhir
 
-2. **Tambah Transaksi** (Menu: Tambah Transaksi atau /dashboard/add)
+2. **Tambah Transaksi** (Menu: Tambah Transaksi atau /dashboard/transactions/add)
    - Pilih jenis: Pemasukan (uang masuk) atau Pengeluaran (uang keluar)
    - Masukkan jumlah dalam Rupiah
    - Pilih kategori (Makan, Transport, Gaji, dll)

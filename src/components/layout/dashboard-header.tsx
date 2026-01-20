@@ -77,7 +77,7 @@ export function DashboardHeader() {
   const getPageTitle = (path: string) => {
     if (path === "/dashboard") return "Beranda"
     if (path === "/dashboard/transactions") return "Riwayat Transaksi"
-    if (path === "/dashboard/add") return "Tambah Transaksi"
+    if (path === "/dashboard/transactions/add") return "Tambah Transaksi"
     return "Dashboard"
   }
 

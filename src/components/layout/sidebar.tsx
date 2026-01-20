@@ -18,7 +18,7 @@ const NAV_ITEMS = [
     icon: Receipt,
   },
   {
-    href: "/dashboard/add",
+    href: "/dashboard/transactions/add",
     label: "Tambah Transaksi",
     icon: PlusCircle,
   },

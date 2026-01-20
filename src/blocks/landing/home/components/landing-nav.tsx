@@ -152,13 +152,13 @@ export function LandingNav() {
               Tentang
             </Link>
             <Link
-              href="#panduan"
+              href="/guide"
               className="px-4 py-2 text-[15px] font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
               Panduan
             </Link>
             <Link
-              href="#faq"
+              href="/faq"
               className="px-4 py-2 text-[15px] font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
               FAQ
@@ -238,14 +238,14 @@ export function LandingNav() {
             Tentang
           </Link>
           <Link
-            href="#panduan"
+            href="/guide"
             className="py-3 text-base font-medium text-foreground hover:text-primary transition-colors"
             onClick={() => setIsMobileMenuOpen(false)}
           >
             Panduan
           </Link>
           <Link
-            href="#faq"
+            href="/faq"
             className="py-3 text-base font-medium text-foreground hover:text-primary transition-colors"
             onClick={() => setIsMobileMenuOpen(false)}
           >

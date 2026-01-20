@@ -12,7 +12,7 @@ const NAV_ITEMS = [
     icon: Home,
   },
   {
-    href: "/dashboard/add",
+    href: "/dashboard/transactions/add",
     label: "Tambah",
     icon: Plus,
     isMain: true,
