@@ -1,6 +1,7 @@
 export {
   MODELS,
   MODEL_DISPLAY_NAMES,
+  ALL_MODELS,
   QUICK_REPLIES,
   BASE_SYSTEM_PROMPT,
   createSystemPrompt,

@@ -4,32 +4,35 @@ export interface Message {
   content: string
   timestamp: Date
   isStreaming?: boolean
-}
-
-export interface ChatbotState {
-  messages: Message[]
-  isLoading: boolean
-  error: string | null
-  isStreaming: boolean
+  imageUrl?: string
 }
 
 export interface StreamChunk {
-  id: string
-  object: string
-  created: number
-  model: string
-  choices: {
-    index: number
+  choices: Array<{
     delta: {
-      role?: string
       content?: string
     }
-    finish_reason?: string
-  }[]
+  }>
 }
 
 export interface QuickReply {
   id: string
   text: string
   message: string
+}
+
+export interface AIModel {
+  id: string
+  name: string
+
+  description: string
+  supportsVision: boolean
+  category: "text" | "vision"
+  pros: string[]
+  free: boolean
+}
+
+export interface ModelSelection {
+  mode: "auto" | "manual"
+  selectedModelId?: string
 }

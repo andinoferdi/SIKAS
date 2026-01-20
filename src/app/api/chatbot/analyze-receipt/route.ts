@@ -7,8 +7,9 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
 const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || "SIKAS"
 
 const VISION_MODELS = [
-  "google/gemma-3-27b-it:free",
-  "mistralai/mistral-small-3.1-24b-instruct:free",
+  "meta-llama/llama-3.2-11b-vision-instruct:free",
+  "qwen/qwen2.5-vl-7b-instruct:free",
+  "google/gemini-2.0-flash-exp:free",
 ]
 
 

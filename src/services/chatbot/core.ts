@@ -6,6 +6,8 @@ const API_KEY = process.env.NEXT_PUBLIC_OPENROUTER_API_KEY
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
 const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || "SIKAS"
 
+import type { AIModel } from "@/types/chatbot"
+
 export const MODELS = [
   "mistralai/devstral-2512:free",
   "nvidia/nemotron-3-nano-30b-a3b:free",
@@ -20,6 +22,99 @@ export const MODEL_DISPLAY_NAMES = [
   "Mimo V2 Flash",
   "Trinity Mini",
   "TNG R1T Chimera",
+]
+
+export const VISION_MODELS = [
+  "meta-llama/llama-3.2-11b-vision-instruct:free",
+  "qwen/qwen2.5-vl-7b-instruct:free",
+  "google/gemini-2.0-flash-exp:free",
+]
+
+export const ALL_MODELS: AIModel[] = [
+  {
+    id: "mistralai/devstral-2512:free",
+    name: "Devstral 2512",
+    description: "Model khusus untuk coding dan pemrograman",
+    supportsVision: false,
+    category: "text",
+    pros: ["Cepat untuk tugas pemrograman", "Bagus untuk code generation"],
+    free: true,
+  },
+  {
+    id: "nvidia/nemotron-3-nano-30b-a3b:free",
+    name: "Nemotron Nano 30B",
+    description: "Model ringan dengan performa tinggi",
+    supportsVision: false,
+    category: "text",
+    pros: ["Respon sangat cepat", "Efisien untuk percakapan umum"],
+    free: true,
+  },
+  {
+    id: "xiaomi/mimo-v2-flash:free",
+    name: "Mimo V2 Flash",
+    description: "Model cepat untuk respons real-time",
+    supportsVision: false,
+    category: "text",
+    pros: ["Latency rendah", "Bagus untuk chat real-time"],
+    free: true,
+  },
+  {
+    id: "arcee-ai/trinity-mini:free",
+    name: "Trinity Mini",
+    description: "Model compact dengan pemahaman konteks baik",
+    supportsVision: false,
+    category: "text",
+    pros: ["Balance speed and quality", "Hemat resource"],
+    free: true,
+  },
+  {
+    id: "tngtech/tng-r1t-chimera:free",
+    name: "TNG R1T Chimera",
+    description: "Model hybrid untuk berbagai tugas",
+    supportsVision: false,
+    category: "text",
+    pros: ["Versatile untuk banyak task", "Stable performance"],
+    free: true,
+  },
+  {
+    id: "meta-llama/llama-3.2-11b-vision-instruct:free",
+    name: "Llama 3.2 Vision",
+    description: "Model vision dari Meta untuk analisis gambar",
+    supportsVision: true,
+    category: "vision",
+    pros: [
+      "Bisa analyze image dengan text",
+      "Bagus untuk OCR dan object detection",
+      "Gratis dan reliable",
+    ],
+    free: true,
+  },
+  {
+    id: "qwen/qwen2.5-vl-7b-instruct:free",
+    name: "Qwen VL 7B",
+    description: "State-of-the-art vision model dari Alibaba",
+    supportsVision: true,
+    category: "vision",
+    pros: [
+      "Pemahaman gambar sangat akurat",
+      "Support multiple languages",
+      "Excellent untuk document analysis",
+    ],
+    free: true,
+  },
+  {
+    id: "google/gemini-2.0-flash-exp:free",
+    name: "Gemini 2.0 Flash",
+    description: "Multimodal model dari Google (experimental)",
+    supportsVision: true,
+    category: "vision",
+    pros: [
+      "Multimodal terbaik (text, image, video)",
+      "Fast inference speed",
+      "Advanced understanding",
+    ],
+    free: true,
+  },
 ]
 
 export const QUICK_REPLIES: QuickReply[] = [

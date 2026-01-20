@@ -2,19 +2,22 @@
 
 import { useState, useRef, useEffect, useCallback } from "react"
 import { usePathname } from "next/navigation"
+import Image from "next/image"
 import { useQueryClient } from "@tanstack/react-query"
 import { X, Send, Loader2, Bot, ImageIcon, Check, XCircle } from "lucide-react"
-import { type Message } from "@/types/chatbot"
+import { type Message, type ModelSelection } from "@/types/chatbot"
 import {
   handleModelFallback,
   generateMessageId,
   getGreetingMessage,
   QUICK_REPLIES,
   retrieveContext,
+  ALL_MODELS,
 } from "@/services/chatbot"
 import type { EnhancedRAGContext, ChatbotAction, ActionPayload } from "@/types/rag"
 import { ChatMessage } from "./chat-message"
 import { QuickReplies } from "./quick-replies"
+import { ModelSelector } from "./model-selector"
 
 interface PendingAction {
   action: ChatbotAction
@@ -112,10 +115,20 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
   const [showQuickReplies, setShowQuickReplies] = useState(true)
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [modelSelection, setModelSelection] = useState<ModelSelection>({ mode: "auto" })
+  const [pendingImage, setPendingImage] = useState<{ file: File; preview: string } | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const selectedModel = 
+    modelSelection.mode === "manual" && modelSelection.selectedModelId
+      ? ALL_MODELS.find((m) => m.id === modelSelection.selectedModelId)
+      : null
+
+  const isVisionEnabled = 
+    modelSelection.mode === "auto" || (selectedModel?.supportsVision ?? false)
 
   const invalidateQueries = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["transactions"] })
@@ -301,9 +314,88 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
     }
   }
 
+  const handleRemovePendingImage = () => {
+    if (pendingImage) {
+      URL.revokeObjectURL(pendingImage.preview)
+      setPendingImage(null)
+    }
+  }
+
+  const handleSendWithImage = async () => {
+    if (!pendingImage) return
+
+    setUploadingImage(true)
+    setShowQuickReplies(false)
+
+    // Convert file to base64 for display in message
+    const reader = new FileReader()
+    const imageDataUrl = await new Promise<string>((resolve) => {
+      reader.onloadend = () => resolve(reader.result as string)
+      reader.readAsDataURL(pendingImage.file)
+    })
+
+    const userPrompt = input.trim() || "Analisis gambar ini"
+    const userMessage: Message = {
+      id: generateMessageId(),
+      role: "user",
+      content: userPrompt,
+      timestamp: new Date(),
+      imageUrl: imageDataUrl,
+    }
+    setMessages((prev) => [...prev, userMessage])
+    setInput("")
+
+    const imageFile = pendingImage.file
+    URL.revokeObjectURL(pendingImage.preview)
+    setPendingImage(null)
+
+    try {
+      const formData = new FormData()
+      formData.append("image", imageFile)
+      formData.append("prompt", userPrompt)
+
+      const response = await fetch("/api/chatbot/vision", {
+        method: "POST",
+        body: formData,
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Gagal menganalisis gambar")
+      }
+
+      const resultMessage: Message = {
+        id: generateMessageId(),
+        role: "assistant",
+        content: data.message,
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, resultMessage])
+
+      if (data.transaction) {
+        invalidateQueries()
+      }
+    } catch (error) {
+      const errorMsg: Message = {
+        id: generateMessageId(),
+        role: "assistant",
+        content: `${error instanceof Error ? error.message : "Gagal menganalisis gambar"}`,
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, errorMsg])
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    sendMessage(input)
+    if (pendingImage) {
+      handleSendWithImage()
+    } else {
+      sendMessage(input)
+    }
   }
 
   const handleQuickReply = (message: string) => {
@@ -313,7 +405,11 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
-      sendMessage(input)
+      if (pendingImage) {
+        handleSendWithImage()
+      } else {
+        sendMessage(input)
+      }
     }
   }
 
@@ -353,7 +449,7 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
     setPendingAction(null)
   }
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
@@ -361,65 +457,39 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
       const errorMsg: Message = {
         id: generateMessageId(),
         role: "assistant",
-        content: "❌ File harus berupa gambar (JPG, PNG, dll)",
+        content: "File harus berupa gambar (JPG, PNG, dll)",
         timestamp: new Date(),
       }
       setMessages((prev) => [...prev, errorMsg])
-      return
-    }
-
-    setUploadingImage(true)
-    setShowQuickReplies(false)
-
-    const userMessage: Message = {
-      id: generateMessageId(),
-      role: "user",
-      content: `📷 Mengunggah nota: ${file.name}`,
-      timestamp: new Date(),
-    }
-    setMessages((prev) => [...prev, userMessage])
-
-    try {
-      const formData = new FormData()
-      formData.append("image", file)
-
-      const response = await fetch("/api/chatbot/analyze-receipt", {
-        method: "POST",
-        body: formData,
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || "Gagal menganalisis gambar")
-      }
-
-      const resultMessage: Message = {
-        id: generateMessageId(),
-        role: "assistant",
-        content: data.message,
-        timestamp: new Date(),
-      }
-      setMessages((prev) => [...prev, resultMessage])
-
-      if (data.transaction) {
-        invalidateQueries()
-      }
-    } catch (error) {
-      const errorMessage: Message = {
-        id: generateMessageId(),
-        role: "assistant",
-        content: `❌ ${error instanceof Error ? error.message : "Gagal menganalisis gambar"}`,
-        timestamp: new Date(),
-      }
-      setMessages((prev) => [...prev, errorMessage])
-    } finally {
-      setUploadingImage(false)
       if (fileInputRef.current) {
         fileInputRef.current.value = ""
       }
+      return
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      const errorMsg: Message = {
+        id: generateMessageId(),
+        role: "assistant",
+        content: "Ukuran gambar maksimal 10MB",
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, errorMsg])
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
+      return
+    }
+
+    const preview = URL.createObjectURL(file)
+    setPendingImage({ file, preview })
+    
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
     }
   }
+
+
 
   if (!isOpen) return null
 
@@ -441,6 +511,14 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
         >
           <X className="w-5 h-5 text-on-surface" />
         </button>
+      </div>
+
+      <div className="px-4 py-2 border-b border-border bg-muted/30">
+        <ModelSelector
+          models={ALL_MODELS}
+          currentSelection={modelSelection}
+          onSelectionChange={setModelSelection}
+        />
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
@@ -485,6 +563,27 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
       </div>
 
       <div className="border-t border-border shrink-0">
+        {pendingImage && (
+          <div className="px-4 pt-3">
+            <div className="relative inline-block">
+              <Image
+                src={pendingImage.preview}
+                alt="Preview"
+                width={128}
+                height={80}
+                className="h-20 max-w-32 object-cover rounded-lg border border-border"
+                unoptimized
+              />
+              <button
+                onClick={handleRemovePendingImage}
+                className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center hover:bg-destructive/80 transition-colors cursor-pointer shadow-md"
+                title="Hapus gambar"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
         <div className="flex items-end">
           <form onSubmit={handleSubmit} className="flex-1">
             <textarea
@@ -492,7 +591,7 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Tulis pesan Anda..."
+              placeholder={pendingImage ? "Tulis instruksi untuk gambar..." : "Tulis pesan Anda..."}
               disabled={isLoading || uploadingImage}
               rows={1}
               className="w-full px-4 py-3 text-sm bg-transparent border-0 focus:outline-none disabled:opacity-50 resize-none"
@@ -510,9 +609,9 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              disabled={isLoading || uploadingImage}
+              disabled={isLoading || uploadingImage || !isVisionEnabled || !!pendingImage}
               className="p-2 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-              title="Upload nota/struk"
+              title={!isVisionEnabled ? "Pilih model Vision untuk upload gambar" : pendingImage ? "Sudah ada gambar" : "Upload gambar"}
             >
               {uploadingImage ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -522,11 +621,11 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
             </button>
             <button
               type="button"
-              onClick={() => sendMessage(input)}
-              disabled={!input.trim() || isLoading || uploadingImage}
+              onClick={() => pendingImage ? handleSendWithImage() : sendMessage(input)}
+              disabled={(!input.trim() && !pendingImage) || isLoading || uploadingImage}
               className="p-2 text-primary hover:text-primary/80 transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
             >
-              {isLoading ? (
+              {isLoading || uploadingImage ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
                 <Send className="w-5 h-5" />

@@ -1,6 +1,7 @@
 "use client"
 
 import { memo } from "react"
+import Image from "next/image"
 import ReactMarkdown from "react-markdown"
 import { type Message } from "@/types/chatbot"
 import { Bot, User } from "lucide-react"
@@ -10,12 +11,10 @@ interface ChatMessageProps {
   message: Message
 }
 
-// Memoized markdown component for better streaming performance
 const MemoizedMarkdown = memo(
   ({ content }: { content: string }) => (
     <ReactMarkdown
       components={{
-        // Custom styling for markdown elements
         p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
         ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
         ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
@@ -80,6 +79,18 @@ export function ChatMessage({ message }: ChatMessageProps) {
             : "bg-primary text-on-surface rounded-tr-sm"
         )}
       >
+        {message.imageUrl && (
+          <div className="mb-2">
+            <Image
+              src={message.imageUrl}
+              alt="Gambar yang dikirim"
+              width={200}
+              height={150}
+              className="rounded-lg max-w-full h-auto object-cover"
+              unoptimized
+            />
+          </div>
+        )}
         {isBot ? (
           <div className="wrap-break-word">
             <MemoizedMarkdown content={message.content} />
