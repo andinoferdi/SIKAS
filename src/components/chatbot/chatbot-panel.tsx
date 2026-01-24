@@ -68,8 +68,13 @@ function parsePendingActions(content: string): PendingAction[] {
 
 function cleanContentForDisplay(content: string): string {
   return content
-    .replace(/\[ACTION:\w+\][\s\S]*?\[\/ACTION\]/g, "")
-    .replace(/\[PENDING_ACTION:\w+\][\s\S]*?\[\/PENDING_ACTION\]/g, "")
+    .replace(/\[ACTION:[\w-]+\][\s\S]*?\[\/ACTION\]/gi, "")
+    .replace(/\[PENDING_ACTION:[\w-]+\][\s\S]*?\[\/PENDING_ACTION\]/gi, "")
+    .replace(/\[ACTION:[\w-]*(?:\][\s\S]*)?$/gi, "")
+    .replace(/\[PENDING_ACTION:[\w-]*(?:\][\s\S]*)?$/gi, "")
+    .replace(/\[\/ACTION\]/gi, "")
+    .replace(/\[\/PENDING_ACTION\]/gi, "")
+    .replace(/\n{3,}/g, "\n\n")
     .trim()
 }
 

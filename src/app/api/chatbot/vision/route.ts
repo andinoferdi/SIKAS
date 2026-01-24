@@ -6,21 +6,26 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
 const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || "SIKAS"
 
 const VISION_MODELS = [
-  "meta-llama/llama-3.2-11b-vision-instruct:free",
-  "qwen/qwen2.5-vl-7b-instruct:free",
-  "google/gemini-2.0-flash-exp:free",
+  "google/gemma-3-27b-it:free",
+  "google/gemma-3-4b-it:free",
+  "allenai/molmo-2-8b:free",
 ]
 
-const SYSTEM_PROMPT = `Kamu adalah SIKAS Bot, asisten AI yang bisa menganalisis gambar.
-Kamu membantu pengguna dengan berbagai pertanyaan tentang gambar yang mereka kirimkan.
+const SYSTEM_PROMPT = `Kamu adalah asisten AI yang bisa menganalisis gambar untuk pengguna SIKAS.
+
+PENTING - TENTANG SUMBER GAMBAR:
+- Gambar yang dikirim pengguna bisa dari MANA SAJA (aplikasi banking, e-wallet, struk toko, dokumen, dll)
+- JANGAN pernah mengklaim gambar berasal dari "aplikasi SIKAS" kecuali ada bukti jelas (logo SIKAS, UI SIKAS)
+- Fokus pada KONTEN gambar, bukan asumsi tentang sumbernya
+- Jika gambar adalah screenshot transaksi dari aplikasi lain (BRI, BCA, GoPay, OVO, dll), sebutkan dengan benar
 
 Kemampuanmu meliputi:
-- Mendeskripsikan isi gambar
+- Mendeskripsikan isi gambar secara objektif
 - Membaca teks dalam gambar (OCR)
 - Menganalisis dokumen, nota, struk, invoice
 - Mengidentifikasi objek, orang, tempat
 - Menjawab pertanyaan spesifik tentang gambar
-- Memberikan insight dari visual data
+- Mengekstrak informasi transaksi (jumlah, tanggal, tujuan, dll)
 
 Jawab dalam Bahasa Indonesia yang ramah dan informatif.
 Jika gambar tidak jelas atau tidak bisa dianalisis, jelaskan dengan sopan.`
@@ -73,8 +78,17 @@ export async function POST(request: NextRequest) {
     const base64 = Buffer.from(buffer).toString("base64")
     const mimeType = image.type
 
+    type VisionErrorType = "rate_limit" | "model_unavailable" | "quota_exceeded" | "auth_error" | "unknown"
+
+    interface ModelError {
+      model: string
+      type: VisionErrorType
+      statusCode?: number
+      message: string
+    }
+
     let responseContent = null
-    let lastError = null
+    const modelErrors: ModelError[] = []
 
     for (const model of VISION_MODELS) {
       try {
@@ -114,8 +128,31 @@ export async function POST(request: NextRequest) {
 
         if (!response.ok) {
           const errorText = await response.text()
-          console.warn(`Vision model ${model} failed:`, errorText)
-          lastError = new Error(errorText)
+          let errorType: VisionErrorType = "unknown"
+
+          try {
+            const errorData = JSON.parse(errorText)
+            const code = errorData?.error?.code || response.status
+            const msg = (errorData?.error?.message || "").toLowerCase()
+
+            if (code === 429) errorType = "rate_limit"
+            else if (code === 402) errorType = "quota_exceeded"
+            else if (code === 401) errorType = "auth_error"
+            else if (code === 404 || msg.includes("not found") || msg.includes("no endpoints")) {
+              errorType = "model_unavailable"
+            }
+          } catch {
+            if (response.status === 429) errorType = "rate_limit"
+            else if (response.status === 404) errorType = "model_unavailable"
+          }
+
+          modelErrors.push({
+            model,
+            type: errorType,
+            statusCode: response.status,
+            message: errorText.slice(0, 200)
+          })
+          console.warn(`Vision ${model}:`, { type: errorType, status: response.status })
           continue
         }
 
@@ -127,39 +164,45 @@ export async function POST(request: NextRequest) {
           break
         }
       } catch (error) {
+        modelErrors.push({
+          model,
+          type: "unknown",
+          message: String(error).slice(0, 200)
+        })
         console.warn(`Vision model ${model} error:`, error)
-        lastError = error instanceof Error ? error : new Error(String(error))
         continue
       }
     }
 
     if (!responseContent) {
-      let errorMessage = "Gagal menganalisis gambar. Semua model vision sedang tidak tersedia."
-      let isRateLimited = false
-      
-      if (lastError?.message) {
-        try {
-          const errorData = JSON.parse(lastError.message)
-          if (errorData?.error?.message) {
-            if (errorData.error.code === 429) {
-              isRateLimited = true
-            } else if (errorData.error.message.includes("No endpoints found")) {
-              isRateLimited = true
-            }
-          }
-        } catch {
-          if (lastError.message.includes("rate limit") || lastError.message.includes("Rate limit")) {
-            isRateLimited = true
-          }
-        }
+      const allRateLimited = modelErrors.length > 0 && modelErrors.every(e => e.type === "rate_limit")
+      const allUnavailable = modelErrors.length > 0 && modelErrors.every(e => e.type === "model_unavailable")
+      const anyQuotaExceeded = modelErrors.some(e => e.type === "quota_exceeded")
+      const anyAuthError = modelErrors.some(e => e.type === "auth_error")
+
+      let errorMessage: string
+
+      if (anyAuthError) {
+        errorMessage = "Terjadi masalah autentikasi API. Silakan hubungi administrator."
+      } else if (anyQuotaExceeded) {
+        errorMessage = "Kuota API bulanan telah habis. Fitur analisis gambar tidak tersedia sampai kuota direset."
+      } else if (allRateLimited) {
+        errorMessage = "Terlalu banyak permintaan. Chat teks biasa tetap bisa digunakan. Coba lagi dalam beberapa menit."
+      } else if (allUnavailable) {
+        errorMessage = "Model vision sedang tidak tersedia atau dalam maintenance. Coba lagi nanti."
+      } else {
+        errorMessage = "Gagal menganalisis gambar. Silakan coba lagi."
       }
 
-      if (isRateLimited) {
-        errorMessage = "Fitur analisis gambar AI sedang mencapai batas penggunaan gratis. Chat teks biasa tetap bisa digunakan. Coba lagi dalam beberapa menit."
-      }
-      
+      console.error("Vision failed - all models:", modelErrors.map(e => ({ model: e.model, type: e.type, status: e.statusCode })))
+
+      const isDev = process.env.NODE_ENV === "development"
+
       return NextResponse.json(
-        { error: errorMessage },
+        {
+          error: errorMessage,
+          ...(isDev && { debug: modelErrors.map(e => ({ model: e.model, type: e.type, status: e.statusCode, message: e.message })) })
+        },
         { status: 500 }
       )
     }
