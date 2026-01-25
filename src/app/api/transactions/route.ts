@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getSession } from "@/lib/auth/session"
 import { createTransactionApiSchema } from "@/lib/validations"
+import { getLastDayOfMonth } from "@/lib/utils/format"
 
 export async function GET(request: NextRequest) {
   const session = await getSession()
@@ -26,9 +27,7 @@ export async function GET(request: NextRequest) {
 
   if (month && year) {
     const startDate = `${year}-${month.padStart(2, "0")}-01`
-    const endDate = new Date(Number(year), Number(month), 0)
-      .toISOString()
-      .split("T")[0]
+    const endDate = getLastDayOfMonth(Number(year), Number(month))
     query = query.gte("transaction_date", startDate).lte("transaction_date", endDate)
   }
 

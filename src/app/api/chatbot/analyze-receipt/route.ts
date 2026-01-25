@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getSession } from "@/lib/auth/session"
+import { getJakartaDateString } from "@/lib/utils/format"
 
 const API_KEY = process.env.NEXT_PUBLIC_OPENROUTER_API_KEY
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
@@ -182,7 +183,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const today = new Date().toISOString().split("T")[0]
+    const today = getJakartaDateString()
     const transactionDate = analysisResult.date || today
 
     const { data: transaction, error: txError } = await supabase

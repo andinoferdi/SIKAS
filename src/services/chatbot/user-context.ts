@@ -6,6 +6,7 @@ import type {
   SearchTransactionsPayload,
 } from "@/types/rag"
 import type { Transaction, MonthlySummary } from "@/types/transaction"
+import { getJakartaDateTime, JAKARTA_TIMEZONE } from "@/lib/utils/format"
 
 
 export async function getUserContext(userId: string): Promise<UserChatContext> {
@@ -35,9 +36,9 @@ export async function getUserContext(userId: string): Promise<UserChatContext> {
 
   const allTimeSummary = calculateAllTimeSummary(transactions)
 
-  const now = new Date()
-  const currentMonth = now.getMonth() + 1
-  const currentYear = now.getFullYear()
+  const jakartaTime = getJakartaDateTime()
+  const currentMonth = jakartaTime.month
+  const currentYear = jakartaTime.year
   const monthlySummary = calculateMonthlySummary(transactions, currentMonth, currentYear)
 
   const recentTransactions = transactions.slice(0, 10)
@@ -167,9 +168,12 @@ export function formatUserContextForPrompt(context: UserChatContext): string {
   const { userName, balances, monthlySummary, recentTransactions } = context
 
   const formatRp = (amount: number) => {
-    if (amount >= 1000000) return `Rp${(amount / 1000000).toFixed(1)}jt`
-    if (amount >= 1000) return `Rp${(amount / 1000).toFixed(0)}rb`
-    return `Rp${amount}`
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount)
   }
 
   let prompt = `## ${userName}\n`
@@ -182,7 +186,7 @@ export function formatUserContextForPrompt(context: UserChatContext): string {
     prompt += `\n### Transaksi Terakhir (ID untuk edit/hapus)\n`
     for (const tx of recentTransactions.slice(0, 8)) {
       const sign = tx.type === "income" ? "+" : "-"
-      const date = new Date(tx.transaction_date).toLocaleDateString("id-ID", { day: "2-digit", month: "short" })
+      const date = new Date(tx.transaction_date).toLocaleDateString("id-ID", { timeZone: JAKARTA_TIMEZONE, day: "2-digit", month: "short" })
       const shortId = tx.id.slice(-8)
       prompt += `[${shortId}] ${date}: ${sign}${formatRp(tx.amount)} ${tx.category}`
       if (tx.description) prompt += ` (${tx.description})`

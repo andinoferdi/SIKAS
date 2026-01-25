@@ -6,6 +6,8 @@ export {
   MODEL_DISPLAY_NAMES,
   ALL_MODELS,
   QUICK_REPLIES,
+  LANDING_QUICK_REPLIES,
+  DASHBOARD_QUICK_REPLIES,
   BASE_SYSTEM_PROMPT,
   createSystemPrompt,
   parseStreamResponse,

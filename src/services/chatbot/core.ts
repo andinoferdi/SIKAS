@@ -1,6 +1,7 @@
 import { type Message, type StreamChunk, type QuickReply } from "@/types/chatbot"
 import type { RAGContext, EnhancedRAGContext } from "@/types/rag"
 import { pruneConversationHistory, estimateMessagesTokens } from "./token-utils"
+import { getJakartaDateString } from "@/lib/utils/format"
 
 const API_KEY = process.env.NEXT_PUBLIC_OPENROUTER_API_KEY
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
@@ -117,28 +118,56 @@ export const ALL_MODELS: AIModel[] = [
   },
 ]
 
-export const QUICK_REPLIES: QuickReply[] = [
+// Quick replies untuk landing page (informatif)
+export const LANDING_QUICK_REPLIES: QuickReply[] = [
   {
-    id: "1",
+    id: "l1",
     text: "Apa itu SIKAS?",
     message: "Apa itu SIKAS dan apa saja fiturnya?",
   },
   {
-    id: "2",
+    id: "l2",
     text: "Cara tambah transaksi",
     message: "Bagaimana cara menambah transaksi di SIKAS?",
   },
   {
-    id: "3",
+    id: "l3",
     text: "M-Banking vs Cash",
     message: "Apa perbedaan M-Banking dan Cash di SIKAS?",
   },
   {
-    id: "4",
+    id: "l4",
     text: "Fitur SIKAS",
     message: "Apa saja fitur yang tersedia di SIKAS?",
   },
 ]
+
+// Quick replies untuk dashboard (action-oriented)
+export const DASHBOARD_QUICK_REPLIES: QuickReply[] = [
+  {
+    id: "d1",
+    text: "Lihat saldo saya",
+    message: "Berapa saldo M-Banking dan Cash saya saat ini?",
+  },
+  {
+    id: "d2",
+    text: "Catat pengeluaran",
+    message: "Tolong bantu saya mencatat transaksi pengeluaran",
+  },
+  {
+    id: "d3",
+    text: "Catat pemasukan",
+    message: "Tolong bantu saya mencatat transaksi pemasukan",
+  },
+  {
+    id: "d4",
+    text: "Ringkasan bulan ini",
+    message: "Tampilkan ringkasan transaksi bulan ini",
+  },
+]
+
+// Backward compatibility alias
+export const QUICK_REPLIES = LANDING_QUICK_REPLIES
 
 export const BASE_SYSTEM_PROMPT = `Kamu adalah SIKAS Bot, asisten AI ramah untuk aplikasi pencatatan keuangan SIKAS.
 
@@ -245,7 +274,7 @@ PERMINTAAN YANG HARUS DITOLAK:
 Selalu mulai dengan sapaan ramah dan tawarkan bantuan!`
 
 export const getActionInstructions = (): string => {
-  const today = new Date().toISOString().split("T")[0]
+  const today = getJakartaDateString()
 
   return `
 ---
@@ -284,15 +313,32 @@ PENTING - WAJIB DIIKUTI:
 - Format tanggal: YYYY-MM-DD
 - Jelaskan SINGKAT apa yang akan dilakukan, lalu sertakan tag aksi
 
-ATURAN KETAT UNTUK PENDING_ACTION (delete/edit):
+ATURAN KETAT UNTUK PENDING_ACTION (create/delete/edit):
 - Sertakan [PENDING_ACTION:...][/PENDING_ACTION] di respons
 - BERHENTI MENULIS setelah tag PENDING_ACTION - JANGAN menambahkan teks apapun setelahnya
 - DILARANG KERAS menyertakan pesan sukses seperti "✅ Transaksi berhasil" atau "sudah dihapus" atau sejenisnya
 - Hasil aksi akan ditampilkan OTOMATIS oleh sistem SETELAH user mengklik tombol konfirmasi
-- Contoh respons yang BENAR: "Saya akan menghapus transaksi X. [PENDING_ACTION:delete_transaction]{...}[/PENDING_ACTION]"
-- Contoh respons yang SALAH: "Saya akan menghapus... [PENDING_ACTION:...][/PENDING_ACTION] ✅ Berhasil dihapus"
 
-ATURAN UNTUK ACTION (create/search):
+PENTING - JANGAN TULIS KONFIRMASI TEKS:
+- JANGAN menulis "Apakah kamu ingin saya tambahkan transaksi ini?" atau pertanyaan konfirmasi serupa
+- Tag PENDING_ACTION sudah akan menampilkan tombol konfirmasi ke user secara otomatis
+- Cukup jelaskan detail transaksi yang akan dibuat, lalu LANGSUNG tulis tag PENDING_ACTION
+- User akan klik tombol untuk konfirmasi, BUKAN membalas dengan teks
+
+Contoh respons yang BENAR untuk create_transaction:
+"Saldo kamu saat ini: M-Banking Rp 9.800.000, Cash Rp 850.000.
+
+Saya akan mencatat transaksi pengeluaran:
+- Jumlah: Rp 76.000
+- Kategori: Transfer
+- Metode: M-Banking
+
+[PENDING_ACTION:create_transaction]{...}[/PENDING_ACTION]"
+
+Contoh respons yang SALAH (JANGAN LAKUKAN):
+"Konfirmasi: Apakah kamu ingin saya tambahkan transaksi ini? Jika iya, saya akan langsung mengeksekusinya."
+
+ATURAN UNTUK ACTION (search saja):
 - Gunakan [ACTION:...][/ACTION] - langsung dieksekusi
 - Boleh menambahkan penjelasan setelah tag ACTION karena hasilnya langsung muncul
 ---`

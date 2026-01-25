@@ -10,7 +10,8 @@ import {
   handleModelFallback,
   generateMessageId,
   getGreetingMessage,
-  QUICK_REPLIES,
+  LANDING_QUICK_REPLIES,
+  DASHBOARD_QUICK_REPLIES,
   retrieveContext,
   ALL_MODELS,
 } from "@/services/chatbot"
@@ -533,9 +534,11 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
 
         {showQuickReplies && messages.length === 1 && (
           <div className="pt-2">
-            <p className="text-xs text-muted-foreground mb-2 px-1">Pertanyaan populer:</p>
+            <p className="text-xs text-muted-foreground mb-2 px-1">
+              {isOnDashboard ? "Aksi cepat:" : "Pertanyaan populer:"}
+            </p>
             <QuickReplies
-              replies={QUICK_REPLIES}
+              replies={isOnDashboard ? DASHBOARD_QUICK_REPLIES : LANDING_QUICK_REPLIES}
               onSelect={handleQuickReply}
               disabled={isLoading}
             />

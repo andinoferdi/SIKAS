@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getSession } from "@/lib/auth/session"
 import { searchUserTransactions } from "@/services/chatbot/user-context"
+import { getJakartaDateString } from "@/lib/utils/format"
 import type {
   ChatbotAction,
   CreateTransactionPayload,
@@ -124,7 +125,7 @@ async function handleCreateTransaction(
       category: payload.category,
       description: payload.description || null,
       payment_method: payload.payment_method,
-      transaction_date: payload.transaction_date || new Date().toISOString().split("T")[0],
+      transaction_date: payload.transaction_date || getJakartaDateString(),
     })
     .select()
     .single()

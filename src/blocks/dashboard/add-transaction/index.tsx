@@ -20,7 +20,7 @@ import {
 } from "@/components/ui"
 import type { TransactionType } from "@/types"
 import { cn } from "@/lib/utils"
-import { formatInputCurrency, parseInputCurrency, formatCurrency } from "@/lib/utils/format"
+import { formatInputCurrency, parseInputCurrency, formatCurrency, getJakartaDateString } from "@/lib/utils/format"
 import { useCurrentUser, useCategories, useCreateTransaction } from "@/hooks"
 import { transactionFormSchema, type TransactionFormData } from "@/lib/validations"
 import { Banknote, Smartphone, Loader2, AlertCircle } from "lucide-react"
@@ -46,7 +46,7 @@ export default function AddTransactionPage() {
       category: "",
       description: "",
       payment_method: "cash",
-      transaction_date: new Date().toISOString().split("T")[0],
+      transaction_date: getJakartaDateString(),
     },
   })
 
