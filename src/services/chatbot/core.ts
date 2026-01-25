@@ -341,6 +341,79 @@ Contoh respons yang SALAH (JANGAN LAKUKAN):
 ATURAN UNTUK ACTION (search saja):
 - Gunakan [ACTION:...][/ACTION] - langsung dieksekusi
 - Boleh menambahkan penjelasan setelah tag ACTION karena hasilnya langsung muncul
+
+---
+AKSI BATCH (BANYAK TRANSAKSI SEKALIGUS):
+
+5. **Tambah Banyak Transaksi Sekaligus** (BUTUH KONFIRMASI):
+Gunakan ketika user menyebut lebih dari 1 transaksi dalam satu pesan.
+[PENDING_ACTION:batch_create_transactions]{
+  "transactions": [
+    {"amount":10000,"type":"expense","category":"Makan","payment_method":"cash","transaction_date":"${today}"},
+    {"amount":50000,"type":"expense","category":"Transport","payment_method":"mbanking","transaction_date":"${today}"}
+  ]
+}[/PENDING_ACTION]
+
+6. **Hapus Banyak Transaksi Berdasarkan Filter** (BUTUH KONFIRMASI):
+[PENDING_ACTION:batch_delete_transactions]{
+  "filter": {
+    "category": "Makan",
+    "startDate": "${today.slice(0, 8)}01",
+    "endDate": "${today}"
+  }
+}[/PENDING_ACTION]
+
+Filter yang tersedia:
+- category: nama kategori (Makan, Transport, Gaji, dll)
+- type: "income" atau "expense"
+- startDate / endDate: range tanggal format YYYY-MM-DD
+- payment_method: "mbanking" atau "cash"
+
+7. **Hapus Semua Transaksi** (SANGAT BERBAHAYA - BUTUH KONFIRMASI GANDA):
+[PENDING_ACTION:delete_all_transactions]{
+  "confirmationText": "HAPUS SEMUA"
+}[/PENDING_ACTION]
+
+Atau dengan filter bulan/tahun tertentu:
+[PENDING_ACTION:delete_all_transactions]{
+  "confirmationText": "HAPUS SEMUA",
+  "month": 1,
+  "year": 2025
+}[/PENDING_ACTION]
+
+ATURAN KHUSUS BATCH:
+- Maksimal 20 transaksi per batch
+- Untuk batch_create: Validasi saldo total sebelum eksekusi
+- Untuk batch_delete: Jelaskan filter yang digunakan
+- Untuk delete_all: WAJIB peringatkan user bahwa aksi TIDAK BISA dibatalkan
+
+CONTOH PENGGUNAAN BATCH:
+
+User: "Catat 3 pengeluaran: makan 15rb, bensin 50rb, pulsa 25rb"
+Bot: "Saldo kamu saat ini: M-Banking Rp X, Cash Rp Y.
+
+Saya akan mencatat 3 transaksi pengeluaran:
+1. Makan: Rp 15.000 (Cash)
+2. Bensin: Rp 50.000 (Cash)
+3. Pulsa: Rp 25.000 (Cash)
+
+Total: Rp 90.000
+
+[PENDING_ACTION:batch_create_transactions]{...}[/PENDING_ACTION]"
+
+User: "Hapus semua transaksi makan minggu ini"
+Bot: "Saya akan menghapus transaksi dengan kriteria:
+- Kategori: Makan
+- Periode: [tanggal awal] sampai [tanggal akhir]
+
+[PENDING_ACTION:batch_delete_transactions]{...}[/PENDING_ACTION]"
+
+User: "Hapus semua transaksi saya"
+Bot: "⚠️ PERINGATAN: Aksi ini akan menghapus SEMUA transaksi dan TIDAK BISA dibatalkan!
+
+Apakah kamu yakin ingin melanjutkan? Sistem akan meminta konfirmasi dengan mengetik 'HAPUS SEMUA'.
+
+[PENDING_ACTION:delete_all_transactions]{...}[/PENDING_ACTION]"
 ---`
 }
 

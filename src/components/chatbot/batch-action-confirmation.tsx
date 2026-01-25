@@ -1,0 +1,243 @@
+"use client"
+
+import { useState, useMemo } from "react"
+import { Check, XCircle, AlertTriangle, Trash2, Plus } from "lucide-react"
+import { cn } from "@/lib/utils"
+import type { ChatbotAction, CreateTransactionPayload, ActionPayload } from "@/types/rag"
+
+export interface PendingAction {
+  action: ChatbotAction
+  payload: ActionPayload
+  description: string
+}
+
+interface BatchActionConfirmationProps {
+  actions: PendingAction[]
+  onConfirm: () => void
+  onCancel: () => void
+  isLoading?: boolean
+}
+
+export function BatchActionConfirmation({
+  actions,
+  onConfirm,
+  onCancel,
+  isLoading = false,
+}: BatchActionConfirmationProps) {
+  const [confirmationText, setConfirmationText] = useState("")
+
+  const isBatchAction = actions.length === 1 && (
+    actions[0].action === "batch_create_transactions" ||
+    actions[0].action === "batch_delete_transactions" ||
+    actions[0].action === "delete_all_transactions"
+  )
+
+  const isDeleteAll = actions.length === 1 && actions[0].action === "delete_all_transactions"
+  const isDestructive = actions.some(a =>
+    a.action.includes("delete")
+  )
+
+  const canConfirm = useMemo(() => {
+    if (isDeleteAll) {
+      return confirmationText === "HAPUS SEMUA"
+    }
+    return true
+  }, [isDeleteAll, confirmationText])
+
+  // Get details for batch actions
+  const batchDetails = useMemo(() => {
+    if (!isBatchAction) return null
+
+    const action = actions[0]
+    if (action.action === "batch_create_transactions") {
+      const payload = action.payload as { transactions: CreateTransactionPayload[] }
+      const transactions = payload.transactions || []
+      const totalAmount = transactions.reduce((sum, tx) => sum + tx.amount, 0)
+      return {
+        type: "create",
+        count: transactions.length,
+        totalAmount,
+        items: transactions.map((tx, i) => ({
+          id: i,
+          label: `${tx.category}: Rp ${tx.amount.toLocaleString("id-ID")}`,
+          detail: tx.description || tx.type,
+        })),
+      }
+    }
+
+    if (action.action === "batch_delete_transactions") {
+      const payload = action.payload as { filter: Record<string, string> }
+      const filters: string[] = []
+      if (payload.filter?.category) filters.push(`Kategori: ${payload.filter.category}`)
+      if (payload.filter?.type) filters.push(`Tipe: ${payload.filter.type === "income" ? "Pemasukan" : "Pengeluaran"}`)
+      if (payload.filter?.startDate) filters.push(`Dari: ${payload.filter.startDate}`)
+      if (payload.filter?.endDate) filters.push(`Sampai: ${payload.filter.endDate}`)
+      if (payload.filter?.payment_method) filters.push(`Metode: ${payload.filter.payment_method === "mbanking" ? "M-Banking" : "Cash"}`)
+
+      return {
+        type: "delete_filter",
+        filters,
+      }
+    }
+
+    if (action.action === "delete_all_transactions") {
+      const payload = action.payload as { month?: number; year?: number }
+      const scope = payload.month && payload.year
+        ? `bulan ${payload.month}/${payload.year}`
+        : "SEMUA WAKTU"
+      return {
+        type: "delete_all",
+        scope,
+      }
+    }
+
+    return null
+  }, [isBatchAction, actions])
+
+  return (
+    <div
+      className={cn(
+        "rounded-lg p-3 mx-1",
+        isDestructive ? "bg-destructive/10 border border-destructive/30" : "bg-muted/50"
+      )}
+    >
+      {/* Header */}
+      <div className="flex items-start gap-2 mb-3">
+        {isDestructive ? (
+          <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+        ) : (
+          <Plus className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+        )}
+        <div>
+          <p className={cn(
+            "text-sm font-medium",
+            isDestructive ? "text-destructive" : "text-foreground"
+          )}>
+            {isDeleteAll
+              ? "Hapus Semua Transaksi"
+              : batchDetails?.type === "create"
+                ? `Tambah ${batchDetails.count} Transaksi`
+                : batchDetails?.type === "delete_filter"
+                  ? "Hapus Transaksi (Filter)"
+                  : actions[0]?.description || "Konfirmasi Aksi"}
+          </p>
+        </div>
+      </div>
+
+      {/* Batch Create Details */}
+      {batchDetails?.type === "create" && batchDetails.items && (
+        <div className="mb-3 space-y-1 max-h-32 overflow-y-auto">
+          {batchDetails.items.map((item) => (
+            <div
+              key={item.id}
+              className="flex items-center gap-2 text-sm py-1 px-2 bg-background/50 rounded"
+            >
+              <Plus className="w-3 h-3 text-primary" />
+              <span className="font-medium">{item.label}</span>
+              {item.detail && (
+                <span className="text-muted-foreground">({item.detail})</span>
+              )}
+            </div>
+          ))}
+          <div className="pt-2 border-t border-border mt-2">
+            <p className="text-sm font-medium">
+              Total: Rp {batchDetails.totalAmount?.toLocaleString("id-ID")}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Batch Delete Filter Details */}
+      {batchDetails?.type === "delete_filter" && batchDetails.filters && (
+        <div className="mb-3 space-y-1">
+          <p className="text-xs text-muted-foreground mb-2">
+            Transaksi yang sesuai filter akan dihapus:
+          </p>
+          {batchDetails.filters.map((filter, i) => (
+            <div
+              key={i}
+              className="flex items-center gap-2 text-sm py-1 px-2 bg-background/50 rounded"
+            >
+              <Trash2 className="w-3 h-3 text-destructive" />
+              <span>{filter}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Delete All Warning */}
+      {batchDetails?.type === "delete_all" && (
+        <div className="mb-3">
+          <div className="bg-destructive/20 rounded-md p-3 mb-3">
+            <p className="text-sm text-destructive font-medium mb-1">
+              Peringatan: Aksi ini tidak dapat dibatalkan!
+            </p>
+            <p className="text-xs text-destructive/80">
+              Semua transaksi {batchDetails.scope} akan dihapus permanen.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs text-muted-foreground">
+              Ketik <span className="font-mono font-bold">HAPUS SEMUA</span> untuk konfirmasi:
+            </label>
+            <input
+              type="text"
+              value={confirmationText}
+              onChange={(e) => setConfirmationText(e.target.value)}
+              className={cn(
+                "w-full px-3 py-2 text-sm rounded-md border bg-background",
+                confirmationText === "HAPUS SEMUA"
+                  ? "border-destructive"
+                  : "border-input"
+              )}
+              placeholder="HAPUS SEMUA"
+              disabled={isLoading}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Single Action Description (non-batch) */}
+      {!isBatchAction && (
+        <p className="text-sm text-foreground mb-3">
+          {actions[0]?.description}
+        </p>
+      )}
+
+      {/* Action Buttons */}
+      <div className="flex gap-2">
+        <button
+          onClick={onConfirm}
+          disabled={!canConfirm || isLoading}
+          className={cn(
+            "flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md transition-colors cursor-pointer",
+            isDestructive
+              ? "bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
+              : "bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50",
+            (!canConfirm || isLoading) && "cursor-not-allowed"
+          )}
+        >
+          {isDestructive ? (
+            <Trash2 className="w-4 h-4" />
+          ) : (
+            <Check className="w-4 h-4" />
+          )}
+          {isLoading
+            ? "Memproses..."
+            : isDestructive
+              ? "Ya, Hapus"
+              : "Ya, Lanjutkan"}
+        </button>
+        <button
+          onClick={onCancel}
+          disabled={isLoading}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-muted text-muted-foreground text-sm rounded-md hover:bg-muted/80 transition-colors cursor-pointer disabled:opacity-50"
+        >
+          <XCircle className="w-4 h-4" />
+          Batal
+        </button>
+      </div>
+    </div>
+  )
+}

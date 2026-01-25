@@ -65,7 +65,15 @@ export interface EnhancedRAGContext extends RAGContext {
 }
 
 // Action types for chatbot
-export type ChatbotAction = "create_transaction" | "delete_transaction" | "edit_transaction" | "search_transactions"
+export type ChatbotAction =
+  | "create_transaction"
+  | "delete_transaction"
+  | "edit_transaction"
+  | "search_transactions"
+  // Batch actions
+  | "batch_create_transactions"
+  | "batch_delete_transactions"
+  | "delete_all_transactions"
 
 export interface CreateTransactionPayload {
   amount: number
@@ -100,7 +108,53 @@ export interface SearchTransactionsPayload {
   description?: string
 }
 
-export type ActionPayload = CreateTransactionPayload | DeleteTransactionPayload | EditTransactionPayload | SearchTransactionsPayload
+// Batch action payloads
+export interface BatchCreateTransactionsPayload {
+  transactions: CreateTransactionPayload[]
+}
+
+export interface BatchDeleteTransactionsPayload {
+  filter: {
+    category?: string
+    type?: "income" | "expense"
+    startDate?: string
+    endDate?: string
+    payment_method?: "mbanking" | "cash"
+  }
+}
+
+export interface DeleteAllTransactionsPayload {
+  confirmationText: string // Must be "HAPUS SEMUA"
+  month?: number // Optional: only delete specific month
+  year?: number // Optional: only delete specific year
+}
+
+// Batch action result
+export interface BatchActionResult {
+  success: boolean
+  totalRequested: number
+  totalSucceeded: number
+  totalFailed: number
+  totalBalanceChange: {
+    mbanking: number
+    cash: number
+  }
+  results: Array<{
+    index: number
+    success: boolean
+    message?: string
+    transactionId?: string
+  }>
+}
+
+export type ActionPayload =
+  | CreateTransactionPayload
+  | DeleteTransactionPayload
+  | EditTransactionPayload
+  | SearchTransactionsPayload
+  | BatchCreateTransactionsPayload
+  | BatchDeleteTransactionsPayload
+  | DeleteAllTransactionsPayload
 
 export interface ChatbotActionRequest {
   action: ChatbotAction

@@ -19,12 +19,7 @@ import type { EnhancedRAGContext, ChatbotAction, ActionPayload } from "@/types/r
 import { ChatMessage } from "./chat-message"
 import { QuickReplies } from "./quick-replies"
 import { ModelSelector } from "./model-selector"
-
-interface PendingAction {
-  action: ChatbotAction
-  payload: ActionPayload
-  description: string
-}
+import { BatchActionConfirmation, type PendingAction } from "./batch-action-confirmation"
 
 function parseActions(
   content: string
@@ -55,9 +50,30 @@ function parsePendingActions(content: string): PendingAction[] {
     const actionType = match[1] as ChatbotAction
     try {
       const payload = JSON.parse(match[2].trim())
-      const description = actionType === "delete_transaction"
-        ? "Hapus transaksi ini?"
-        : "Ubah transaksi ini?"
+      let description = "Konfirmasi aksi ini?"
+
+      switch (actionType) {
+        case "create_transaction":
+          description = `Tambah transaksi ${payload.type === "income" ? "pemasukan" : "pengeluaran"} Rp ${payload.amount?.toLocaleString("id-ID")}?`
+          break
+        case "delete_transaction":
+          description = "Hapus transaksi ini?"
+          break
+        case "edit_transaction":
+          description = "Ubah transaksi ini?"
+          break
+        case "batch_create_transactions":
+          const txCount = payload.transactions?.length || 0
+          description = `Tambah ${txCount} transaksi sekaligus?`
+          break
+        case "batch_delete_transactions":
+          description = "Hapus transaksi yang sesuai filter?"
+          break
+        case "delete_all_transactions":
+          description = "Hapus SEMUA transaksi? (Perlu konfirmasi tambahan)"
+          break
+      }
+
       actions.push({ action: actionType, payload, description })
     } catch (e) {
       console.error("Failed to parse pending action payload:", e)
@@ -103,6 +119,38 @@ async function executeAction(
       message: error instanceof Error ? error.message : "Unknown error",
     }
   }
+}
+
+async function executeBatchAction(
+  action: ChatbotAction,
+  payload: ActionPayload
+): Promise<{ success: boolean; message: string; data?: unknown }> {
+  try {
+    const response = await fetch("/api/chatbot/batch-actions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, payload }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      return { success: false, message: data.error || "Batch action failed" }
+    }
+
+    return { success: true, message: data.message || "Batch action completed", data }
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Unknown error",
+    }
+  }
+}
+
+function isBatchAction(action: ChatbotAction): boolean {
+  return action === "batch_create_transactions" ||
+         action === "batch_delete_transactions" ||
+         action === "delete_all_transactions"
 }
 
 interface ChatbotPanelProps {
@@ -422,7 +470,13 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
   const handleConfirmAction = async () => {
     if (!pendingAction) return
 
-    const result = await executeAction(pendingAction.action, pendingAction.payload)
+    setIsLoading(true)
+
+    // Use batch endpoint for batch actions
+    const result = isBatchAction(pendingAction.action)
+      ? await executeBatchAction(pendingAction.action, pendingAction.payload)
+      : await executeAction(pendingAction.action, pendingAction.payload)
+
     if (result.success) {
       invalidateQueries()
       const successMessage: Message = {
@@ -442,6 +496,7 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
       setMessages((prev) => [...prev, errorMessage])
     }
     setPendingAction(null)
+    setIsLoading(false)
   }
 
   const handleCancelAction = () => {
@@ -546,25 +601,36 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
         )}
 
         {pendingAction && (
-          <div className="bg-muted/50 rounded-lg p-3 mx-1">
-            <p className="text-sm text-foreground mb-3">{pendingAction.description}</p>
-            <div className="flex gap-2">
-              <button
-                onClick={handleConfirmAction}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground text-sm rounded-md hover:bg-primary/90 transition-colors cursor-pointer"
-              >
-                <Check className="w-4 h-4" />
-                Ya, Lanjutkan
-              </button>
-              <button
-                onClick={handleCancelAction}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-destructive/10 text-destructive text-sm rounded-md hover:bg-destructive/20 transition-colors cursor-pointer"
-              >
-                <XCircle className="w-4 h-4" />
-                Batal
-              </button>
+          isBatchAction(pendingAction.action) ? (
+            <BatchActionConfirmation
+              actions={[pendingAction]}
+              onConfirm={handleConfirmAction}
+              onCancel={handleCancelAction}
+              isLoading={isLoading}
+            />
+          ) : (
+            <div className="bg-muted/50 rounded-lg p-3 mx-1">
+              <p className="text-sm text-foreground mb-3">{pendingAction.description}</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleConfirmAction}
+                  disabled={isLoading}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground text-sm rounded-md hover:bg-primary/90 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <Check className="w-4 h-4" />
+                  {isLoading ? "Memproses..." : "Ya, Lanjutkan"}
+                </button>
+                <button
+                  onClick={handleCancelAction}
+                  disabled={isLoading}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-destructive/10 text-destructive text-sm rounded-md hover:bg-destructive/20 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <XCircle className="w-4 h-4" />
+                  Batal
+                </button>
+              </div>
             </div>
-          </div>
+          )
         )}
 
         <div ref={messagesEndRef} />
