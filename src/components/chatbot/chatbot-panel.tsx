@@ -46,8 +46,22 @@ function parsePendingActions(content: string): PendingAction[] {
   const pendingRegex = /\[PENDING_ACTION:(\w+)\]([\s\S]*?)\[\/PENDING_ACTION\]/g
   let match
 
+  const hasPendingTag = content.includes("[PENDING_ACTION:")
+  if (process.env.NODE_ENV === "development") {
+    console.log("[Batch Debug] Content has PENDING_ACTION tag:", hasPendingTag)
+    if (hasPendingTag) {
+      const tagStart = content.indexOf("[PENDING_ACTION:")
+      const tagEnd = content.indexOf("[/PENDING_ACTION]")
+      console.log("[Batch Debug] Tag positions - start:", tagStart, "end:", tagEnd)
+    }
+  }
+
   while ((match = pendingRegex.exec(content)) !== null) {
     const actionType = match[1] as ChatbotAction
+    if (process.env.NODE_ENV === "development") {
+      console.log("[Batch Debug] Found action type:", actionType)
+      console.log("[Batch Debug] Payload raw:", match[2].substring(0, 200))
+    }
     try {
       const payload = JSON.parse(match[2].trim())
       let description = "Konfirmasi aksi ini?"
@@ -76,8 +90,13 @@ function parsePendingActions(content: string): PendingAction[] {
 
       actions.push({ action: actionType, payload, description })
     } catch (e) {
-      console.error("Failed to parse pending action payload:", e)
+      console.error("[Batch Debug] Failed to parse pending action payload:", e)
+      console.error("[Batch Debug] Raw payload that failed:", match[2])
     }
+  }
+
+  if (process.env.NODE_ENV === "development") {
+    console.log("[Batch Debug] Total pending actions found:", actions.length)
   }
 
   return actions

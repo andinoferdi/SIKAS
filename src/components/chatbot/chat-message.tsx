@@ -4,7 +4,7 @@ import { memo } from "react"
 import Image from "next/image"
 import ReactMarkdown from "react-markdown"
 import { type Message } from "@/types/chatbot"
-import { Bot, User } from "lucide-react"
+import { Bot, User, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface ChatMessageProps {
@@ -93,13 +93,23 @@ export function ChatMessage({ message }: ChatMessageProps) {
         )}
         {isBot ? (
           <div className="wrap-break-word">
-            <MemoizedMarkdown content={message.content} />
+            {message.isStreaming && !message.content ? (
+              <div className="flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                <span className="text-muted-foreground">Memproses permintaan...</span>
+              </div>
+            ) : (
+              <MemoizedMarkdown content={message.content} />
+            )}
           </div>
         ) : (
           <p className="whitespace-pre-wrap wrap-break-word">{message.content}</p>
         )}
-        {message.isStreaming && (
-          <span className="inline-block w-1.5 h-4 bg-current animate-pulse ml-0.5 -mb-0.5" />
+        {message.isStreaming && message.content && (
+          <div className="flex items-center gap-1.5 mt-2 text-muted-foreground">
+            <Loader2 className="w-3 h-3 animate-spin" />
+            <span className="text-xs">Mengetik...</span>
+          </div>
         )}
       </div>
     </div>

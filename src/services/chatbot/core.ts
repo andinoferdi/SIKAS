@@ -345,14 +345,21 @@ ATURAN UNTUK ACTION (search saja):
 ---
 AKSI BATCH (BANYAK TRANSAKSI SEKALIGUS):
 
+ATURAN WAJIB UNTUK BATCH:
+- SELALU gunakan tag [PENDING_ACTION:batch_create_transactions] untuk membuat banyak transaksi
+- JANGAN pernah hanya menampilkan daftar transaksi tanpa tag PENDING_ACTION
+- SEMUA transaksi HARUS dalam format JSON array, bukan daftar teks
+- Tag PENDING_ACTION WAJIB ada agar tombol konfirmasi muncul
+
 5. **Tambah Banyak Transaksi Sekaligus** (BUTUH KONFIRMASI):
 Gunakan ketika user menyebut lebih dari 1 transaksi dalam satu pesan.
-[PENDING_ACTION:batch_create_transactions]{
-  "transactions": [
-    {"amount":10000,"type":"expense","category":"Makan","payment_method":"cash","transaction_date":"${today}"},
-    {"amount":50000,"type":"expense","category":"Transport","payment_method":"mbanking","transaction_date":"${today}"}
-  ]
-}[/PENDING_ACTION]
+
+Format respons yang BENAR:
+"Saya akan mencatat X transaksi:
+
+[PENDING_ACTION:batch_create_transactions]{"transactions":[{"amount":10000,"type":"expense","category":"Makan","payment_method":"cash","transaction_date":"${today}"},{"amount":50000,"type":"income","category":"Gaji","payment_method":"mbanking","transaction_date":"${today}"}]}[/PENDING_ACTION]"
+
+PENTING: JSON harus dalam SATU BARIS tanpa line break di dalam tag PENDING_ACTION.
 
 6. **Hapus Banyak Transaksi Berdasarkan Filter** (BUTUH KONFIRMASI):
 [PENDING_ACTION:batch_delete_transactions]{
@@ -392,14 +399,15 @@ CONTOH PENGGUNAAN BATCH:
 User: "Catat 3 pengeluaran: makan 15rb, bensin 50rb, pulsa 25rb"
 Bot: "Saldo kamu saat ini: M-Banking Rp X, Cash Rp Y.
 
-Saya akan mencatat 3 transaksi pengeluaran:
-1. Makan: Rp 15.000 (Cash)
-2. Bensin: Rp 50.000 (Cash)
-3. Pulsa: Rp 25.000 (Cash)
+Saya akan mencatat 3 transaksi pengeluaran (Total: Rp 90.000):
 
-Total: Rp 90.000
+[PENDING_ACTION:batch_create_transactions]{"transactions":[{"amount":15000,"type":"expense","category":"Makan","payment_method":"cash","transaction_date":"${today}"},{"amount":50000,"type":"expense","category":"Transport","description":"bensin","payment_method":"cash","transaction_date":"${today}"},{"amount":25000,"type":"expense","category":"Tagihan","description":"pulsa","payment_method":"cash","transaction_date":"${today}"}]}[/PENDING_ACTION]"
 
-[PENDING_ACTION:batch_create_transactions]{...}[/PENDING_ACTION]"
+SALAH (JANGAN LAKUKAN):
+"Saya akan mencatat:
+1. Makan: Rp 15.000
+2. Bensin: Rp 50.000
+..." (tanpa tag PENDING_ACTION = tombol konfirmasi TIDAK akan muncul!)
 
 User: "Hapus semua transaksi makan minggu ini"
 Bot: "Saya akan menghapus transaksi dengan kriteria:
