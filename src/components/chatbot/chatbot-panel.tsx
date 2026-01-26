@@ -4,11 +4,12 @@ import { useState, useEffect, useCallback } from "react"
 import { usePathname } from "next/navigation"
 import { X, Bot } from "lucide-react"
 import { type ModelSelection } from "@/types/chatbot"
-import { LANDING_QUICK_REPLIES, DASHBOARD_QUICK_REPLIES } from "@/services/chatbot"
+import { LANDING_QUICK_REPLIES, DASHBOARD_QUICK_REPLIES, ALL_MODELS } from "@/services/chatbot"
 import { useChatMessages } from "@/components/chatbot/hooks/use-chat-messages"
 import { useChatActions } from "@/components/chatbot/hooks/use-chat-actions"
 import { ChatMessages } from "@/components/chatbot/chat-messages"
 import { ChatInput } from "@/components/chatbot/chat-input"
+import { ModelSelector } from "@/components/chatbot/model-selector"
 
 interface PendingImage {
   file: File
@@ -128,6 +129,14 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
         </button>
       </div>
 
+      <div className="px-4 py-2 border-b border-border bg-muted/30 shrink-0">
+        <ModelSelector
+          models={ALL_MODELS}
+          currentSelection={modelSelection}
+          onSelectionChange={setModelSelection}
+        />
+      </div>
+
       <ChatMessages
         messages={messages}
         showQuickReplies={showQuickReplies}
@@ -150,7 +159,6 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
         onImageSelect={handleImageSelect}
         onImageRemove={handleImageRemove}
         modelSelection={modelSelection}
-        onModelSelectionChange={setModelSelection}
       />
     </div>
   )

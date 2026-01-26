@@ -5,7 +5,6 @@ import Image from "next/image"
 import { X, Send, Loader2, ImageIcon } from "lucide-react"
 import { type ModelSelection } from "@/types/chatbot"
 import { ALL_MODELS } from "@/services/chatbot"
-import { ModelSelector } from "@/components/chatbot/model-selector"
 
 interface PendingImage {
   file: File
@@ -22,7 +21,6 @@ interface ChatInputProps {
   onImageSelect: (file: File) => void
   onImageRemove: () => void
   modelSelection: ModelSelection
-  onModelSelectionChange: (selection: ModelSelection) => void
 }
 
 export const ChatInput = memo(function ChatInput({
@@ -35,7 +33,6 @@ export const ChatInput = memo(function ChatInput({
   onImageSelect,
   onImageRemove,
   modelSelection,
-  onModelSelectionChange,
 }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -99,15 +96,8 @@ export const ChatInput = memo(function ChatInput({
   const canSend = (input.trim() || pendingImage) && !isLoading && !isUploading
 
   return (
-    <div className="border-t border-border shrink-0">
-      <div className="px-4 py-2 border-b border-border bg-muted/30">
-        <ModelSelector
-          models={ALL_MODELS}
-          currentSelection={modelSelection}
-          onSelectionChange={onModelSelectionChange}
-        />
-      </div>
 
+    <div className="border-t border-border shrink-0">
       {pendingImage && (
         <div className="px-4 pt-3">
           <div className="relative inline-block">
