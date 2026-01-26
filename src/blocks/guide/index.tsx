@@ -11,7 +11,7 @@ const GUIDES = [
     description: "Panduan awal untuk pengguna baru: Registrasi, verifikasi, dan tur dashboard pertama kali.",
     icon: BookOpen,
     href: "#",
-    color: "bg-blue-500/10 text-blue-500",
+    color: "bg-primary/10 text-primary",
   },
   {
     id: "managing-transactions",
@@ -19,7 +19,7 @@ const GUIDES = [
     description: "Cara mencatat pemasukan dan pengeluaran, mengedit data, serta melihat riwayat transaksi.",
     icon: Wallet,
     href: "#",
-    color: "bg-green-500/10 text-green-500",
+    color: "bg-success/10 text-success",
   },
   {
     id: "budgeting-101",
@@ -27,7 +27,7 @@ const GUIDES = [
     description: "Pelajari metode 50/30/20 untuk mengelola gaji bulanan agar tidak boncos di akhir bulan.",
     icon: Calculator,
     href: "#",
-    color: "bg-purple-500/10 text-purple-500",
+    color: "bg-info/10 text-info",
   },
   {
     id: "ai-features",
@@ -35,7 +35,7 @@ const GUIDES = [
     description: "Tips menggunakan asisten AI untuk analisis pengeluaran dan scan struk belanja otomatis.",
     icon: Lightbulb,
     href: "#",
-    color: "bg-yellow-500/10 text-yellow-500",
+    color: "bg-warning/10 text-warning",
   },
 ]
 

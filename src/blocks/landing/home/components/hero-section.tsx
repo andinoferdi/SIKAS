@@ -83,7 +83,7 @@ export function HeroSection() {
               <div
                 className="w-87.5 h-87.5 sm:w-112.5 sm:h-112.5 lg:w-137.5 lg:h-137.5 rounded-full"
                 style={{
-                  background: "linear-gradient(135deg, rgba(14, 165, 233, 0.08) 0%, rgba(14, 165, 233, 0.03) 100%)",
+                  background: "linear-gradient(135deg, color-mix(in srgb, var(--primary) 8%, transparent) 0%, color-mix(in srgb, var(--primary) 3%, transparent) 100%)",
                 }}
               ></div>
             </div>
@@ -136,7 +136,7 @@ export function HeroSection() {
                         <div
                           className="rounded-xl p-3 text-primary-foreground"
                           style={{
-                            background: "linear-gradient(135deg, var(--primary) 0%, #0284c7 100%)",
+                            background: "linear-gradient(135deg, var(--gradient-mbanking-from) 0%, var(--gradient-mbanking-to) 100%)",
                           }}
                         >
                           <div className="flex items-center gap-1.5 mb-1">
@@ -152,7 +152,7 @@ export function HeroSection() {
                         <div
                           className="rounded-xl p-3 text-primary-foreground"
                           style={{
-                            background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                            background: "linear-gradient(135deg, var(--gradient-cash-from) 0%, var(--gradient-cash-to) 100%)",
                           }}
                         >
                           <div className="flex items-center gap-1.5 mb-1">

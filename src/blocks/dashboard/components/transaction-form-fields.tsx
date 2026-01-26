@@ -42,7 +42,6 @@ interface TransactionFormFieldsProps {
 
 export const TransactionFormFields = memo(function TransactionFormFields({
   type,
-  // amount, // Unused
   paymentMethod,
   category,
   categories,

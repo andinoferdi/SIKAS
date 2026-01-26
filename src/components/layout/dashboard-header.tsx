@@ -4,12 +4,12 @@ import { useEffect, useState } from "react"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { Search } from "lucide-react"
-import { userService } from "@/services"
+import { useCurrentUser } from "@/hooks"
 import { cn } from "@/lib/utils"
-import { useHeaderSearch } from "./hooks/use-header-search"
-import { HeaderSearch } from "./header-search"
-import { HeaderUserDropdown } from "./header-user-dropdown"
-import { MobileSearchModal } from "./mobile-search-modal"
+import { useHeaderSearch } from "@/components/layout/hooks"
+import { HeaderSearch } from "@/components/layout/header-search"
+import { HeaderUserDropdown } from "@/components/layout/header-user-dropdown"
+import { MobileSearchModal } from "@/components/layout/mobile-search-modal"
 
 const MIN_SCROLL = 10
 
@@ -23,8 +23,8 @@ function getPageTitle(path: string) {
 export function DashboardHeader() {
   const pathname = usePathname()
   const [scrolled, setScrolled] = useState(false)
-  const [user, setUser] = useState<{ name: string } | null>(null)
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
+  const { data: user } = useCurrentUser()
 
   const {
     searchValue,
@@ -44,14 +44,6 @@ export function DashboardHeader() {
     }
     window.addEventListener("scroll", handleScroll)
     return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      const userData = await userService.getCurrentUser()
-      if (userData) setUser(userData)
-    }
-    fetchUser()
   }, [])
 
   const handleMobileResultClick = () => {

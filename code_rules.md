@@ -15,14 +15,13 @@ src/
 ├── components/
 │   ├── ui/        # Primitives (Button, Input, Card)
 │   └── layout/    # Header, Sidebar
-├── hooks/         # Custom hooks
+├── hooks/         # Global/shared hooks (TanStack Query wrappers)
 ├── stores/        # Zustand stores
 ├── services/      # API layer
 ├── types/         # TypeScript types
 ├── lib/
 │   ├── utils/     # Helper functions
 │   └── validations/ # Zod schemas
-└── validations/
 ```
 
 ## 3. App Router File Conventions
@@ -39,7 +38,7 @@ Gunakan route groups (folder) untuk organisasi tanpa mempengaruhi URL. Gunakan p
 
 ## 4. Aturan Dasar
 
-Gunakan nama deskriptif dan early return. Gunakan const arrow function untuk handlers. Sertakan semua imports. Jangan tinggalkan TODO. Tulis kode tanpa komentar kecuali penjelasan penting. Gunakan path @/ untuk imports. Gunakan barrel exports (index.ts).
+Gunakan nama deskriptif dan early return. Gunakan const arrow function untuk handlers. Sertakan semua imports. Jangan tinggalkan TODO. Tulis kode tanpa komentar kecuali penjelasan penting. **Selalu gunakan absolute path `@/` untuk semua imports, termasuk di barrel exports (index.ts). Jangan pernah gunakan relative path (`./` atau `../`).**
 
 ## 5. Components
 
@@ -47,7 +46,19 @@ Server Component default. Tambahkan "use client" hanya jika butuh state, effects
 
 Tiga jenis komponen: Primitives (src/components/ui) untuk UI murni, Logic Components (src/components) untuk UI + logic reusable, Partial Components (src/blocks/[page]/components) untuk komponen khusus satu halaman.
 
-## 6. Data Fetching
+**Component Size Limit:** Maksimal ~150-200 lines per component. Jika lebih, split menjadi sub-components.
+
+## 6. Hooks Location
+
+```
+src/hooks/                    # Global hooks (TanStack Query wrappers, auth)
+src/components/*/hooks/       # Feature-specific hooks (chatbot, etc)
+src/blocks/*/components/hooks/ # Page-specific hooks (transaction form, etc)
+```
+
+Aturan: Jika hook dipakai di lebih dari 1 fitur → `src/hooks/`. Jika hanya untuk 1 fitur → co-locate dengan komponennya.
+
+## 7. Data Fetching
 
 Gunakan TanStack Query. Jangan pakai useEffect + useState untuk fetch.
 
@@ -70,7 +81,7 @@ export function useCreateTransaction() {
 }
 ```
 
-## 7. Error Handling
+## 8. Error Handling
 
 Di service layer, throw Error dengan message yang jelas. Di UI, gunakan isError dan error dari React Query.
 
@@ -90,7 +101,7 @@ mutation.mutate(data, {
 });
 ```
 
-## 8. Form
+## 9. Form
 
 Gunakan React Hook Form + Zod. Simpan schema di lib/validations/.
 
@@ -115,7 +126,7 @@ const {
 });
 ```
 
-## 9. Client State
+## 10. Client State
 
 Gunakan Zustand untuk UI state. Jangan simpan server data di Zustand.
 
@@ -126,7 +137,7 @@ export const useUIStore = create<UIState>((set) => ({
 }));
 ```
 
-## 10. Service Layer
+## 11. Service Layer
 
 ```tsx
 // services/base.ts
@@ -146,7 +157,7 @@ export async function fetcher<T>(
 }
 ```
 
-## 11. Styling
+## 12. Styling
 
 Jangan hardcode warna. Gunakan design tokens.
 
@@ -169,7 +180,7 @@ Jangan hardcode warna. Gunakan design tokens.
 }
 ```
 
-## 12. Metadata dan SEO
+## 13. Metadata dan SEO
 
 Gunakan Metadata API di setiap page untuk SEO.
 
@@ -191,7 +202,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 ```
 
-## 13. TypeScript Conventions
+## 14. TypeScript Conventions
 
 Gunakan interface untuk object shapes dan props. Gunakan type untuk unions dan intersections.
 
@@ -212,7 +223,7 @@ type TransactionType = "income" | "expense";
 type Status = "idle" | "loading" | "success" | "error";
 ```
 
-## 14. API Routes
+## 15. API Routes
 
 ```tsx
 export async function GET(request: NextRequest) {
@@ -224,7 +235,7 @@ export async function GET(request: NextRequest) {
 }
 ```
 
-## 15. Dependencies
+## 16. Dependencies
 
 ```json
 {
@@ -239,6 +250,6 @@ export async function GET(request: NextRequest) {
 }
 ```
 
-## 16. Sebelum Coding
+## 17. Sebelum Coding
 
 Analisis proyek dulu: baca file yang ada, identifikasi pola coding, Tolong tulis kode tanpa komentar, hanya komentar yang penting penting saja agar terlihat lebih humanize, cek konsistensi, berikan kesimpulan mana yang sudah benar dan mana yang masih salah. Fokus pada scope yang dibutuhkan.
