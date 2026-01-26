@@ -11,7 +11,6 @@ export const metadata: Metadata = {
 export default function FAQPage() {
   return (
     <main className="min-h-screen bg-background pb-20 lg:pb-0">
-      {/* Header */}
       <div className="bg-primary pt-12 pb-20 px-6 text-center text-primary-foreground relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full bg-[url('/images/pattern.png')] opacity-10 mix-blend-overlay"></div>
         <div className="relative z-10 max-w-2xl mx-auto">
@@ -29,7 +28,6 @@ export default function FAQPage() {
         </div>
       </div>
 
-      {/* Content */}
       <div className="max-w-2xl mx-auto px-6 -mt-10 relative z-20">
         <div className="bg-card rounded-2xl p-6 shadow-xl border border-border/50">
           <FAQList />

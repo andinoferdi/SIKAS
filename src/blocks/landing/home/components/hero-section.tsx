@@ -24,7 +24,7 @@ export function HeroSection() {
 
   return (
     <section className="relative overflow-hidden bg-card">
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-300 mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center min-h-[calc(100vh-80px)] py-12 lg:py-0">
           <div className="flex flex-col gap-6 text-center lg:text-left order-2 lg:order-1">
             <h1 className="text-4xl sm:text-5xl lg:text-[56px] font-bold leading-[1.15] text-foreground">
@@ -40,7 +40,7 @@ export function HeroSection() {
               </span>
             </h1>
 
-            <p className="text-lg text-muted-foreground max-w-[450px] mx-auto lg:mx-0 leading-relaxed">
+            <p className="text-lg text-muted-foreground max-w-112.5 mx-auto lg:mx-0 leading-relaxed">
               Catat pengeluaran dan pemasukan dengan mudah.
               <br className="hidden sm:block" />
               Kelola keuangan untuk masa depan yang lebih baik.
@@ -81,7 +81,7 @@ export function HeroSection() {
           <div className="relative flex justify-center lg:justify-end order-1 lg:order-2">
             <div className="absolute inset-0 flex items-center justify-center">
               <div
-                className="w-[350px] h-[350px] sm:w-[450px] sm:h-[450px] lg:w-[550px] lg:h-[550px] rounded-full"
+                className="w-87.5 h-87.5 sm:w-112.5 sm:h-112.5 lg:w-137.5 lg:h-137.5 rounded-full"
                 style={{
                   background: "linear-gradient(135deg, rgba(14, 165, 233, 0.08) 0%, rgba(14, 165, 233, 0.03) 100%)",
                 }}
@@ -107,7 +107,7 @@ export function HeroSection() {
             </div>
 
             <div className="relative z-10">
-              <div className="relative w-[240px] sm:w-[260px] lg:w-[280px]">
+              <div className="relative w-60 sm:w-65 lg:w-70">
                 <div className="bg-foreground rounded-[3rem] p-3 shadow-2xl">
                   <div className="relative bg-background rounded-[2.5rem] overflow-hidden">
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-7 bg-foreground rounded-b-3xl z-10"></div>

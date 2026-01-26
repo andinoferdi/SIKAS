@@ -1,0 +1,153 @@
+import type { ChatbotAction, ActionPayload } from "@/types/rag"
+import type { PendingAction } from "@/components/chatbot/batch-action-confirmation"
+
+export function parseActions(
+  content: string
+): Array<{ action: ChatbotAction; payload: ActionPayload }> {
+  const actions: Array<{ action: ChatbotAction; payload: ActionPayload }> = []
+  const actionRegex = /\[ACTION:(\w+)\]([\s\S]*?)\[\/ACTION\]/g
+  let match
+
+  while ((match = actionRegex.exec(content)) !== null) {
+    const actionType = match[1] as ChatbotAction
+    try {
+      const payload = JSON.parse(match[2].trim())
+      actions.push({ action: actionType, payload })
+    } catch (e) {
+      console.error("Failed to parse action payload:", e)
+    }
+  }
+
+  return actions
+}
+
+export function parsePendingActions(content: string): PendingAction[] {
+  const actions: PendingAction[] = []
+  const pendingRegex = /\[PENDING_ACTION:(\w+)\]([\s\S]*?)\[\/PENDING_ACTION\]/g
+  let match
+
+  const hasPendingTag = content.includes("[PENDING_ACTION:")
+  if (process.env.NODE_ENV === "development") {
+    console.log("[Batch Debug] Content has PENDING_ACTION tag:", hasPendingTag)
+    if (hasPendingTag) {
+      const tagStart = content.indexOf("[PENDING_ACTION:")
+      const tagEnd = content.indexOf("[/PENDING_ACTION]")
+      console.log("[Batch Debug] Tag positions - start:", tagStart, "end:", tagEnd)
+    }
+  }
+
+  while ((match = pendingRegex.exec(content)) !== null) {
+    const actionType = match[1] as ChatbotAction
+    if (process.env.NODE_ENV === "development") {
+      console.log("[Batch Debug] Found action type:", actionType)
+      console.log("[Batch Debug] Payload raw:", match[2].substring(0, 200))
+    }
+    try {
+      const payload = JSON.parse(match[2].trim())
+      let description = "Konfirmasi aksi ini?"
+
+      switch (actionType) {
+        case "create_transaction":
+          description = `Tambah transaksi ${payload.type === "income" ? "pemasukan" : "pengeluaran"} Rp ${payload.amount?.toLocaleString("id-ID")}?`
+          break
+        case "delete_transaction":
+          description = "Hapus transaksi ini?"
+          break
+        case "edit_transaction":
+          description = "Ubah transaksi ini?"
+          break
+        case "batch_create_transactions":
+          const txCount = payload.transactions?.length || 0
+          description = `Tambah ${txCount} transaksi sekaligus?`
+          break
+        case "batch_delete_transactions":
+          description = "Hapus transaksi yang sesuai filter?"
+          break
+        case "delete_all_transactions":
+          description = "Hapus SEMUA transaksi? (Perlu konfirmasi tambahan)"
+          break
+      }
+
+      actions.push({ action: actionType, payload, description })
+    } catch (e) {
+      console.error("[Batch Debug] Failed to parse pending action payload:", e)
+      console.error("[Batch Debug] Raw payload that failed:", match[2])
+    }
+  }
+
+  if (process.env.NODE_ENV === "development") {
+    console.log("[Batch Debug] Total pending actions found:", actions.length)
+  }
+
+  return actions
+}
+
+export function cleanContentForDisplay(content: string): string {
+  return content
+    .replace(/\[ACTION:[\w-]+\][\s\S]*?\[\/ACTION\]/gi, "")
+    .replace(/\[PENDING_ACTION:[\w-]+\][\s\S]*?\[\/PENDING_ACTION\]/gi, "")
+    .replace(/\[ACTION:[\w-]*(?:\][\s\S]*)?$/gi, "")
+    .replace(/\[PENDING_ACTION:[\w-]*(?:\][\s\S]*)?$/gi, "")
+    .replace(/\[\/ACTION\]/gi, "")
+    .replace(/\[\/PENDING_ACTION\]/gi, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim()
+}
+
+export async function executeAction(
+  action: ChatbotAction,
+  payload: ActionPayload
+): Promise<{ success: boolean; message: string; data?: unknown }> {
+  try {
+    const response = await fetch("/api/chatbot/actions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, payload }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      return { success: false, message: data.error || "Action failed" }
+    }
+
+    return { success: true, message: data.message || "Action completed", data }
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Unknown error",
+    }
+  }
+}
+
+export async function executeBatchAction(
+  action: ChatbotAction,
+  payload: ActionPayload
+): Promise<{ success: boolean; message: string; data?: unknown }> {
+  try {
+    const response = await fetch("/api/chatbot/batch-actions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, payload }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      return { success: false, message: data.error || "Batch action failed" }
+    }
+
+    return { success: true, message: data.message || "Batch action completed", data }
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Unknown error",
+    }
+  }
+}
+
+export function isBatchAction(action: ChatbotAction): boolean {
+  return action === "batch_create_transactions" ||
+         action === "batch_delete_transactions" ||
+         action === "delete_all_transactions"
+}

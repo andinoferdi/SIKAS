@@ -44,7 +44,6 @@ export function BatchActionConfirmation({
     return true
   }, [isDeleteAll, confirmationText])
 
-  // Get details for batch actions
   const batchDetails = useMemo(() => {
     if (!isBatchAction) return null
 
@@ -101,7 +100,6 @@ export function BatchActionConfirmation({
         isDestructive ? "bg-destructive/10 border border-destructive/30" : "bg-muted/50"
       )}
     >
-      {/* Header */}
       <div className="flex items-start gap-2 mb-3">
         {isDestructive ? (
           <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
@@ -124,7 +122,6 @@ export function BatchActionConfirmation({
         </div>
       </div>
 
-      {/* Batch Create Details */}
       {batchDetails?.type === "create" && batchDetails.items && (
         <div className="mb-3 space-y-1 max-h-32 overflow-y-auto">
           {batchDetails.items.map((item) => (
@@ -147,7 +144,6 @@ export function BatchActionConfirmation({
         </div>
       )}
 
-      {/* Batch Delete Filter Details */}
       {batchDetails?.type === "delete_filter" && batchDetails.filters && (
         <div className="mb-3 space-y-1">
           <p className="text-xs text-muted-foreground mb-2">
@@ -165,7 +161,6 @@ export function BatchActionConfirmation({
         </div>
       )}
 
-      {/* Delete All Warning */}
       {batchDetails?.type === "delete_all" && (
         <div className="mb-3">
           <div className="bg-destructive/20 rounded-md p-3 mb-3">
@@ -198,14 +193,12 @@ export function BatchActionConfirmation({
         </div>
       )}
 
-      {/* Single Action Description (non-batch) */}
       {!isBatchAction && (
         <p className="text-sm text-foreground mb-3">
           {actions[0]?.description}
         </p>
       )}
 
-      {/* Action Buttons */}
       <div className="flex gap-2">
         <button
           onClick={onConfirm}

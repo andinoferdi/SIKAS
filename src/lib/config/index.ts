@@ -1,2 +1,2 @@
-export * from "./brand"
-export * from "./navigation"
+export * from "@/lib/config/brand"
+export * from "@/lib/config/navigation"

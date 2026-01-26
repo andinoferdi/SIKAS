@@ -1,109 +1,48 @@
 "use client"
 
-import { useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
-import {
-  Button,
-  Input,
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  DatePicker,
-} from "@/components/ui"
-import type { TransactionType } from "@/types"
-import { cn } from "@/lib/utils"
-import { formatInputCurrency, parseInputCurrency, formatCurrency, getJakartaDateString } from "@/lib/utils/format"
-import { useCurrentUser, useCategories, useCreateTransaction } from "@/hooks"
-import { transactionFormSchema, type TransactionFormData } from "@/lib/validations"
-import { Banknote, Smartphone, Loader2, AlertCircle } from "lucide-react"
-/* eslint-disable react-hooks/incompatible-library */
+import { Button } from "@/components/ui"
+import { formatCurrency } from "@/lib/utils/format"
+import { useCreateTransaction } from "@/hooks"
+import { Banknote, Smartphone, Loader2 } from "lucide-react"
+import { useTransactionForm } from "@/blocks/dashboard/components/hooks/use-transaction-form"
+import { TransactionFormFields } from "@/blocks/dashboard/components/transaction-form-fields"
 
-
-const MIN_MBANKING_BALANCE = 50000
 export default function AddTransactionPage() {
   const router = useRouter()
+  const createMutation = useCreateTransaction()
+
+  const {
+    form,
+    type,
+    amount,
+    paymentMethod,
+    category,
+    categories,
+    user,
+    balanceWarning,
+    handleAmountChange,
+    handleTypeChange,
+    handleCategoryChange,
+    handlePaymentMethodChange,
+    handleDateChange,
+    validateAndGetAmount,
+    getCurrentBalance,
+    MIN_MBANKING_BALANCE,
+  } = useTransactionForm()
 
   const {
     register,
     handleSubmit,
     watch,
-    setValue,
     formState: { errors },
     setError: setFormError,
-  } = useForm<TransactionFormData>({
-    resolver: zodResolver(transactionFormSchema),
-    defaultValues: {
-      type: "expense",
-      amount: "",
-      category: "",
-      description: "",
-      payment_method: "cash",
-      transaction_date: getJakartaDateString(),
-    },
-  })
+  } = form
 
-  const type = watch("type")
-  const amount = watch("amount")
-  const paymentMethod = watch("payment_method")
-  const category = watch("category")
-
-  const { data: user } = useCurrentUser()
-  const { data: categories = [] } = useCategories(type)
-  const createMutation = useCreateTransaction()
-
-  const defaultCategory = categories.length > 0 ? categories[0].name : ""
-  
-  if (categories.length > 0 && !category) {
-    setValue("category", defaultCategory)
-  }
-
-  const balanceWarning = useMemo(() => {
-    if (!user || type !== "expense") {
-      return ""
-    }
-
-    const numericAmount = parseInputCurrency(amount)
-    if (!numericAmount) {
-      return ""
-    }
-
-    const currentBalance = paymentMethod === "mbanking" ? Number(user.mbanking_balance) : Number(user.cash_balance)
-
-    if (numericAmount > currentBalance) {
-      return "Saldo tidak cukup"
-    }
-
-    if (paymentMethod === "mbanking") {
-      const remainingBalance = currentBalance - numericAmount
-      if (remainingBalance < MIN_MBANKING_BALANCE) {
-        return `Minimal saldo M-Banking harus ${formatCurrency(MIN_MBANKING_BALANCE)}`
-      }
-    }
-
-    return ""
-  }, [amount, paymentMethod, type, user])
-
-  const onSubmit = async (data: TransactionFormData) => {
-    const numericAmount = parseInputCurrency(data.amount)
-
-    if (!numericAmount) {
-      toast.error("Jumlah tidak valid")
-      return
-    }
-
-    if (balanceWarning) {
-      setFormError("root", { message: balanceWarning })
-      toast.error(balanceWarning)
-      return
-    }
+  const onSubmit = handleSubmit((data) => {
+    const numericAmount = validateAndGetAmount()
+    if (!numericAmount) return
 
     createMutation.mutate(
       {
@@ -126,12 +65,7 @@ export default function AddTransactionPage() {
         },
       }
     )
-  }
-
-  const getCurrentBalance = () => {
-    if (!user) return 0
-    return paymentMethod === "mbanking" ? Number(user.mbanking_balance) : Number(user.cash_balance)
-  }
+  })
 
   return (
     <div className="p-4 lg:p-6 pb-24 lg:pb-6">
@@ -144,155 +78,25 @@ export default function AddTransactionPage() {
         <div className="lg:grid lg:grid-cols-5 lg:gap-8">
           <div className="lg:col-span-3">
             <div className="bg-card rounded-2xl border border-border p-5 lg:p-6">
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-                <Tabs value={type} onValueChange={(val) => setValue("type", val as TransactionType)}>
-                  <TabsList className="w-full bg-muted p-1 rounded-xl">
-                    <TabsTrigger
-                      value="expense"
-                      className="flex-1 rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm"
-                    >
-                      <span className={type === "expense" ? "text-destructive font-medium" : "text-muted-foreground"}>
-                        Pengeluaran
-                      </span>
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="income"
-                      className="flex-1 rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm"
-                    >
-                      <span className={type === "income" ? "text-success font-medium" : "text-muted-foreground"}>
-                        Pemasukan
-                      </span>
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
-
-                <div>
-                  <label className="block text-sm font-medium text-card-foreground mb-2">Jumlah</label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-lg">Rp</span>
-                    <Input
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="0"
-                      {...register("amount")}
-                      onChange={(e) => {
-                        const formatted = formatInputCurrency(e.target.value)
-                        setValue("amount", formatted)
-                      }}
-                      className="text-2xl font-bold pl-12 h-14"
-                    />
-                  </div>
-                  {type === "expense" && user && (
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Saldo {paymentMethod === "mbanking" ? "M-Banking" : "Cash"}: {formatCurrency(getCurrentBalance())}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-card-foreground mb-2">Kategori</label>
-                  <Select value={category || defaultCategory} onValueChange={(val) => setValue("category", val)}>
-                    <SelectTrigger className="h-12">
-                      <SelectValue placeholder="Pilih kategori" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat.id} value={cat.name}>
-                          {cat.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-card-foreground mb-2">Metode Pembayaran</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setValue("payment_method", "cash")}
-                      className={cn(
-                        "flex items-center gap-3 p-4 rounded-xl border-2 transition-all cursor-pointer",
-                        paymentMethod === "cash"
-                          ? "border-primary bg-primary/10"
-                          : "border-border hover:border-muted-foreground/30"
-                      )}
-                    >
-                      <div className={cn(
-                        "w-10 h-10 rounded-xl flex items-center justify-center",
-                        paymentMethod === "cash" ? "bg-primary/20" : "bg-muted"
-                      )}>
-                        <Banknote className={cn(
-                          "h-5 w-5",
-                          paymentMethod === "cash" ? "text-primary" : "text-muted-foreground"
-                        )} />
-                      </div>
-                      <span className={cn(
-                        "font-medium text-sm",
-                        paymentMethod === "cash" ? "text-primary" : "text-muted-foreground"
-                      )}>
-                        Cash
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setValue("payment_method", "mbanking")}
-                      className={cn(
-                        "flex items-center gap-3 p-4 rounded-xl border-2 transition-all cursor-pointer",
-                        paymentMethod === "mbanking"
-                          ? "border-primary bg-primary/10"
-                          : "border-border hover:border-muted-foreground/30"
-                      )}
-                    >
-                      <div className={cn(
-                        "w-10 h-10 rounded-xl flex items-center justify-center",
-                        paymentMethod === "mbanking" ? "bg-primary/20" : "bg-muted"
-                      )}>
-                        <Smartphone className={cn(
-                          "h-5 w-5",
-                          paymentMethod === "mbanking" ? "text-primary" : "text-muted-foreground"
-                        )} />
-                      </div>
-                      <span className={cn(
-                        "font-medium text-sm",
-                        paymentMethod === "mbanking" ? "text-primary" : "text-muted-foreground"
-                      )}>
-                        M-Banking
-                      </span>
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-card-foreground mb-2">Tanggal</label>
-                  <DatePicker value={watch("transaction_date")} onChange={(val) => setValue("transaction_date", val)} placeholder="Pilih tanggal" />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-card-foreground mb-2">
-                    Keterangan <span className="text-muted-foreground font-normal">(opsional)</span>
-                  </label>
-                  <Input
-                    type="text"
-                    placeholder="Contoh: Makan siang"
-                    {...register("description")}
-                    className="h-12"
-                  />
-                </div>
-
-                {balanceWarning && (
-                  <div className="flex items-center gap-2 p-3 bg-warning-bg border border-warning-border rounded-xl">
-                    <AlertCircle className="h-4 w-4 text-warning shrink-0" />
-                    <p className="text-sm text-warning-text">{balanceWarning}</p>
-                  </div>
-                )}
-
-                {errors.root && !balanceWarning && (
-                  <div className="flex items-center gap-2 p-3 bg-danger-bg border border-danger-border rounded-xl">
-                    <AlertCircle className="h-4 w-4 text-danger shrink-0" />
-                    <p className="text-sm text-danger-text">{errors.root.message}</p>
-                  </div>
-                )}
+              <form onSubmit={onSubmit} className="space-y-5">
+                <TransactionFormFields
+                  type={type}
+                  paymentMethod={paymentMethod}
+                  category={category}
+                  categories={categories}
+                  transactionDate={watch("transaction_date")}
+                  description={watch("description") || ""}
+                  showBalanceInfo={!!user}
+                  currentBalance={getCurrentBalance()}
+                  balanceWarning={balanceWarning}
+                  errors={errors}
+                  register={register}
+                  onTypeChange={handleTypeChange}
+                  onAmountChange={handleAmountChange}
+                  onCategoryChange={handleCategoryChange}
+                  onPaymentMethodChange={handlePaymentMethodChange}
+                  onDateChange={handleDateChange}
+                />
 
                 <Button
                   type="submit"

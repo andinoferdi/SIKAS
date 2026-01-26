@@ -11,7 +11,6 @@ export const metadata: Metadata = {
 export default function GuidePage() {
   return (
     <main className="min-h-screen bg-background pb-20 lg:pb-0">
-      {/* Header */}
       <div className="bg-primary/5 pt-12 pb-16 px-6 relative overflow-hidden">
         <div className="max-w-4xl mx-auto relative z-10">
           <Link 
@@ -31,7 +30,6 @@ export default function GuidePage() {
         </div>
       </div>
 
-      {/* Content */}
       <div className="max-w-4xl mx-auto px-6 py-12">
         <div className="mb-10 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-foreground">Topik Populer</h2>

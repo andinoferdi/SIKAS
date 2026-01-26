@@ -120,7 +120,7 @@ const SelectContent = React.forwardRef<
         <SelectPrimitive.Viewport
           className={cn(
             "p-1 overflow-x-hidden overflow-y-auto",
-            hasSearch ? "max-h-[300px]" : "max-h-[400px]",
+            hasSearch ? "max-h-75" : "max-h-100",
             position === "popper" &&
               "h-(--radix-select-trigger-height) w-full min-w-(--radix-select-trigger-width) scroll-my-1",
           )}

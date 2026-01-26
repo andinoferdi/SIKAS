@@ -1,6 +1,6 @@
 import { type Message, type StreamChunk, type QuickReply } from "@/types/chatbot"
 import type { RAGContext, EnhancedRAGContext } from "@/types/rag"
-import { pruneConversationHistory, estimateMessagesTokens } from "./token-utils"
+import { pruneConversationHistory, estimateMessagesTokens } from "@/services/chatbot/token-utils"
 import { getJakartaDateString } from "@/lib/utils/format"
 
 const API_KEY = process.env.NEXT_PUBLIC_OPENROUTER_API_KEY
