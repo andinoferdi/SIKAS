@@ -58,7 +58,18 @@ export function parsePendingActions(content: string): PendingAction[] {
           break
         case "batch_create_transactions":
           const txCount = payload.transactions?.length || 0
-          description = `Tambah ${txCount} transaksi sekaligus?`
+          const totalIncome = payload.transactions
+            ?.filter((tx: { type: string }) => tx.type === "income")
+            .reduce((sum: number, tx: { amount?: number }) => sum + (tx.amount || 0), 0) || 0
+          const totalExpense = payload.transactions
+            ?.filter((tx: { type: string }) => tx.type === "expense")
+            .reduce((sum: number, tx: { amount?: number }) => sum + (tx.amount || 0), 0) || 0
+          let amountInfo = ""
+          if (totalIncome > 0) amountInfo += `+Rp ${totalIncome.toLocaleString("id-ID")} `
+          if (totalExpense > 0) amountInfo += `-Rp ${totalExpense.toLocaleString("id-ID")}`
+          description = amountInfo.trim()
+            ? `Tambah ${txCount} transaksi (${amountInfo.trim()})?`
+            : `Tambah ${txCount} transaksi sekaligus?`
           break
         case "batch_delete_transactions":
           description = "Hapus transaksi yang sesuai filter?"
@@ -72,6 +83,11 @@ export function parsePendingActions(content: string): PendingAction[] {
     } catch (e) {
       console.error("[Batch Debug] Failed to parse pending action payload:", e)
       console.error("[Batch Debug] Raw payload that failed:", match[2])
+      actions.push({
+        action: "parse_error",
+        payload: { rawPayload: match[2].substring(0, 100) },
+        description: "Gagal memproses aksi. Coba ulangi permintaan dengan format lebih sederhana."
+      })
     }
   }
 

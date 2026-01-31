@@ -14,7 +14,6 @@ import {
   parseActions,
   parsePendingActions,
   cleanContentForDisplay,
-  executeAction,
 } from "@/components/chatbot/utils/action-parser"
 import type { PendingAction } from "@/components/chatbot/batch-action-confirmation"
 
@@ -131,30 +130,20 @@ export function useChatMessages({ isOnDashboard, onPendingAction }: UseChatMessa
       const actions = parseActions(fullContent)
       const pendingActions = parsePendingActions(fullContent)
 
+      // PERBAIKAN: Konversi [ACTION:...] menjadi pending actions untuk konfirmasi
+      // AI seharusnya TIDAK menggunakan [ACTION:...], tapi jika terjadi, tetap minta konfirmasi
       if (actions.length > 0) {
-        console.log("Actions detected:", actions)
+        console.warn("[Security] AI menggunakan [ACTION:...] yang seharusnya tidak digunakan. Mengkonversi ke pending action.")
         for (const { action, payload } of actions) {
-          const result = await executeAction(action, payload)
-          console.log(`Action ${action} result:`, result)
-
-          if (result.success) {
-            invalidateQueries()
-            const actionMessage: Message = {
-              id: generateMessageId(),
-              role: "assistant",
-              content: `✅ ${result.message}`,
-              timestamp: new Date(),
+          // Buat description berdasarkan tipe aksi
+          let description = `Konfirmasi: ${action}?`
+          if (action === "create_transaction" && payload && typeof payload === "object") {
+            const p = payload as { type?: string; amount?: number }
+            if (p.type && p.amount) {
+              description = `Tambah transaksi ${p.type === "income" ? "pemasukan" : "pengeluaran"} Rp ${p.amount.toLocaleString("id-ID")}?`
             }
-            setMessages((prev) => [...prev, actionMessage])
-          } else {
-            const errorMessage: Message = {
-              id: generateMessageId(),
-              role: "assistant",
-              content: `❌ ${result.message}`,
-              timestamp: new Date(),
-            }
-            setMessages((prev) => [...prev, errorMessage])
           }
+          onPendingAction({ action, payload, description })
         }
       }
 
@@ -199,7 +188,7 @@ export function useChatMessages({ isOnDashboard, onPendingAction }: UseChatMessa
       setIsLoading(false)
       abortControllerRef.current = null
     }
-  }, [isLoading, messages, isOnDashboard, invalidateQueries, onPendingAction])
+  }, [isLoading, messages, isOnDashboard, onPendingAction])
 
   const sendImageMessage = useCallback(async (
     imageFile: File,

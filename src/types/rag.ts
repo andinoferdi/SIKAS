@@ -74,6 +74,8 @@ export type ChatbotAction =
   | "batch_create_transactions"
   | "batch_delete_transactions"
   | "delete_all_transactions"
+  // Error handling
+  | "parse_error"
 
 export interface CreateTransactionPayload {
   amount: number
@@ -147,6 +149,10 @@ export interface BatchActionResult {
   }>
 }
 
+export interface ParseErrorPayload {
+  rawPayload?: string
+}
+
 export type ActionPayload =
   | CreateTransactionPayload
   | DeleteTransactionPayload
@@ -155,6 +161,7 @@ export type ActionPayload =
   | BatchCreateTransactionsPayload
   | BatchDeleteTransactionsPayload
   | DeleteAllTransactionsPayload
+  | ParseErrorPayload
 
 export interface ChatbotActionRequest {
   action: ChatbotAction
