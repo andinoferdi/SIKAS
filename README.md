@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SIKAS - Sistem Informasi Keuangan Anda Sendiri
 
-## Getting Started
+Aplikasi pencatatan keuangan pribadi dengan AI chatbot untuk membantu mengelola pemasukan dan pengeluaran Anda.
 
-First, run the development server:
+## Akses Langsung
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Kunjungi website langsung di: **[sikas-noyu.vercel.app](https://sikas-noyu.vercel.app/)**
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Menjalankan di Lokal
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Prasyarat
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- [Node.js](https://nodejs.org/) versi 18 atau lebih baru
+- [Git](https://git-scm.com/)
 
-## Learn More
+### Langkah-langkah
 
-To learn more about Next.js, take a look at the following resources:
+1. **Clone repository**
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+   ```bash
+   git clone https://github.com/andinoferdi/SIKAS.git
+   cd SIKAS
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+2. **Install dependencies**
 
-## Deploy on Vercel
+   ```bash
+   npm install
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+3. **Jalankan aplikasi**
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+   ```bash
+   npm run dev
+   ```
+
+4. **Buka browser** dan akses `http://localhost:3000`
+
+## Cara Menggunakan
+
+### 1. Registrasi & Login
+
+- Buat akun baru atau login dengan akun yang sudah ada
+- Anda akan diarahkan ke Dashboard
+
+### 2. Mencatat Transaksi
+
+- Klik tombol **"+"** di navigasi bawah (mobile) atau menu **"Tambah Transaksi"** (desktop)
+- Pilih jenis: Pemasukan atau Pengeluaran
+- Isi jumlah, kategori, dan metode pembayaran (Cash/M-Banking)
+
+### 3. Menggunakan AI Chatbot
+
+- Klik ikon chat di pojok kanan bawah
+- Ketik perintah seperti:
+  - _"Catat pengeluaran makan 50rb"_
+  - _"Tampilkan transaksi bulan ini"_
+  - _"Berapa saldo saya?"_
+- AI akan membantu mencatat dan mengelola keuangan Anda
+
+### 4. Melihat Ringkasan
+
+- Dashboard menampilkan saldo M-Banking dan Cash
+- Lihat ringkasan pemasukan, pengeluaran, dan selisih bulanan
+
+## Tech Stack
+
+- **Framework**: Next.js (App Router)
+- **Database**: Supabase
+- **Styling**: Tailwind CSS
+- **State Management**: Zustand, TanStack Query
+- **Form**: React Hook Form + Zod
+- **AI**: Xenova Transformers
+
+## Lisensi
+
+MIT License - bebas digunakan untuk keperluan pribadi dan komersial.
