@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { Check, XCircle, AlertTriangle, Trash2, Plus } from "lucide-react"
+import { Check, XCircle, AlertTriangle, Trash2, Plus, Pencil } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { ChatbotAction, CreateTransactionPayload, ActionPayload } from "@/types/rag"
 
@@ -29,6 +29,7 @@ export function BatchActionConfirmation({
   const isBatchAction = actions.length === 1 && (
     actions[0].action === "batch_create_transactions" ||
     actions[0].action === "batch_delete_transactions" ||
+    actions[0].action === "batch_edit_transactions" ||
     actions[0].action === "delete_all_transactions"
   )
 
@@ -79,6 +80,20 @@ export function BatchActionConfirmation({
       }
     }
 
+    if (action.action === "batch_edit_transactions") {
+      const payload = action.payload as { updates: Array<{ transactionId: string; updates: Record<string, unknown> }> }
+      const updates = payload.updates || []
+      return {
+        type: "edit",
+        count: updates.length,
+        items: updates.map((u, i) => ({
+          id: i,
+          label: `Transaksi ${i + 1}`,
+          detail: Object.keys(u.updates).join(", "),
+        })),
+      }
+    }
+
     if (action.action === "delete_all_transactions") {
       const payload = action.payload as { month?: number; year?: number }
       const scope = payload.month && payload.year
@@ -115,9 +130,11 @@ export function BatchActionConfirmation({
               ? "Hapus Semua Transaksi"
               : batchDetails?.type === "create"
                 ? `Tambah ${batchDetails.count} Transaksi`
-                : batchDetails?.type === "delete_filter"
-                  ? "Hapus Transaksi (Filter)"
-                  : actions[0]?.description || "Konfirmasi Aksi"}
+                : batchDetails?.type === "edit"
+                  ? `Edit ${batchDetails.count} Transaksi`
+                  : batchDetails?.type === "delete_filter"
+                    ? "Hapus Transaksi (Filter)"
+                    : actions[0]?.description || "Konfirmasi Aksi"}
           </p>
         </div>
       </div>
@@ -141,6 +158,26 @@ export function BatchActionConfirmation({
               Total: Rp {batchDetails.totalAmount?.toLocaleString("id-ID")}
             </p>
           </div>
+        </div>
+      )}
+
+      {batchDetails?.type === "edit" && batchDetails.items && (
+        <div className="mb-3 space-y-1 max-h-32 overflow-y-auto">
+          <p className="text-xs text-muted-foreground mb-2">
+            Transaksi yang akan diubah:
+          </p>
+          {batchDetails.items.map((item) => (
+            <div
+              key={item.id}
+              className="flex items-center gap-2 text-sm py-1 px-2 bg-background/50 rounded"
+            >
+              <Pencil className="w-3 h-3 text-primary" />
+              <span className="font-medium">{item.label}</span>
+              {item.detail && (
+                <span className="text-muted-foreground">({item.detail})</span>
+              )}
+            </div>
+          ))}
         </div>
       )}
 

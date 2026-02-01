@@ -62,13 +62,13 @@ export function DashboardHeader() {
         <div className="flex h-16 items-center justify-between px-4 lg:px-6">
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="lg:hidden flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                 <Image
                   src="/images/logo.png"
                   alt="SIKAS"
                   width={20}
                   height={20}
-                  className="object-contain filter brightness-0 invert"
+                  className="object-contain"
                 />
               </div>
               <span className="text-lg font-bold text-primary">SIKAS</span>

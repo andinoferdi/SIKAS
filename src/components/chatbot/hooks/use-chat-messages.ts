@@ -127,6 +127,12 @@ export function useChatMessages({ isOnDashboard, onPendingAction }: UseChatMessa
         ragContext
       )
 
+      // Fallback if response is still empty after all retries
+      if (!fullContent || fullContent.trim().length === 0) {
+        console.warn("[useChatMessages] All models returned empty response, using fallback message")
+        fullContent = "Maaf, saya tidak bisa memberikan respons saat ini. Silakan coba lagi dalam beberapa saat."
+      }
+
       const actions = parseActions(fullContent)
       const pendingActions = parsePendingActions(fullContent)
 
@@ -153,13 +159,18 @@ export function useChatMessages({ isOnDashboard, onPendingAction }: UseChatMessa
       }
 
       const cleanedContent = cleanContentForDisplay(fullContent)
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === assistantMessageId
-            ? { ...msg, content: cleanedContent, isStreaming: false }
-            : msg
+      
+      if (cleanedContent.length > 0) {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === assistantMessageId
+              ? { ...msg, content: cleanedContent, isStreaming: false }
+              : msg
+          )
         )
-      )
+      } else {
+        setMessages((prev) => prev.filter((msg) => msg.id !== assistantMessageId))
+      }
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
         setMessages((prev) =>

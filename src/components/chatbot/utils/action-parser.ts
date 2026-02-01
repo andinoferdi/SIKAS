@@ -74,6 +74,10 @@ export function parsePendingActions(content: string): PendingAction[] {
         case "batch_delete_transactions":
           description = "Hapus transaksi yang sesuai filter?"
           break
+        case "batch_edit_transactions":
+          const editCount = payload.updates?.length || 0
+          description = `Edit ${editCount} transaksi sekaligus?`
+          break
         case "delete_all_transactions":
           description = "Hapus SEMUA transaksi? (Perlu konfirmasi tambahan)"
           break
@@ -106,6 +110,14 @@ export function cleanContentForDisplay(content: string): string {
     .replace(/\[PENDING_ACTION:[\w-]*(?:\][\s\S]*)?$/gi, "")
     .replace(/\[\/ACTION\]/gi, "")
     .replace(/\[\/PENDING_ACTION\]/gi, "")
+    .replace(/\[SEDIAKAN TAG PENDING_ACTION[^\]]*\]/gi, "")
+    .replace(/\[SERTAKAN TAG PENDING_ACTION[^\]]*\]/gi, "")
+    .replace(/\[PROVIDE PENDING_ACTION[^\]]*\]/gi, "")
+    .replace(/\[[^\]]*PENDING_ACTION[^\]]*\]/gi, "")
+    .replace(/\[[^\]]*ACTION[^\]]*TAG[^\]]*\]/gi, "")
+    .replace(/Transaksi ID\s+[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/gi, "Transaksi")
+    .replace(/ID\s+[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/gi, "")
+    .replace(/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/gi, "")
     .replace(/\n{3,}/g, "\n\n")
     .trim()
 }
@@ -165,5 +177,6 @@ export async function executeBatchAction(
 export function isBatchAction(action: ChatbotAction): boolean {
   return action === "batch_create_transactions" ||
          action === "batch_delete_transactions" ||
+         action === "batch_edit_transactions" ||
          action === "delete_all_transactions"
 }

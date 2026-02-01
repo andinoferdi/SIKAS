@@ -187,8 +187,8 @@ export function formatUserContextForPrompt(context: UserChatContext): string {
     for (const tx of recentTransactions.slice(0, 8)) {
       const sign = tx.type === "income" ? "+" : "-"
       const date = new Date(tx.transaction_date).toLocaleDateString("id-ID", { timeZone: JAKARTA_TIMEZONE, day: "2-digit", month: "short" })
-      const shortId = tx.id.slice(-8)
-      prompt += `[${shortId}] ${date}: ${sign}${formatRp(tx.amount)} ${tx.category}`
+      // Gunakan full UUID agar AI bisa menggunakannya untuk edit/delete
+      prompt += `[${tx.id}] ${date}: ${sign}${formatRp(tx.amount)} ${tx.category}`
       if (tx.description) prompt += ` (${tx.description})`
       prompt += ` [${tx.payment_method}]\n`
     }

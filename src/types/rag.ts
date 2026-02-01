@@ -73,6 +73,7 @@ export type ChatbotAction =
   // Batch actions
   | "batch_create_transactions"
   | "batch_delete_transactions"
+  | "batch_edit_transactions"
   | "delete_all_transactions"
   // Error handling
   | "parse_error"
@@ -131,6 +132,20 @@ export interface DeleteAllTransactionsPayload {
   year?: number // Optional: only delete specific year
 }
 
+export interface BatchEditTransactionsPayload {
+  updates: Array<{
+    transactionId: string
+    updates: {
+      amount?: number
+      type?: "income" | "expense"
+      category?: string
+      description?: string
+      payment_method?: "mbanking" | "cash"
+      transaction_date?: string
+    }
+  }>
+}
+
 // Batch action result
 export interface BatchActionResult {
   success: boolean
@@ -160,6 +175,7 @@ export type ActionPayload =
   | SearchTransactionsPayload
   | BatchCreateTransactionsPayload
   | BatchDeleteTransactionsPayload
+  | BatchEditTransactionsPayload
   | DeleteAllTransactionsPayload
   | ParseErrorPayload
 

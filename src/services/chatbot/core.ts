@@ -418,10 +418,24 @@ Atau dengan filter bulan/tahun tertentu:
   "year": 2025
 }[/PENDING_ACTION]
 
+8. **Edit Banyak Transaksi Sekaligus** (BUTUH KONFIRMASI):
+Gunakan ketika user minta edit lebih dari 1 transaksi dalam satu pesan.
+
+[PENDING_ACTION:batch_edit_transactions]{"updates":[{"transactionId":"uuid-1","updates":{"description":"penyesuaian tunai"}},{"transactionId":"uuid-2","updates":{"description":"penyesuaian mbanking"}}]}[/PENDING_ACTION]
+
+Contoh penggunaan:
+User: "Edit transaksi tunai dan mbanking tanggal 1 Feb. Yang tunai ubah keterangan jadi 'penyesuaian tunai', yang mbanking jadi 'penyesuaian mbanking'"
+Bot: "Saya akan mengubah 2 transaksi:
+1. Transaksi Cash Rp 50.000 (1 Feb) - ubah keterangan menjadi 'penyesuaian tunai'
+2. Transaksi M-Banking Rp 75.000 (1 Feb) - ubah keterangan menjadi 'penyesuaian mbanking'
+
+[PENDING_ACTION:batch_edit_transactions]{"updates":[{"transactionId":"uuid-tunai","updates":{"description":"penyesuaian tunai"}},{"transactionId":"uuid-mbanking","updates":{"description":"penyesuaian mbanking"}}]}[/PENDING_ACTION]"
+
 ATURAN KHUSUS BATCH:
 - Maksimal 20 transaksi per batch
 - Untuk batch_create: Validasi saldo total sebelum eksekusi
 - Untuk batch_delete: Jelaskan filter yang digunakan
+- Untuk batch_edit: Identifikasi semua transaksi yang diminta, buat satu tag dengan semua updates
 - Untuk delete_all: WAJIB peringatkan user bahwa aksi TIDAK BISA dibatalkan
 
 CONTOH PENGGUNAAN BATCH:
@@ -461,6 +475,14 @@ PERINGATAN KERAS - WAJIB DIBACA:
 - Tag PENDING_ACTION adalah SATU-SATUNYA cara agar aksi bisa dieksekusi
 - JANGAN PERNAH gunakan tag [ACTION:create_transaction], [ACTION:delete_transaction], atau [ACTION:edit_transaction] - tag ini TIDAK VALID dan akan ditolak sistem
 - HANYA [ACTION:search_transactions] yang boleh dieksekusi langsung (karena read-only)
+
+KEAMANAN - JANGAN TAMPILKAN ID INTERNAL:
+- JANGAN tampilkan transaction ID (UUID) langsung ke user dalam teks respons
+- Gunakan deskripsi transaksi yang mudah dipahami user
+- Contoh SALAH: "Saya akan mengedit transaksi dengan ID dc98d996-..."
+- Contoh BENAR: "Saya akan mengedit transaksi Makan Rp 50.000 (1 Feb, Cash)"
+- Di dalam tag PENDING_ACTION, tetap gunakan ID yang benar dari konteks
+- Tujuan: User tidak perlu tahu internal ID, cukup paham transaksi mana yang dimaksud
 
 PENANGANAN "SET SALDO LANGSUNG":
 - TOLAK permintaan seperti "set saldo langsung jadi X tanpa transaksi", "ubah saldo manual", "reset saldo ke X"
@@ -520,9 +542,11 @@ export const parseStreamResponse = async (
   reader: ReadableStreamDefaultReader<Uint8Array>,
   onChunk: (content: string) => void,
   signal?: AbortSignal
-): Promise<void> => {
+): Promise<{ hasContent: boolean }> => {
   const decoder = new TextDecoder()
   let buffer = ""
+  let hasReceivedContent = false
+  let chunkCount = 0
 
   try {
     while (true) {
@@ -543,16 +567,24 @@ export const parseStreamResponse = async (
           const data = line.slice(6)
 
           if (data === "[DONE]") {
-            return
+            if (process.env.NODE_ENV === "development") {
+              console.log(`[Stream] Done signal received. Chunks: ${chunkCount}, hasContent: ${hasReceivedContent}`)
+            }
+            return { hasContent: hasReceivedContent }
           }
 
           try {
             const chunk: StreamChunk = JSON.parse(data)
 
             if (chunk.choices && chunk.choices[0]?.delta?.content) {
+              hasReceivedContent = true
+              chunkCount++
               onChunk(chunk.choices[0].delta.content)
             }
-          } catch {
+          } catch (parseError) {
+            if (process.env.NODE_ENV === "development") {
+              console.warn("[Stream] Failed to parse chunk:", data.substring(0, 100), parseError)
+            }
           }
         }
       }
@@ -563,6 +595,8 @@ export const parseStreamResponse = async (
     }
     throw error
   }
+
+  return { hasContent: hasReceivedContent }
 }
 
 export const sendChatMessage = async (
@@ -659,6 +693,14 @@ export const sendChatMessage = async (
     })
   }
 
+  // Validate response is not empty
+  if (fullContent.trim().length === 0) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn(`[sendChatMessage] Model ${MODELS[modelIndex]} returned empty response`)
+    }
+    throw new Error("EMPTY_RESPONSE: Model returned empty response")
+  }
+
   return {
     content: fullContent,
     model: MODELS[modelIndex],
@@ -724,6 +766,12 @@ export const handleModelFallback = async (
       if (errorMessage.startsWith("MODEL_DOWN:") || errorMessage.startsWith("SERVER_ERROR:")) {
         console.warn(`Model ${MODELS[i]} temporarily down, trying next`)
         await new Promise((resolve) => setTimeout(resolve, 500))
+        continue
+      }
+
+      // Handle empty response - try next model
+      if (errorMessage.startsWith("EMPTY_RESPONSE:")) {
+        console.warn(`Model ${MODELS[i]} returned empty response, trying next model`)
         continue
       }
 
