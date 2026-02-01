@@ -85,7 +85,18 @@ Kunjungi website langsung di: **[sikas-noyu.vercel.app](https://sikas-noyu.verce
    );
    ```
 
-   Aktifkan juga extension `vector` di Supabase: Database > Extensions > cari "vector" > Enable
+   Aktifkan extension `vector` di Supabase: Database > Extensions > cari "vector" > Enable
+
+   Kemudian disable RLS (Row Level Security) untuk semua tabel agar aplikasi bisa mengakses data:
+
+   ```sql
+   -- Disable RLS untuk semua tabel
+   alter table users disable row level security;
+   alter table transactions disable row level security;
+   alter table knowledge_base_embeddings disable row level security;
+   ```
+
+   Atau melalui UI: Klik tabel > Authentication > Disable RLS
 
 5. **Seed knowledge base untuk chatbot**
 
