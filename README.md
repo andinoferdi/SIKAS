@@ -28,13 +28,31 @@ Kunjungi website langsung di: **[sikas-noyu.vercel.app](https://sikas-noyu.verce
    npm install
    ```
 
-3. **Jalankan aplikasi**
+3. **Setup environment variables**
+
+   Buat file `.env.local` di root folder dan isi dengan:
+
+   ```env
+   NEXT_PUBLIC_OPENROUTER_API_KEY=your_openrouter_api_key
+   NEXT_PUBLIC_SITE_NAME=SIKAS
+   NEXT_PUBLIC_PRODUCTION_URL=https://sikas-noyu.vercel.app/
+   NEXT_PUBLIC_SITE_URL=http://localhost:3000
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   SESSION_SECRET=your_session_secret_key
+   ```
+
+   Cara mendapatkan API key:
+   - **OpenRouter**: Daftar di [openrouter.ai](https://openrouter.ai/) dan buat API key
+   - **Supabase**: Buat project di [supabase.com](https://supabase.com/), lalu copy URL dan anon key dari Settings > API
+
+4. **Jalankan aplikasi**
 
    ```bash
    npm run dev
    ```
 
-4. **Buka browser** dan akses `http://localhost:3000`
+5. **Buka browser** dan akses `http://localhost:3000`
 
 ## Cara Menggunakan
 
