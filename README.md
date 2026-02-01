@@ -46,13 +46,68 @@ Kunjungi website langsung di: **[sikas-noyu.vercel.app](https://sikas-noyu.verce
    - **OpenRouter**: Daftar di [openrouter.ai](https://openrouter.ai/) dan buat API key
    - **Supabase**: Buat project di [supabase.com](https://supabase.com/), lalu copy URL dan anon key dari Settings > API
 
-4. **Jalankan aplikasi**
+4. **Setup database Supabase**
+
+   Buat tabel-tabel berikut di Supabase SQL Editor:
+
+   ```sql
+   -- Tabel users
+   create table users (
+     id uuid primary key default gen_random_uuid(),
+     name text not null,
+     pin text not null,
+     mbanking_balance numeric default 0,
+     cash_balance numeric default 0,
+     created_at timestamp with time zone default now()
+   );
+
+   -- Tabel transactions
+   create table transactions (
+     id uuid primary key default gen_random_uuid(),
+     user_id uuid references users(id) on delete cascade,
+     amount numeric not null,
+     type text not null,
+     category text not null,
+     description text,
+     payment_method text not null,
+     transaction_date date not null,
+     created_at timestamp with time zone default now()
+   );
+
+   -- Tabel knowledge_base_embeddings (untuk AI chatbot)
+   create table knowledge_base_embeddings (
+     id uuid primary key default gen_random_uuid(),
+     content text not null,
+     category text,
+     metadata jsonb,
+     embedding vector(384),
+     created_at timestamp with time zone default now()
+   );
+   ```
+
+   Aktifkan juga extension `vector` di Supabase: Database > Extensions > cari "vector" > Enable
+
+5. **Seed knowledge base untuk chatbot**
+
+   Setelah aplikasi berjalan, buka browser dan akses:
+
+   ```
+   POST http://localhost:3000/api/chatbot/seed
+   ```
+
+   Atau gunakan curl:
+
+   ```bash
+   curl -X POST http://localhost:3000/api/chatbot/seed
+   ```
+
+6. **Jalankan aplikasi**
 
    ```bash
    npm run dev
    ```
 
-5. **Buka browser** dan akses `http://localhost:3000`
+7. **Buka browser** dan akses `http://localhost:3000`
 
 ## Cara Menggunakan
 
