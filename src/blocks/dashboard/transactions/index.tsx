@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { TransactionList } from "@/blocks/dashboard/components"
 import { EditTransactionModal } from "@/blocks/dashboard/components/edit-transaction-modal"
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui"
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem, ErrorState } from "@/components/ui"
 import type { Transaction } from "@/types"
 import { getMonthName, getCurrentMonth, getCurrentYear } from "@/lib/utils/format"
 import { useTransactions, useDeleteTransaction } from "@/hooks"
@@ -38,7 +38,7 @@ export default function TransactionsPage() {
   const year = searchParams.get("year") || String(getCurrentYear())
   const typeFilter = searchParams.get("type") || "all"
 
-  const { data: transactions = [], isLoading } = useTransactions({ month, year })
+  const { data: transactions = [], isLoading, isError, refetch } = useTransactions({ month, year })
   const deleteMutation = useDeleteTransaction()
 
   const filteredTransactions = useMemo(() => {
@@ -55,7 +55,7 @@ export default function TransactionsPage() {
   const handleDelete = (id: string) => {
     deleteMutation.mutate(id, {
       onSuccess: () => toast.success("Transaksi berhasil dihapus"),
-      onError: () => toast.error("Gagal menghapus transaksi"),
+      onError: (error) => toast.error(error.message || "Gagal menghapus transaksi"),
     })
   }
 
@@ -66,6 +66,17 @@ export default function TransactionsPage() {
   const handleEditSuccess = () => {
     setEditingTransaction(null)
     toast.success("Transaksi berhasil diperbarui")
+  }
+
+  if (isError) {
+    return (
+      <div className="p-4 lg:p-6 min-h-screen flex items-center justify-center pb-24 lg:pb-6">
+        <ErrorState 
+          message="Gagal memuat riwayat transaksi" 
+          onRetry={() => refetch()} 
+        />
+      </div>
+    )
   }
 
   return (

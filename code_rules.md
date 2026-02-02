@@ -46,8 +46,6 @@ Server Component default. Tambahkan "use client" hanya jika butuh state, effects
 
 Tiga jenis komponen: Primitives (src/components/ui) untuk UI murni, Logic Components (src/components) untuk UI + logic reusable, Partial Components (src/blocks/[page]/components) untuk komponen khusus satu halaman.
 
-**Component Size Limit:** Maksimal ~150-200 lines per component. Jika lebih, split menjadi sub-components.
-
 ## 6. Hooks Location
 
 ```

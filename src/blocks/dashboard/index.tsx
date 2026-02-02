@@ -3,14 +3,16 @@
 import Link from "next/link"
 import { BalanceCard, SummaryCard, TransactionList } from "@/blocks/dashboard/components"
 import { useCurrentUser, useTransactions, useMonthlySummary } from "@/hooks"
+import { ErrorState } from "@/components/ui"
 import { ChevronRight } from "lucide-react"
 
 export default function DashboardPage() {
-  const { data: user, isLoading: userLoading } = useCurrentUser()
-  const { data: transactions = [], isLoading: transactionsLoading } = useTransactions({ limit: 5 })
-  const { data: summary, isLoading: summaryLoading } = useMonthlySummary()
+  const { data: user, isLoading: userLoading, isError: userError, refetch: refetchUser } = useCurrentUser()
+  const { data: transactions = [], isLoading: transactionsLoading, isError: transactionsError, refetch: refetchTransactions } = useTransactions({ limit: 5 })
+  const { data: summary, isLoading: summaryLoading, isError: summaryError, refetch: refetchSummary } = useMonthlySummary()
 
   const loading = userLoading || transactionsLoading || summaryLoading
+  const hasError = userError || transactionsError || summaryError
 
   if (loading) {
     return (
@@ -30,13 +32,28 @@ export default function DashboardPage() {
     )
   }
 
+  if (hasError) {
+    const handleRetry = () => {
+      refetchUser()
+      refetchTransactions()
+      refetchSummary()
+    }
+    return (
+      <div className="p-4 lg:p-6 min-h-screen flex items-center justify-center pb-24 lg:pb-6">
+        <ErrorState 
+          message="Gagal memuat data dashboard" 
+          onRetry={handleRetry} 
+        />
+      </div>
+    )
+  }
+
   if (!user) {
     return (
-      <div className="p-4 lg:p-6 text-center min-h-screen flex items-center justify-center pb-24 lg:pb-6">
-        <div>
-          <p className="text-foreground text-lg font-medium">Gagal memuat data</p>
-          <p className="text-muted-foreground text-sm mt-2">Silakan refresh halaman atau logout</p>
-        </div>
+      <div className="p-4 lg:p-6 min-h-screen flex items-center justify-center pb-24 lg:pb-6">
+        <ErrorState 
+          message="Gagal memuat data. Silakan refresh halaman atau logout." 
+        />
       </div>
     )
   }

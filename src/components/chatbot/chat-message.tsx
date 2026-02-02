@@ -22,12 +22,12 @@ const MemoizedMarkdown = memo(
         strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
         em: ({ children }) => <em className="italic">{children}</em>,
         code: ({ children }) => (
-          <code className="bg-black/10 dark:bg-white/10 px-1 py-0.5 rounded text-xs font-mono">
+          <code className="bg-muted px-1 py-0.5 rounded text-xs font-mono">
             {children}
           </code>
         ),
         pre: ({ children }) => (
-          <pre className="bg-black/10 dark:bg-white/10 p-2 rounded text-xs font-mono overflow-x-auto mb-2">
+          <pre className="bg-muted p-2 rounded text-xs font-mono overflow-x-auto mb-2">
             {children}
           </pre>
         ),

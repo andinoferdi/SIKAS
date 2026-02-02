@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextRequest } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { hashPin } from "@/lib/auth/pin"
 import { createSession } from "@/lib/auth/session"
 import { z } from "zod"
+import { jsonResponse, errorResponse } from "@/lib/utils/api-response"
 
 const registerApiSchema = z.object({
   name: z.string().min(2, "Nama minimal 2 karakter").regex(/^[a-zA-Z\s]+$/, "Nama hanya boleh huruf dan spasi"),
@@ -17,10 +18,7 @@ export async function POST(request: NextRequest) {
 
     if (!validation.success) {
       const firstError = validation.error.issues[0]
-      return NextResponse.json(
-        { error: firstError.message },
-        { status: 400 }
-      )
+      return errorResponse(firstError.message, 400)
     }
 
     const { name, pin } = validation.data
@@ -35,17 +33,11 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (existingUser) {
-      return NextResponse.json(
-        { error: "Nama sudah terdaftar. Silakan gunakan nama lain atau login." },
-        { status: 409 }
-      )
+      return errorResponse("Nama sudah terdaftar. Silakan gunakan nama lain atau login.", 409)
     }
 
     if (checkError && checkError.code !== "PGRST116") {
-      return NextResponse.json(
-        { error: "Terjadi kesalahan saat memeriksa data" },
-        { status: 500 }
-      )
+      return errorResponse("Terjadi kesalahan saat memeriksa data", 500)
     }
 
     const hashedPin = await hashPin(pin)
@@ -63,23 +55,17 @@ export async function POST(request: NextRequest) {
 
     if (insertError || !newUser) {
       console.error("Insert error:", insertError)
-      return NextResponse.json(
-        { error: "Gagal membuat akun. Silakan coba lagi." },
-        { status: 500 }
-      )
+      return errorResponse("Gagal membuat akun. Silakan coba lagi.", 500)
     }
 
     await createSession(newUser.id, newUser.name)
 
-    return NextResponse.json({
+    return jsonResponse({
       success: true,
       user: { id: newUser.id, name: newUser.name }
     })
   } catch (error) {
     console.error("Register error:", error)
-    return NextResponse.json(
-      { error: "Terjadi kesalahan server" },
-      { status: 500 }
-    )
+    return errorResponse("Terjadi kesalahan server", 500)
   }
 }

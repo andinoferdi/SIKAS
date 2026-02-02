@@ -1,12 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { transactionService } from "@/services"
-import type { CreateTransactionInput, UpdateTransactionInput } from "@/types"
-
-interface GetTransactionsOptions {
-  month?: string
-  year?: string
-  limit?: number
-}
+import { broadcastInvalidation } from "@/lib/utils/broadcast-sync"
+import type { CreateTransactionInput, UpdateTransactionInput, GetTransactionsOptions } from "@/types"
 
 export function useTransactions(options?: GetTransactionsOptions) {
   return useQuery({
@@ -31,6 +26,8 @@ export function useCreateTransaction() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] })
       queryClient.invalidateQueries({ queryKey: ["summary"] })
+      queryClient.invalidateQueries({ queryKey: ["user", "current"] })
+      broadcastInvalidation([["transactions"], ["summary"], ["user", "current"]])
     },
   })
 }
@@ -44,6 +41,8 @@ export function useUpdateTransaction() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] })
       queryClient.invalidateQueries({ queryKey: ["summary"] })
+      queryClient.invalidateQueries({ queryKey: ["user", "current"] })
+      broadcastInvalidation([["transactions"], ["summary"], ["user", "current"]])
     },
   })
 }
@@ -56,6 +55,8 @@ export function useDeleteTransaction() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] })
       queryClient.invalidateQueries({ queryKey: ["summary"] })
+      queryClient.invalidateQueries({ queryKey: ["user", "current"] })
+      broadcastInvalidation([["transactions"], ["summary"], ["user", "current"]])
     },
   })
 }

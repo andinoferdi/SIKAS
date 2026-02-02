@@ -1,15 +1,12 @@
-import { NextResponse } from "next/server"
 import { getSession } from "@/lib/auth/session"
 import { createClient } from "@/lib/supabase/server"
+import { jsonResponse, errorResponse } from "@/lib/utils/api-response"
 
 export async function GET() {
   const session = await getSession()
 
   if (!session) {
-    return NextResponse.json(
-      { error: "Tidak ada session" },
-      { status: 401 }
-    )
+    return errorResponse("Tidak ada session", 401)
   }
 
   const supabase = await createClient()
@@ -20,11 +17,8 @@ export async function GET() {
     .single()
 
   if (error || !user) {
-    return NextResponse.json(
-      { error: "User tidak ditemukan" },
-      { status: 404 }
-    )
+    return errorResponse("User tidak ditemukan", 404)
   }
 
-  return NextResponse.json({ user })
+  return jsonResponse({ user })
 }

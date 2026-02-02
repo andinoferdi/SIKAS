@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { errorResponse } from "@/lib/utils/api-response"
 import { getSession } from "@/lib/auth/session"
 
 const API_KEY = process.env.NEXT_PUBLIC_OPENROUTER_API_KEY
@@ -35,14 +36,11 @@ export async function POST(request: NextRequest) {
     const session = await getSession()
 
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return errorResponse("Tidak diizinkan", 401)
     }
 
     if (!API_KEY) {
-      return NextResponse.json(
-        { error: "API key tidak dikonfigurasi" },
-        { status: 500 }
-      )
+      return errorResponse("API key tidak dikonfigurasi", 500)
     }
 
     const formData = await request.formData()
@@ -50,28 +48,19 @@ export async function POST(request: NextRequest) {
     const prompt = formData.get("prompt") as string
 
     if (!image) {
-      return NextResponse.json({ error: "Tidak ada gambar" }, { status: 400 })
+      return errorResponse("Tidak ada gambar", 400)
     }
 
     if (!prompt || prompt.trim().length === 0) {
-      return NextResponse.json(
-        { error: "Instruksi atau pertanyaan wajib diisi" },
-        { status: 400 }
-      )
+      return errorResponse("Instruksi atau pertanyaan wajib diisi", 400)
     }
 
     if (!image.type.startsWith("image/")) {
-      return NextResponse.json(
-        { error: "File harus berupa gambar" },
-        { status: 400 }
-      )
+      return errorResponse("File harus berupa gambar", 400)
     }
 
     if (image.size > 10 * 1024 * 1024) {
-      return NextResponse.json(
-        { error: "Ukuran gambar maksimal 10MB" },
-        { status: 400 }
-      )
+      return errorResponse("Ukuran gambar maksimal 10MB", 400)
     }
 
     const buffer = await image.arrayBuffer()
@@ -213,9 +202,6 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error("Vision analysis error:", error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Terjadi kesalahan server" },
-      { status: 500 }
-    )
+    return errorResponse(error instanceof Error ? error.message : "Terjadi kesalahan server", 500)
   }
 }

@@ -33,8 +33,8 @@ export function HeaderUserDropdown({ userName }: HeaderUserDropdownProps) {
       await userService.logout()
       toast.success("Berhasil logout")
       router.push("/login")
-    } catch {
-      toast.error("Gagal logout")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Gagal logout")
       setLogoutLoading(false)
     }
   }

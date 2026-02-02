@@ -13,7 +13,7 @@ interface StoredMessage {
 
 export const saveChatHistory = (messages: Message[], userId: string | null): void => {
   if (typeof window === "undefined") return
-  if (!userId) return // Don't save if not logged in
+  if (!userId) return 
 
   try {
     const messagesToStore = messages
@@ -35,8 +35,7 @@ export const saveChatHistory = (messages: Message[], userId: string | null): voi
 
 export const loadChatHistory = (userId: string | null): Message[] => {
   if (typeof window === "undefined") return []
-  if (!userId) return [] // Don't load if not logged in
-
+  if (!userId) return []
   try {
     const stored = localStorage.getItem(getStorageKey(userId))
     if (!stored) return []
@@ -57,7 +56,7 @@ export const loadChatHistory = (userId: string | null): Message[] => {
 
 export const clearChatHistory = (userId: string | null): void => {
   if (typeof window === "undefined") return
-  if (!userId) return // Nothing to clear if not logged in
+  if (!userId) return 
 
   try {
     localStorage.removeItem(getStorageKey(userId))
@@ -68,7 +67,7 @@ export const clearChatHistory = (userId: string | null): void => {
 
 export const hasChatHistory = (userId: string | null): boolean => {
   if (typeof window === "undefined") return false
-  if (!userId) return false // No history if not logged in
+  if (!userId) return false 
 
   try {
     const stored = localStorage.getItem(getStorageKey(userId))

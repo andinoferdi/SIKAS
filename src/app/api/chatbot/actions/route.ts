@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { errorResponse } from "@/lib/utils/api-response"
 import { createClient } from "@/lib/supabase/server"
 import { getSession } from "@/lib/auth/session"
 import { searchUserTransactions } from "@/services/chatbot/user-context"
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
     const session = await getSession()
 
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return errorResponse("Tidak diizinkan", 401)
     }
 
     const body = await request.json()
@@ -61,14 +62,11 @@ export async function POST(request: NextRequest) {
         return await handleSearchTransactions(session.userId, payload as SearchTransactionsPayload)
 
       default:
-        return NextResponse.json({ error: "Unknown action" }, { status: 400 })
+        return errorResponse("Aksi tidak dikenal", 400)
     }
   } catch (error) {
     console.error("Chatbot action error:", error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Terjadi kesalahan server" },
-      { status: 500 }
-    )
+    return errorResponse(error instanceof Error ? error.message : "Terjadi kesalahan server", 500)
   }
 }
 
@@ -79,10 +77,7 @@ async function handleCreateTransaction(
   const supabase = await createClient()
 
   if (!payload.amount || !payload.type || !payload.category || !payload.payment_method) {
-    return NextResponse.json(
-      { error: "Data transaksi tidak lengkap" },
-      { status: 400 }
-    )
+    return errorResponse("Data transaksi tidak lengkap", 400)
   }
 
   const { data: user, error: userError } = await supabase
@@ -92,7 +87,7 @@ async function handleCreateTransaction(
     .single()
 
   if (userError || !user) {
-    return NextResponse.json({ error: "User tidak ditemukan" }, { status: 404 })
+    return errorResponse("User tidak ditemukan", 404)
   }
 
   const isMbanking = payload.payment_method === "mbanking"
@@ -105,14 +100,11 @@ async function handleCreateTransaction(
 
   if (payload.type === "expense") {
     if (newBalance < 0) {
-      return NextResponse.json({ error: "Saldo tidak cukup" }, { status: 400 })
+      return errorResponse("Saldo tidak cukup", 400)
     }
 
     if (isMbanking && newBalance < MIN_MBANKING_BALANCE) {
-      return NextResponse.json(
-        { error: `Minimal saldo M-Banking harus Rp ${MIN_MBANKING_BALANCE.toLocaleString("id-ID")}` },
-        { status: 400 }
-      )
+      return errorResponse(`Minimal saldo M-Banking harus Rp ${MIN_MBANKING_BALANCE.toLocaleString("id-ID")}`, 400)
     }
   }
 
@@ -131,7 +123,7 @@ async function handleCreateTransaction(
     .single()
 
   if (txError) {
-    return NextResponse.json({ error: txError.message }, { status: 500 })
+    return errorResponse(txError.message, 500)
   }
 
   const { error: balanceError } = await supabase
@@ -141,7 +133,7 @@ async function handleCreateTransaction(
 
   if (balanceError) {
     await supabase.from("transactions").delete().eq("id", transaction.id)
-    return NextResponse.json({ error: "Gagal memperbarui saldo" }, { status: 500 })
+    return errorResponse("Gagal memperbarui saldo", 500)
   }
 
   return NextResponse.json({
@@ -158,12 +150,12 @@ async function handleDeleteTransaction(
   const supabase = await createClient()
 
   if (!payload.transactionId) {
-    return NextResponse.json({ error: "ID transaksi tidak diberikan" }, { status: 400 })
+    return errorResponse("ID transaksi tidak diberikan", 400)
   }
 
   const fullId = await resolveTransactionId(userId, payload.transactionId)
   if (!fullId) {
-    return NextResponse.json({ error: "Transaksi tidak ditemukan" }, { status: 404 })
+    return errorResponse("Transaksi tidak ditemukan", 404)
   }
 
   const { data: transaction, error: fetchError } = await supabase
@@ -174,7 +166,7 @@ async function handleDeleteTransaction(
     .single()
 
   if (fetchError || !transaction) {
-    return NextResponse.json({ error: "Transaksi tidak ditemukan" }, { status: 404 })
+    return errorResponse("Transaksi tidak ditemukan", 404)
   }
 
   const { data: user, error: userError } = await supabase
@@ -184,7 +176,7 @@ async function handleDeleteTransaction(
     .single()
 
   if (userError || !user) {
-    return NextResponse.json({ error: "User tidak ditemukan" }, { status: 404 })
+    return errorResponse("User tidak ditemukan", 404)
   }
 
   const isMbanking = transaction.payment_method === "mbanking"
@@ -199,17 +191,11 @@ async function handleDeleteTransaction(
 
   if (transaction.type === "income") {
     if (newBalance < 0) {
-      return NextResponse.json(
-        { error: "Tidak dapat menghapus: saldo akan menjadi negatif" },
-        { status: 400 }
-      )
+      return errorResponse("Tidak dapat menghapus: saldo akan menjadi negatif", 400)
     }
 
     if (isMbanking && newBalance < MIN_MBANKING_BALANCE) {
-      return NextResponse.json(
-        { error: `Tidak dapat menghapus: saldo M-Banking akan di bawah minimum Rp ${MIN_MBANKING_BALANCE.toLocaleString("id-ID")}` },
-        { status: 400 }
-      )
+      return errorResponse(`Tidak dapat menghapus: saldo M-Banking akan di bawah minimum Rp ${MIN_MBANKING_BALANCE.toLocaleString("id-ID")}`, 400)
     }
   }
 
@@ -220,7 +206,7 @@ async function handleDeleteTransaction(
     .eq("user_id", userId)
 
   if (deleteError) {
-    return NextResponse.json({ error: deleteError.message }, { status: 500 })
+    return errorResponse(deleteError.message, 500)
   }
 
   const { error: balanceError } = await supabase
@@ -230,7 +216,7 @@ async function handleDeleteTransaction(
 
   if (balanceError) {
     await supabase.from("transactions").insert(transaction)
-    return NextResponse.json({ error: "Gagal memperbarui saldo" }, { status: 500 })
+    return errorResponse("Gagal memperbarui saldo", 500)
   }
 
   return NextResponse.json({
@@ -246,16 +232,16 @@ async function handleEditTransaction(
   const supabase = await createClient()
 
   if (!payload.transactionId) {
-    return NextResponse.json({ error: "ID transaksi tidak diberikan" }, { status: 400 })
+    return errorResponse("ID transaksi tidak diberikan", 400)
   }
 
   if (!payload.updates || Object.keys(payload.updates).length === 0) {
-    return NextResponse.json({ error: "Tidak ada data yang diubah" }, { status: 400 })
+    return errorResponse("Tidak ada data yang diubah", 400)
   }
 
   const fullId = await resolveTransactionId(userId, payload.transactionId)
   if (!fullId) {
-    return NextResponse.json({ error: "Transaksi tidak ditemukan" }, { status: 404 })
+    return errorResponse("Transaksi tidak ditemukan", 404)
   }
 
   const { data: existingTx, error: fetchError } = await supabase
@@ -266,7 +252,7 @@ async function handleEditTransaction(
     .single()
 
   if (fetchError || !existingTx) {
-    return NextResponse.json({ error: "Transaksi tidak ditemukan" }, { status: 404 })
+    return errorResponse("Transaksi tidak ditemukan", 404)
   }
 
   const { data: user, error: userError } = await supabase
@@ -276,7 +262,7 @@ async function handleEditTransaction(
     .single()
 
   if (userError || !user) {
-    return NextResponse.json({ error: "User tidak ditemukan" }, { status: 404 })
+    return errorResponse("User tidak ditemukan", 404)
   }
 
   const oldAmount = Number(existingTx.amount)
@@ -309,14 +295,11 @@ async function handleEditTransaction(
   }
 
   if (newMbankingBalance < 0 || newCashBalance < 0) {
-    return NextResponse.json({ error: "Saldo tidak cukup untuk perubahan ini" }, { status: 400 })
+    return errorResponse("Saldo tidak cukup untuk perubahan ini", 400)
   }
 
   if (newMbankingBalance < MIN_MBANKING_BALANCE) {
-    return NextResponse.json(
-      { error: `Saldo M-Banking akan di bawah minimum Rp ${MIN_MBANKING_BALANCE.toLocaleString("id-ID")}` },
-      { status: 400 }
-    )
+    return errorResponse(`Saldo M-Banking akan di bawah minimum Rp ${MIN_MBANKING_BALANCE.toLocaleString("id-ID")}`, 400)
   }
 
   const updateData: Record<string, unknown> = {}
@@ -334,7 +317,7 @@ async function handleEditTransaction(
     .eq("user_id", userId)
 
   if (updateError) {
-    return NextResponse.json({ error: updateError.message }, { status: 500 })
+    return errorResponse(updateError.message, 500)
   }
 
   const { error: balanceError } = await supabase
@@ -357,7 +340,7 @@ async function handleEditTransaction(
         transaction_date: existingTx.transaction_date,
       })
       .eq("id", fullId)
-    return NextResponse.json({ error: "Gagal memperbarui saldo" }, { status: 500 })
+    return errorResponse("Gagal memperbarui saldo", 500)
   }
 
   const changes: string[] = []

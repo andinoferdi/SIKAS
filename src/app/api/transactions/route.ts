@@ -1,14 +1,15 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextRequest } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getSession } from "@/lib/auth/session"
 import { createTransactionApiSchema } from "@/lib/validations"
 import { getLastDayOfMonth } from "@/lib/utils/format"
+import { jsonResponse, errorResponse } from "@/lib/utils/api-response"
 
 export async function GET(request: NextRequest) {
   const session = await getSession()
 
   if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    return errorResponse("Unauthorized", 401)
   }
 
   const searchParams = request.nextUrl.searchParams
@@ -38,10 +39,10 @@ export async function GET(request: NextRequest) {
   const { data, error } = await query
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return errorResponse(error.message, 500)
   }
 
-  return NextResponse.json({ transactions: data })
+  return jsonResponse({ transactions: data })
 }
 
 const MIN_MBANKING_BALANCE = 50000
@@ -50,20 +51,17 @@ export async function POST(request: NextRequest) {
   const session = await getSession()
 
   if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    return errorResponse("Unauthorized", 401)
   }
 
   try {
     const body = await request.json()
-    
+
     const validation = createTransactionApiSchema.safeParse(body)
 
     if (!validation.success) {
       const firstError = validation.error.issues[0]
-      return NextResponse.json(
-        { error: firstError.message },
-        { status: 400 }
-      )
+      return errorResponse(firstError.message, 400)
     }
 
     const { amount, type, category, description, payment_method, transaction_date } = validation.data
@@ -76,7 +74,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (userError || !user) {
-      return NextResponse.json({ error: "User tidak ditemukan" }, { status: 404 })
+      return errorResponse("User tidak ditemukan", 404)
     }
 
     const isMbanking = payment_method === "mbanking"
@@ -89,17 +87,11 @@ export async function POST(request: NextRequest) {
 
     if (type === "expense") {
       if (newBalance < 0) {
-        return NextResponse.json(
-          { error: "Saldo tidak cukup" },
-          { status: 400 }
-        )
+        return errorResponse("Saldo tidak cukup", 400)
       }
 
       if (isMbanking && newBalance < MIN_MBANKING_BALANCE) {
-        return NextResponse.json(
-          { error: `Minimal saldo M-Banking harus Rp ${MIN_MBANKING_BALANCE.toLocaleString("id-ID")}` },
-          { status: 400 }
-        )
+        return errorResponse(`Minimal saldo M-Banking harus Rp ${MIN_MBANKING_BALANCE.toLocaleString("id-ID")}`, 400)
       }
     }
 
@@ -118,7 +110,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return errorResponse(error.message, 500)
     }
 
     const { error: balanceError } = await supabase
@@ -132,16 +124,12 @@ export async function POST(request: NextRequest) {
         .delete()
         .eq("id", data.id)
 
-      return NextResponse.json({ error: "Gagal memperbarui saldo" }, { status: 500 })
+      return errorResponse("Gagal memperbarui saldo", 500)
     }
 
-    return NextResponse.json({ transaction: data })
+    return jsonResponse({ transaction: data })
   } catch (error) {
     console.error("Transaction error:", error)
-    return NextResponse.json(
-      { error: "Terjadi kesalahan server" },
-      { status: 500 }
-    )
+    return errorResponse("Terjadi kesalahan server", 500)
   }
 }
-

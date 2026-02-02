@@ -259,21 +259,6 @@ export function useChatMessages({ isOnDashboard, userId, isUserLoading, onPendin
       let ragContext: EnhancedRAGContext | undefined
       try {
         ragContext = await retrieveContext(content.trim(), 0.4, 3, isOnDashboard)
-        if (ragContext.relevantDocs.length > 0) {
-          console.log("RAG Context found:", {
-            query: ragContext.query,
-            avgSimilarity: (ragContext.avgSimilarity * 100).toFixed(1) + "%",
-            hasUserContext: !!ragContext.userContext,
-            docs: ragContext.relevantDocs.map((d) => ({
-              category: d.category,
-              similarity: (d.similarity * 100).toFixed(1) + "%",
-              preview: d.content.substring(0, 50) + "...",
-            })),
-          })
-        }
-        if (ragContext.userContext) {
-          console.log("User context included:", ragContext.userContext.userName)
-        }
       } catch (ragError) {
         console.warn("RAG retrieval failed:", ragError)
       }
@@ -324,7 +309,6 @@ export function useChatMessages({ isOnDashboard, userId, isUserLoading, onPendin
       }
 
       if (pendingActions.length > 0) {
-        console.log("Pending actions detected:", pendingActions)
         onPendingAction(pendingActions[0])
       }
 

@@ -1,12 +1,13 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextRequest } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getSession } from "@/lib/auth/session"
+import { jsonResponse, errorResponse } from "@/lib/utils/api-response"
 
 export async function GET(request: NextRequest) {
   const session = await getSession()
 
   if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    return errorResponse("Unauthorized", 401)
   }
 
   const searchParams = request.nextUrl.searchParams
@@ -23,8 +24,8 @@ export async function GET(request: NextRequest) {
   const { data, error } = await query
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return errorResponse(error.message, 500)
   }
 
-  return NextResponse.json({ categories: data })
+  return jsonResponse({ categories: data })
 }

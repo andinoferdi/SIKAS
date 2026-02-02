@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { errorResponse } from "@/lib/utils/api-response"
 import { createClient } from "@/lib/supabase/server"
 import { getSession } from "@/lib/auth/session"
 import { getJakartaDateString } from "@/lib/utils/format"
@@ -20,7 +21,7 @@ export async function POST(request: NextRequest) {
     const session = await getSession()
 
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return errorResponse("Tidak diizinkan", 401)
     }
 
     const body = await request.json()
@@ -40,14 +41,11 @@ export async function POST(request: NextRequest) {
         return await handleDeleteAll(session.userId, payload as DeleteAllTransactionsPayload)
 
       default:
-        return NextResponse.json({ error: "Unknown batch action" }, { status: 400 })
+        return errorResponse("Aksi batch tidak dikenal", 400)
     }
   } catch (error) {
     console.error("Batch action error:", error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Terjadi kesalahan server" },
-      { status: 500 }
-    )
+    return errorResponse(error instanceof Error ? error.message : "Terjadi kesalahan server", 500)
   }
 }
 
@@ -58,28 +56,22 @@ async function handleBatchCreate(
   const supabase = await createClient()
 
   if (!payload.transactions || !Array.isArray(payload.transactions)) {
-    return NextResponse.json({ error: "Data transaksi tidak valid" }, { status: 400 })
+    return errorResponse("Data transaksi tidak valid", 400)
   }
 
   if (payload.transactions.length === 0) {
-    return NextResponse.json({ error: "Tidak ada transaksi untuk ditambahkan" }, { status: 400 })
+    return errorResponse("Tidak ada transaksi untuk ditambahkan", 400)
   }
 
   if (payload.transactions.length > MAX_BATCH_SIZE) {
-    return NextResponse.json(
-      { error: `Maksimal ${MAX_BATCH_SIZE} transaksi per batch` },
-      { status: 400 }
-    )
+    return errorResponse(`Maksimal ${MAX_BATCH_SIZE} transaksi per batch`, 400)
   }
 
   // Validate all transactions first
   for (let i = 0; i < payload.transactions.length; i++) {
     const tx = payload.transactions[i]
     if (!tx.amount || !tx.type || !tx.category || !tx.payment_method) {
-      return NextResponse.json(
-        { error: `Transaksi #${i + 1} tidak lengkap` },
-        { status: 400 }
-      )
+      return errorResponse(`Transaksi #${i + 1} tidak lengkap`, 400)
     }
   }
 
@@ -91,7 +83,7 @@ async function handleBatchCreate(
     .single()
 
   if (userError || !user) {
-    return NextResponse.json({ error: "User tidak ditemukan" }, { status: 404 })
+    return errorResponse("User tidak ditemukan", 404)
   }
 
   // Calculate total balance changes
@@ -112,17 +104,11 @@ async function handleBatchCreate(
 
   // Validate final balances
   if (newCashBalance < 0) {
-    return NextResponse.json(
-      { error: `Saldo Cash tidak cukup. Perubahan total: Rp ${Math.abs(cashChange).toLocaleString("id-ID")}` },
-      { status: 400 }
-    )
+    return errorResponse(`Saldo Cash tidak cukup. Perubahan total: Rp ${Math.abs(cashChange).toLocaleString("id-ID")}`, 400)
   }
 
   if (newMbankingBalance < MIN_MBANKING_BALANCE) {
-    return NextResponse.json(
-      { error: `Saldo M-Banking akan di bawah minimum Rp ${MIN_MBANKING_BALANCE.toLocaleString("id-ID")}` },
-      { status: 400 }
-    )
+    return errorResponse(`Saldo M-Banking akan di bawah minimum Rp ${MIN_MBANKING_BALANCE.toLocaleString("id-ID")}`, 400)
   }
 
   // Prepare transactions for insert
@@ -144,7 +130,7 @@ async function handleBatchCreate(
     .select()
 
   if (insertError) {
-    return NextResponse.json({ error: insertError.message }, { status: 500 })
+    return errorResponse(insertError.message, 500)
   }
 
   // Update user balance
@@ -162,7 +148,7 @@ async function handleBatchCreate(
     if (insertedIds.length > 0) {
       await supabase.from("transactions").delete().in("id", insertedIds)
     }
-    return NextResponse.json({ error: "Gagal memperbarui saldo" }, { status: 500 })
+    return errorResponse("Gagal memperbarui saldo", 500)
   }
 
   const result: BatchActionResult = {
@@ -195,10 +181,7 @@ async function handleBatchDelete(
   const supabase = await createClient()
 
   if (!payload.filter || Object.keys(payload.filter).length === 0) {
-    return NextResponse.json(
-      { error: "Filter tidak valid. Harap tentukan minimal 1 kriteria filter." },
-      { status: 400 }
-    )
+    return errorResponse("Filter tidak valid. Harap tentukan minimal 1 kriteria filter.", 400)
   }
 
   // Build query to find matching transactions
@@ -226,7 +209,7 @@ async function handleBatchDelete(
   const { data: transactions, error: fetchError } = await query
 
   if (fetchError) {
-    return NextResponse.json({ error: fetchError.message }, { status: 500 })
+    return errorResponse(fetchError.message, 500)
   }
 
   if (!transactions || transactions.length === 0) {
@@ -245,10 +228,7 @@ async function handleBatchDelete(
   }
 
   if (transactions.length > MAX_BATCH_SIZE) {
-    return NextResponse.json(
-      { error: `Terlalu banyak transaksi (${transactions.length}). Maksimal ${MAX_BATCH_SIZE} transaksi per batch. Persempit filter.` },
-      { status: 400 }
-    )
+    return errorResponse(`Terlalu banyak transaksi (${transactions.length}). Maksimal ${MAX_BATCH_SIZE} transaksi per batch. Persempit filter.`, 400)
   }
 
   // Get current user balances
@@ -259,7 +239,7 @@ async function handleBatchDelete(
     .single()
 
   if (userError || !user) {
-    return NextResponse.json({ error: "User tidak ditemukan" }, { status: 404 })
+    return errorResponse("User tidak ditemukan", 404)
   }
 
   // Calculate balance changes (reverse of the transactions)
@@ -281,17 +261,11 @@ async function handleBatchDelete(
 
   // Validate final balances
   if (newCashBalance < 0) {
-    return NextResponse.json(
-      { error: "Tidak dapat menghapus: saldo Cash akan menjadi negatif" },
-      { status: 400 }
-    )
+    return errorResponse("Tidak dapat menghapus: saldo Cash akan menjadi negatif", 400)
   }
 
   if (newMbankingBalance < MIN_MBANKING_BALANCE) {
-    return NextResponse.json(
-      { error: `Tidak dapat menghapus: saldo M-Banking akan di bawah minimum Rp ${MIN_MBANKING_BALANCE.toLocaleString("id-ID")}` },
-      { status: 400 }
-    )
+    return errorResponse(`Tidak dapat menghapus: saldo M-Banking akan di bawah minimum Rp ${MIN_MBANKING_BALANCE.toLocaleString("id-ID")}`, 400)
   }
 
   // Delete all matching transactions
@@ -302,7 +276,7 @@ async function handleBatchDelete(
     .in("id", transactionIds)
 
   if (deleteError) {
-    return NextResponse.json({ error: deleteError.message }, { status: 500 })
+    return errorResponse(deleteError.message, 500)
   }
 
   // Update user balance
@@ -317,7 +291,7 @@ async function handleBatchDelete(
   if (balanceError) {
     // Rollback: re-insert deleted transactions
     await supabase.from("transactions").insert(transactions)
-    return NextResponse.json({ error: "Gagal memperbarui saldo" }, { status: 500 })
+    return errorResponse("Gagal memperbarui saldo", 500)
   }
 
   const result: BatchActionResult = {
@@ -351,34 +325,25 @@ async function handleBatchEdit(
   const supabase = await createClient()
 
   if (!payload.updates || !Array.isArray(payload.updates)) {
-    return NextResponse.json({ error: "Data update tidak valid" }, { status: 400 })
+    return errorResponse("Data update tidak valid", 400)
   }
 
   if (payload.updates.length === 0) {
-    return NextResponse.json({ error: "Tidak ada transaksi untuk diubah" }, { status: 400 })
+    return errorResponse("Tidak ada transaksi untuk diubah", 400)
   }
 
   if (payload.updates.length > MAX_BATCH_SIZE) {
-    return NextResponse.json(
-      { error: `Maksimal ${MAX_BATCH_SIZE} transaksi per batch edit` },
-      { status: 400 }
-    )
+    return errorResponse(`Maksimal ${MAX_BATCH_SIZE} transaksi per batch edit`, 400)
   }
 
   // Validate all updates have transactionId
   for (let i = 0; i < payload.updates.length; i++) {
     const update = payload.updates[i]
     if (!update.transactionId) {
-      return NextResponse.json(
-        { error: `Update #${i + 1} tidak memiliki transactionId` },
-        { status: 400 }
-      )
+      return errorResponse(`Update #${i + 1} tidak memiliki transactionId`, 400)
     }
     if (!update.updates || Object.keys(update.updates).length === 0) {
-      return NextResponse.json(
-        { error: `Update #${i + 1} tidak memiliki perubahan` },
-        { status: 400 }
-      )
+      return errorResponse(`Update #${i + 1} tidak memiliki perubahan`, 400)
     }
   }
 
@@ -393,16 +358,13 @@ async function handleBatchEdit(
     .in("id", transactionIds)
 
   if (fetchError) {
-    return NextResponse.json({ error: fetchError.message }, { status: 500 })
+    return errorResponse(fetchError.message, 500)
   }
 
   if (!existingTransactions || existingTransactions.length !== transactionIds.length) {
     const foundIds = new Set(existingTransactions?.map((tx) => tx.id) || [])
     const missingIds = transactionIds.filter((id) => !foundIds.has(id))
-    return NextResponse.json(
-      { error: `Transaksi tidak ditemukan: ${missingIds.length} transaksi tidak valid atau bukan milik user` },
-      { status: 404 }
-    )
+    return errorResponse(`Transaksi tidak ditemukan: ${missingIds.length} transaksi tidak valid atau bukan milik user`, 404)
   }
 
   // Get current user balances
@@ -413,7 +375,7 @@ async function handleBatchEdit(
     .single()
 
   if (userError || !user) {
-    return NextResponse.json({ error: "User tidak ditemukan" }, { status: 404 })
+    return errorResponse("User tidak ditemukan", 404)
   }
 
   // Calculate balance changes for each edit
@@ -458,17 +420,11 @@ async function handleBatchEdit(
 
   // Validate final balances
   if (newCashBalance < 0) {
-    return NextResponse.json(
-      { error: "Tidak dapat mengubah: saldo Cash akan menjadi negatif" },
-      { status: 400 }
-    )
+    return errorResponse("Tidak dapat mengubah: saldo Cash akan menjadi negatif", 400)
   }
 
   if (newMbankingBalance < MIN_MBANKING_BALANCE) {
-    return NextResponse.json(
-      { error: `Tidak dapat mengubah: saldo M-Banking akan di bawah minimum Rp ${MIN_MBANKING_BALANCE.toLocaleString("id-ID")}` },
-      { status: 400 }
-    )
+    return errorResponse(`Tidak dapat mengubah: saldo M-Banking akan di bawah minimum Rp ${MIN_MBANKING_BALANCE.toLocaleString("id-ID")}`, 400)
   }
 
   // Store original transactions for potential rollback
@@ -509,10 +465,7 @@ async function handleBatchEdit(
 
   if (failedCount > 0 && failedCount === payload.updates.length) {
     // All failed, no need to update balance
-    return NextResponse.json(
-      { error: "Semua update gagal", details: updateResults },
-      { status: 500 }
-    )
+    return errorResponse("Semua update gagal", 500)
   }
 
   // Update user balance
@@ -539,7 +492,7 @@ async function handleBatchEdit(
         })
         .eq("id", original.id)
     }
-    return NextResponse.json({ error: "Gagal memperbarui saldo" }, { status: 500 })
+    return errorResponse("Gagal memperbarui saldo", 500)
   }
 
   const successCount = updateResults.filter((r) => r.success).length
@@ -571,10 +524,7 @@ async function handleDeleteAll(
 
   // Validate confirmation text
   if (payload.confirmationText !== "HAPUS SEMUA") {
-    return NextResponse.json(
-      { error: "Konfirmasi tidak valid. Ketik 'HAPUS SEMUA' untuk melanjutkan." },
-      { status: 400 }
-    )
+    return errorResponse("Konfirmasi tidak valid. Ketik 'HAPUS SEMUA' untuk melanjutkan.", 400)
   }
 
   // Build query based on optional month/year filter
@@ -593,7 +543,7 @@ async function handleDeleteAll(
   const { data: transactions, error: fetchError } = await query
 
   if (fetchError) {
-    return NextResponse.json({ error: fetchError.message }, { status: 500 })
+    return errorResponse(fetchError.message, 500)
   }
 
   if (!transactions || transactions.length === 0) {
@@ -632,7 +582,7 @@ async function handleDeleteAll(
     .single()
 
   if (userError || !user) {
-    return NextResponse.json({ error: "User tidak ditemukan" }, { status: 404 })
+    return errorResponse("User tidak ditemukan", 404)
   }
 
   const newMbankingBalance = Number(user.mbanking_balance) + mbankingChange
@@ -650,7 +600,7 @@ async function handleDeleteAll(
     .in("id", transactionIds)
 
   if (deleteError) {
-    return NextResponse.json({ error: deleteError.message }, { status: 500 })
+    return errorResponse(deleteError.message, 500)
   }
 
   // Update user balance
@@ -665,7 +615,7 @@ async function handleDeleteAll(
   if (balanceError) {
     // Rollback: re-insert deleted transactions
     await supabase.from("transactions").insert(transactions)
-    return NextResponse.json({ error: "Gagal memperbarui saldo" }, { status: 500 })
+    return errorResponse("Gagal memperbarui saldo", 500)
   }
 
   const periodText = payload.month && payload.year

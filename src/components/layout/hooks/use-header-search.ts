@@ -16,10 +16,16 @@ export function useHeaderSearch() {
     const debounceTimer = setTimeout(async () => {
       if (searchValue.trim().length >= 2) {
         setSearchLoading(true)
-        const results = await transactionService.searchTransactions(searchValue)
-        setSearchResults(results)
-        setShowSearchResults(true)
-        setSearchLoading(false)
+        try {
+          const results = await transactionService.searchTransactions(searchValue)
+          setSearchResults(results)
+          setShowSearchResults(true)
+        } catch (error) {
+          console.error("Search failed:", error)
+          setSearchResults([])
+        } finally {
+          setSearchLoading(false)
+        }
       } else {
         setSearchResults([])
         setShowSearchResults(false)

@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { userService } from "@/services"
+import { broadcastInvalidation } from "@/lib/utils/broadcast-sync"
 
 interface LoginInput {
   name: string
@@ -17,8 +18,8 @@ export function useLogin() {
   return useMutation({
     mutationFn: (input: LoginInput) => userService.login(input.name, input.pin),
     onSuccess: () => {
-      // Invalidate user query to fetch new user data
       queryClient.invalidateQueries({ queryKey: ["user", "current"] })
+      broadcastInvalidation([["user", "current"]])
     },
   })
 }
@@ -29,8 +30,8 @@ export function useRegister() {
   return useMutation({
     mutationFn: (input: RegisterInput) => userService.register(input.name, input.pin),
     onSuccess: () => {
-      // Invalidate user query to fetch new user data
       queryClient.invalidateQueries({ queryKey: ["user", "current"] })
+      broadcastInvalidation([["user", "current"]])
     },
   })
 }
@@ -41,8 +42,8 @@ export function useLogout() {
   return useMutation({
     mutationFn: () => userService.logout(),
     onSuccess: () => {
-      // Clear all queries to prevent data leakage between users
       queryClient.clear()
+      broadcastInvalidation([["user", "current"], ["transactions"], ["summary"]])
     },
   })
 }

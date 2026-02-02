@@ -1,21 +1,19 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextRequest } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { hashPin, verifyPin } from "@/lib/auth/pin"
 import { createSession } from "@/lib/auth/session"
 import { loginSchema } from "@/lib/validations"
+import { jsonResponse, errorResponse } from "@/lib/utils/api-response"
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    
+
     const validation = loginSchema.safeParse(body)
 
     if (!validation.success) {
       const firstError = validation.error.issues[0]
-      return NextResponse.json(
-        { error: firstError.message },
-        { status: 400 }
-      )
+      return errorResponse(firstError.message, 400)
     }
 
     const { name: userName, pin } = validation.data
@@ -28,10 +26,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error || !user) {
-      return NextResponse.json(
-        { error: "User tidak ditemukan" },
-        { status: 404 }
-      )
+      return errorResponse("User tidak ditemukan", 404)
     }
 
     if (!user.pin_hash) {
@@ -43,24 +38,18 @@ export async function POST(request: NextRequest) {
     } else {
       const isValid = await verifyPin(pin, user.pin_hash)
       if (!isValid) {
-        return NextResponse.json(
-          { error: "PIN salah" },
-          { status: 401 }
-        )
+        return errorResponse("PIN salah", 401)
       }
     }
 
     await createSession(user.id, user.name)
 
-    return NextResponse.json({
+    return jsonResponse({
       success: true,
       user: { id: user.id, name: user.name }
     })
   } catch (error) {
     console.error("Login error:", error)
-    return NextResponse.json(
-      { error: "Terjadi kesalahan server" },
-      { status: 500 }
-    )
+    return errorResponse("Terjadi kesalahan server", 500)
   }
 }

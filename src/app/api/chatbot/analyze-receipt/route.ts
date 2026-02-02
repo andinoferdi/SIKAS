@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { errorResponse } from "@/lib/utils/api-response"
 import { createClient } from "@/lib/supabase/server"
 import { getSession } from "@/lib/auth/session"
 import { getJakartaDateString } from "@/lib/utils/format"
@@ -41,35 +42,26 @@ export async function POST(request: NextRequest) {
     const session = await getSession()
 
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return errorResponse("Tidak diizinkan", 401)
     }
 
     if (!API_KEY) {
-      return NextResponse.json(
-        { error: "API key tidak dikonfigurasi" },
-        { status: 500 }
-      )
+      return errorResponse("API key tidak dikonfigurasi", 500)
     }
 
     const formData = await request.formData()
     const image = formData.get("image") as File
 
     if (!image) {
-      return NextResponse.json({ error: "Tidak ada gambar" }, { status: 400 })
+      return errorResponse("Tidak ada gambar", 400)
     }
 
     if (!image.type.startsWith("image/")) {
-      return NextResponse.json(
-        { error: "File harus berupa gambar" },
-        { status: 400 }
-      )
+      return errorResponse("File harus berupa gambar", 400)
     }
 
     if (image.size > 10 * 1024 * 1024) {
-      return NextResponse.json(
-        { error: "Ukuran gambar maksimal 10MB" },
-        { status: 400 }
-      )
+      return errorResponse("Ukuran gambar maksimal 10MB", 400)
     }
 
     const buffer = await image.arrayBuffer()
@@ -136,26 +128,15 @@ export async function POST(request: NextRequest) {
     }
 
     if (!analysisResult) {
-      return NextResponse.json(
-        {
-          error: lastError?.message || "Gagal menganalisis gambar dengan semua model",
-        },
-        { status: 500 }
-      )
+      return errorResponse(lastError?.message || "Gagal menganalisis gambar dengan semua model", 500)
     }
 
     if (analysisResult.error) {
-      return NextResponse.json(
-        { error: analysisResult.error },
-        { status: 400 }
-      )
+      return errorResponse(analysisResult.error, 400)
     }
 
     if (!analysisResult.amount || typeof analysisResult.amount !== "number") {
-      return NextResponse.json(
-        { error: "Tidak dapat mendeteksi jumlah pembayaran dari nota" },
-        { status: 400 }
-      )
+      return errorResponse("Tidak dapat mendeteksi jumlah pembayaran dari nota", 400)
     }
 
     const supabase = await createClient()
@@ -167,20 +148,14 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (userError || !user) {
-      return NextResponse.json({ error: "User tidak ditemukan" }, { status: 404 })
+      return errorResponse("User tidak ditemukan", 404)
     }
 
     const currentBalance = Number(user.cash_balance)
     const newBalance = currentBalance - analysisResult.amount
 
     if (newBalance < 0) {
-      return NextResponse.json(
-        {
-          error: `Saldo Cash tidak cukup. Saldo: Rp ${currentBalance.toLocaleString("id-ID")}, Dibutuhkan: Rp ${analysisResult.amount.toLocaleString("id-ID")}`,
-          analysis: analysisResult,
-        },
-        { status: 400 }
-      )
+      return errorResponse(`Saldo Cash tidak cukup. Saldo: Rp ${currentBalance.toLocaleString("id-ID")}, Dibutuhkan: Rp ${analysisResult.amount.toLocaleString("id-ID")}`, 400)
     }
 
     const today = getJakartaDateString()
@@ -201,10 +176,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (txError) {
-      return NextResponse.json(
-        { error: txError.message, analysis: analysisResult },
-        { status: 500 }
-      )
+      return errorResponse(txError.message, 500)
     }
 
     const { error: balanceError } = await supabase
@@ -214,10 +186,7 @@ export async function POST(request: NextRequest) {
 
     if (balanceError) {
       await supabase.from("transactions").delete().eq("id", transaction.id)
-      return NextResponse.json(
-        { error: "Gagal memperbarui saldo" },
-        { status: 500 }
-      )
+      return errorResponse("Gagal memperbarui saldo", 500)
     }
 
     const formatAmount = (n: number) => `Rp ${n.toLocaleString("id-ID")}`
@@ -230,9 +199,6 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error("Receipt analysis error:", error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Terjadi kesalahan server" },
-      { status: 500 }
-    )
+    return errorResponse(error instanceof Error ? error.message : "Terjadi kesalahan server", 500)
   }
 }
