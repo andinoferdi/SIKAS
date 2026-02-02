@@ -14,7 +14,9 @@ import {
   parseActions,
   parsePendingActions,
   cleanContentForDisplay,
+  extractTransactionFromText,
 } from "@/components/chatbot/utils/action-parser"
+import { getJakartaDateString } from "@/lib/utils/format"
 import type { PendingAction } from "@/components/chatbot/batch-action-confirmation"
 import { saveChatHistory, loadChatHistory, clearChatHistory } from "@/lib/utils/chat-storage"
 
@@ -310,6 +312,16 @@ export function useChatMessages({ isOnDashboard, userId, isUserLoading, onPendin
 
       if (pendingActions.length > 0) {
         onPendingAction(pendingActions[0])
+      }
+
+      // Fallback: auto-detect transaksi jika model tidak generate PENDING_ACTION tag
+      if (actions.length === 0 && pendingActions.length === 0) {
+        const today = getJakartaDateString()
+        const extracted = extractTransactionFromText(fullContent, today)
+        if (extracted) {
+          console.warn("[Fallback] Model tidak generate PENDING_ACTION, auto-detect dari text:", extracted)
+          onPendingAction(extracted)
+        }
       }
 
       const cleanedContent = cleanContentForDisplay(fullContent)
