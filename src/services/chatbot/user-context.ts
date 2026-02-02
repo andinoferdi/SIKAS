@@ -165,7 +165,7 @@ export async function searchUserTransactions(
 
 
 export function formatUserContextForPrompt(context: UserChatContext): string {
-  const { userName, balances, monthlySummary, recentTransactions } = context
+  const { userName, balances, monthlySummary, recentTransactions, allTimeSummary } = context
 
   const formatRp = (amount: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -182,12 +182,42 @@ export function formatUserContextForPrompt(context: UserChatContext): string {
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]
   prompt += `${monthNames[monthlySummary.month - 1]} ${monthlySummary.year}: +${formatRp(monthlySummary.total_income)} -${formatRp(monthlySummary.total_expense)} = ${formatRp(monthlySummary.net)}\n`
 
+  if (monthlySummary.total_income > 0) {
+    const expenseRatio = (monthlySummary.total_expense / monthlySummary.total_income * 100).toFixed(1)
+    prompt += `\n### Rasio Pengeluaran Bulan Ini: ${expenseRatio}%\n`
+    if (parseFloat(expenseRatio) < 50) {
+      prompt += `Status: Sangat Hemat\n`
+    } else if (parseFloat(expenseRatio) < 70) {
+      prompt += `Status: Seimbang\n`
+    } else if (parseFloat(expenseRatio) < 90) {
+      prompt += `Status: Perlu Perhatian\n`
+    } else {
+      prompt += `Status: Boros\n`
+    }
+  } else if (monthlySummary.total_expense > 0) {
+    prompt += `\n### Rasio Pengeluaran Bulan Ini: Tidak ada pemasukan tercatat\n`
+    prompt += `Status: Perlu mencatat pemasukan untuk analisis\n`
+  }
+
+  if (allTimeSummary && allTimeSummary.byCategory.length > 0) {
+    const expenseCategories = allTimeSummary.byCategory
+      .filter(c => c.category.startsWith("expense:"))
+      .slice(0, 5)
+
+    if (expenseCategories.length > 0) {
+      prompt += `\n### Top 5 Kategori Pengeluaran (Sepanjang Waktu)\n`
+      for (const cat of expenseCategories) {
+        const categoryName = cat.category.split(":")[1]
+        prompt += `- ${categoryName}: ${formatRp(cat.total)} (${cat.count}x transaksi)\n`
+      }
+    }
+  }
+
   if (recentTransactions.length > 0) {
     prompt += `\n### Transaksi Terakhir (ID untuk edit/hapus)\n`
     for (const tx of recentTransactions.slice(0, 8)) {
       const sign = tx.type === "income" ? "+" : "-"
       const date = new Date(tx.transaction_date).toLocaleDateString("id-ID", { timeZone: JAKARTA_TIMEZONE, day: "2-digit", month: "short" })
-      // Gunakan full UUID agar AI bisa menggunakannya untuk edit/delete
       prompt += `[${tx.id}] ${date}: ${sign}${formatRp(tx.amount)} ${tx.category}`
       if (tx.description) prompt += ` (${tx.description})`
       prompt += ` [${tx.payment_method}]\n`

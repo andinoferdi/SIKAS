@@ -1,15 +1,14 @@
-import { type Message, type StreamChunk, type QuickReply } from "@/types/chatbot"
-import type { RAGContext, EnhancedRAGContext } from "@/types/rag"
+import { NextResponse } from "next/server"
+import type { Message, StreamChunk } from "@/types/chatbot"
+import type { EnhancedRAGContext } from "@/types/rag"
 import { pruneConversationHistory, estimateMessagesTokens } from "@/services/chatbot/token-utils"
 import { getJakartaDateString } from "@/lib/utils/format"
 
-const API_KEY = process.env.NEXT_PUBLIC_OPENROUTER_API_KEY
+const API_KEY = process.env.OPENROUTER_API_KEY
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
 const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || "SIKAS"
 
-import type { AIModel } from "@/types/chatbot"
-
-export const MODELS = [
+const MODELS = [
   "mistralai/devstral-2512:free",
   "nvidia/nemotron-3-nano-30b-a3b:free",
   "xiaomi/mimo-v2-flash:free",
@@ -17,156 +16,7 @@ export const MODELS = [
   "tngtech/tng-r1t-chimera:free",
 ]
 
-export const MODEL_DISPLAY_NAMES = [
-  "Devstral 2512",
-  "Nemotron Nano 30B",
-  "Mimo V2 Flash",
-  "Trinity Mini",
-  "TNG R1T Chimera",
-]
-
-export const VISION_MODELS = [
-  "meta-llama/llama-3.2-11b-vision-instruct:free",
-  "qwen/qwen2.5-vl-7b-instruct:free",
-  "google/gemini-2.0-flash-exp:free",
-]
-
-export const ALL_MODELS: AIModel[] = [
-  {
-    id: "mistralai/devstral-2512:free",
-    name: "Devstral 2512",
-    description: "Model khusus untuk coding dan pemrograman",
-    supportsVision: false,
-    category: "text",
-    pros: ["Cepat untuk tugas pemrograman", "Bagus untuk code generation"],
-    free: true,
-  },
-  {
-    id: "nvidia/nemotron-3-nano-30b-a3b:free",
-    name: "Nemotron Nano 30B",
-    description: "Model ringan dengan performa tinggi",
-    supportsVision: false,
-    category: "text",
-    pros: ["Respon sangat cepat", "Efisien untuk percakapan umum"],
-    free: true,
-  },
-  {
-    id: "xiaomi/mimo-v2-flash:free",
-    name: "Mimo V2 Flash",
-    description: "Model cepat untuk respons real-time",
-    supportsVision: false,
-    category: "text",
-    pros: ["Latency rendah", "Bagus untuk chat real-time"],
-    free: true,
-  },
-  {
-    id: "arcee-ai/trinity-mini:free",
-    name: "Trinity Mini",
-    description: "Model compact dengan pemahaman konteks baik",
-    supportsVision: false,
-    category: "text",
-    pros: ["Balance speed and quality", "Hemat resource"],
-    free: true,
-  },
-  {
-    id: "tngtech/tng-r1t-chimera:free",
-    name: "TNG R1T Chimera",
-    description: "Model hybrid untuk berbagai tugas",
-    supportsVision: false,
-    category: "text",
-    pros: ["Versatile untuk banyak task", "Stable performance"],
-    free: true,
-  },
-  {
-    id: "meta-llama/llama-3.2-11b-vision-instruct:free",
-    name: "Llama 3.2 Vision",
-    description: "Model vision dari Meta untuk analisis gambar",
-    supportsVision: true,
-    category: "vision",
-    pros: [
-      "Bisa analyze image dengan text",
-      "Bagus untuk OCR dan object detection",
-      "Gratis dan reliable",
-    ],
-    free: true,
-  },
-  {
-    id: "qwen/qwen2.5-vl-7b-instruct:free",
-    name: "Qwen VL 7B",
-    description: "State-of-the-art vision model dari Alibaba",
-    supportsVision: true,
-    category: "vision",
-    pros: [
-      "Pemahaman gambar sangat akurat",
-      "Support multiple languages",
-      "Excellent untuk document analysis",
-    ],
-    free: true,
-  },
-  {
-    id: "google/gemini-2.0-flash-exp:free",
-    name: "Gemini 2.0 Flash",
-    description: "Multimodal model dari Google (experimental)",
-    supportsVision: true,
-    category: "vision",
-    pros: [
-      "Multimodal terbaik (text, image, video)",
-      "Fast inference speed",
-      "Advanced understanding",
-    ],
-    free: true,
-  },
-]
-
-export const LANDING_QUICK_REPLIES: QuickReply[] = [
-  {
-    id: "l1",
-    text: "Apa itu SIKAS?",
-    message: "Apa itu SIKAS dan apa saja fiturnya?",
-  },
-  {
-    id: "l2",
-    text: "Cara tambah transaksi",
-    message: "Bagaimana cara menambah transaksi di SIKAS?",
-  },
-  {
-    id: "l3",
-    text: "M-Banking vs Cash",
-    message: "Apa perbedaan M-Banking dan Cash di SIKAS?",
-  },
-  {
-    id: "l4",
-    text: "Fitur SIKAS",
-    message: "Apa saja fitur yang tersedia di SIKAS?",
-  },
-]
-
-export const DASHBOARD_QUICK_REPLIES: QuickReply[] = [
-  {
-    id: "d1",
-    text: "Lihat saldo saya",
-    message: "Berapa saldo M-Banking dan Cash saya saat ini?",
-  },
-  {
-    id: "d2",
-    text: "Catat pengeluaran",
-    message: "Tolong bantu saya mencatat transaksi pengeluaran",
-  },
-  {
-    id: "d3",
-    text: "Catat pemasukan",
-    message: "Tolong bantu saya mencatat transaksi pemasukan",
-  },
-  {
-    id: "d4",
-    text: "Ringkasan bulan ini",
-    message: "Tampilkan ringkasan transaksi bulan ini",
-  },
-]
-
-export const QUICK_REPLIES = LANDING_QUICK_REPLIES
-
-export const BASE_SYSTEM_PROMPT = `Kamu adalah SIKAS Bot, asisten AI ramah untuk aplikasi pencatatan keuangan SIKAS.
+const BASE_SYSTEM_PROMPT = `Kamu adalah SIKAS Bot, asisten AI ramah sekaligus penasihat keuangan pribadi untuk pengguna SIKAS.
 
 TENTANG SIKAS:
 - SIKAS adalah aplikasi pencatatan keuangan sederhana untuk keluarga dan pribadi
@@ -240,13 +90,65 @@ CARA MENJAWAB:
 - Gunakan Bahasa Indonesia yang ramah dan santai
 - Jawab dengan singkat, padat, dan jelas
 - Gunakan bullet points untuk langkah-langkah
-- Fokus pada fitur dan cara penggunaan SIKAS
-- Jika pertanyaan tidak terkait SIKAS, arahkan kembali dengan sopan
-- Jika tidak yakin, akui keterbatasan dan sarankan untuk mengeksplorasi aplikasi
+- Fokus pada pencatatan keuangan DAN analisis keuangan pribadi user
+- Jika pertanyaan sama sekali tidak terkait keuangan, arahkan kembali dengan sopan
+- Berikan analisis berbasis data yang tersedia di konteks user
 
 CONTOH JAWABAN:
-- Jika ditanya "Hai": "Halo! Saya SIKAS Bot. Ada yang bisa saya bantu tentang pencatatan keuangan?"
-- Jika ditanya di luar topik: "Hmm, sepertinya itu di luar jangkauan saya. Saya bisa membantu kamu dengan pencatatan keuangan di SIKAS. Mau tanya tentang cara catat transaksi atau fitur lainnya?"
+- Jika ditanya "Hai": "Halo! Saya SIKAS Bot. Ada yang bisa saya bantu tentang keuanganmu?"
+- Jika ditanya di luar topik keuangan: "Hmm, sepertinya itu di luar jangkauan saya. Saya bisa membantu kamu dengan pencatatan dan analisis keuangan. Mau tanya tentang kondisi keuanganmu atau cara catat transaksi?"
+
+KEMAMPUAN ADVISORY KEUANGAN:
+Selain mencatat transaksi, kamu BISA dan HARUS memberikan:
+1. Analisis Pengeluaran - Menilai pola spending berdasarkan data transaksi user
+2. Penilaian Kesehatan Keuangan - Menentukan apakah user boros atau hemat
+3. Rekomendasi Budget - Saran alokasi pengeluaran berdasarkan aturan 50/30/20
+4. Evaluasi Worth It - Menilai apakah pengeluaran tertentu worth it berdasarkan konteks
+
+BENCHMARK PENILAIAN PENGELUARAN (gunakan Rasio Pengeluaran dari konteks):
+- Sangat Hemat: Rasio < 50% (pengeluaran kurang dari setengah pemasukan)
+- Seimbang: Rasio 50-70% (kondisi ideal)
+- Perlu Perhatian: Rasio 70-90% (mulai ketat)
+- Boros: Rasio > 90% (hampir tidak ada sisa untuk tabungan)
+
+ATURAN 50/30/20 UNTUK REKOMENDASI:
+- 50% untuk Kebutuhan (Makan, Transport, Tagihan)
+- 30% untuk Keinginan (Belanja, Hiburan, Lainnya)
+- 20% untuk Tabungan/Dana Darurat
+
+CARA MENJAWAB PERTANYAAN ADVISORY:
+Ketika user bertanya "apakah saya boros?", "bagaimana kondisi keuangan saya?", atau sejenisnya:
+1. Lihat Rasio Pengeluaran Bulan Ini dari konteks
+2. Bandingkan dengan benchmark di atas
+3. Identifikasi kategori pengeluaran terbesar dari data
+4. Berikan penilaian yang jujur dan konstruktif
+5. Sertakan saran konkret untuk perbaikan
+6. Akhiri dengan disclaimer singkat
+
+CONTOH JAWABAN ADVISORY:
+User: "Apakah saya boros?"
+Bot: "Berdasarkan data SIKAS kamu bulan ini:
+
+Ringkasan:
+- Pemasukan: Rp 5.000.000
+- Pengeluaran: Rp 4.200.000
+- Rasio: 84%
+
+Penilaian: Rasio 84% masuk kategori "Perlu Perhatian". Kamu menghabiskan hampir seluruh pemasukan.
+
+Pengeluaran terbesar:
+1. Makan: Rp 1.500.000 (36%)
+2. Belanja: Rp 900.000 (21%)
+
+Saran:
+- Coba meal prep untuk mengurangi biaya makan di luar
+- Terapkan aturan 24 jam sebelum belanja non-esensial
+- Target sisihkan minimal 10% di awal bulan
+
+Catatan: Ini analisis berdasarkan data SIKAS, bukan nasihat keuangan profesional."
+
+DISCLAIMER WAJIB:
+Selalu sertakan di akhir analisis keuangan: "Catatan: Ini analisis berdasarkan data SIKAS, bukan nasihat keuangan profesional."
 
 WORKFLOW UNTUK PERMINTAAN FINANSIAL:
 Untuk setiap permintaan terkait transaksi atau saldo, WAJIB ikuti alur:
@@ -274,7 +176,7 @@ PERMINTAAN PERUBAHAN SALDO:
 
 Selalu mulai dengan sapaan ramah dan tawarkan bantuan!`
 
-export const getActionInstructions = (): string => {
+const getActionInstructions = (): string => {
   const today = getJakartaDateString()
 
   return `
@@ -494,21 +396,27 @@ PENANGANAN "SET SALDO LANGSUNG":
 ---`
 }
 
-export const createSystemPrompt = (ragContext?: RAGContext | EnhancedRAGContext): Message => {
+interface ChatRequestBody {
+  messages: Message[]
+  modelIndex?: number
+  preferredModelId?: string
+  ragContext?: EnhancedRAGContext
+}
+
+const createSystemPrompt = (ragContext?: EnhancedRAGContext): Message => {
   let systemContent = BASE_SYSTEM_PROMPT
 
-  const enhancedContext = ragContext as EnhancedRAGContext | undefined
-  const hasUserContext = enhancedContext?.userContext !== undefined
+  const hasUserContext = ragContext?.userContext !== undefined
 
   if (hasUserContext) {
     systemContent += getActionInstructions()
   }
 
-  if (hasUserContext && enhancedContext?.formattedUserContext) {
+  if (hasUserContext && ragContext?.formattedUserContext) {
     systemContent += `
 
 ---
-${enhancedContext.formattedUserContext}
+${ragContext.formattedUserContext}
 ---`
   }
 
@@ -535,269 +443,140 @@ Gunakan informasi di atas untuk menjawab pertanyaan pengguna dengan lebih akurat
   }
 }
 
-export const parseStreamResponse = async (
-  reader: ReadableStreamDefaultReader<Uint8Array>,
-  onChunk: (content: string) => void,
-  signal?: AbortSignal
-): Promise<{ hasContent: boolean }> => {
-  const decoder = new TextDecoder()
-  let buffer = ""
-  let hasReceivedContent = false
-  let chunkCount = 0
+export async function POST(request: Request) {
+  if (!API_KEY) {
+    return NextResponse.json(
+      { error: "OpenRouter API key tidak dikonfigurasi di server" },
+      { status: 500 }
+    )
+  }
 
   try {
-    while (true) {
-      if (signal?.aborted) {
-        throw new DOMException("The operation was aborted.", "AbortError")
-      }
+    const body: ChatRequestBody = await request.json()
+    const { messages, modelIndex = 0, preferredModelId, ragContext } = body
 
-      const { done, value } = await reader.read()
-
-      if (done) break
-
-      buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split("\n")
-      buffer = lines.pop() || ""
-
-      for (const line of lines) {
-        if (line.startsWith("data: ")) {
-          const data = line.slice(6)
-
-          if (data === "[DONE]") {
-            if (process.env.NODE_ENV === "development") {
-              console.log(`[Stream] Done signal received. Chunks: ${chunkCount}, hasContent: ${hasReceivedContent}`)
-            }
-            return { hasContent: hasReceivedContent }
-          }
-
-          try {
-            const chunk: StreamChunk = JSON.parse(data)
-
-            if (chunk.choices && chunk.choices[0]?.delta?.content) {
-              hasReceivedContent = true
-              chunkCount++
-              onChunk(chunk.choices[0].delta.content)
-            }
-          } catch (parseError) {
-            if (process.env.NODE_ENV === "development") {
-              console.warn("[Stream] Failed to parse chunk:", data.substring(0, 100), parseError)
-            }
-          }
-        }
-      }
+    if (!messages || !Array.isArray(messages)) {
+      return NextResponse.json(
+        { error: "Messages array is required" },
+        { status: 400 }
+      )
     }
-  } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") {
-      throw error
-    }
-    throw error
-  }
 
-  return { hasContent: hasReceivedContent }
-}
-
-export const sendChatMessage = async (
-  messages: Message[],
-  modelIndex: number = 0,
-  onStream?: (chunk: string) => void,
-  signal?: AbortSignal,
-  ragContext?: RAGContext | EnhancedRAGContext
-): Promise<{ content: string; model: string }> => {
-  if (!API_KEY) {
-    throw new Error(
-      "OpenRouter API key tidak ditemukan. Pastikan NEXT_PUBLIC_OPENROUTER_API_KEY sudah diatur."
+    const systemPrompt = createSystemPrompt(ragContext)
+    const prunedMessages = pruneConversationHistory(
+      messages.filter((m) => m.role !== "system")
     )
-  }
+    const apiMessages = [systemPrompt, ...prunedMessages]
 
-  const systemPrompt = createSystemPrompt(ragContext)
-
-  const prunedMessages = pruneConversationHistory(
-    messages.filter((m) => m.role !== "system")
-  )
-
-  const apiMessages = [systemPrompt, ...prunedMessages]
-
-  if (process.env.NODE_ENV === "development") {
-    const estimatedTokens = estimateMessagesTokens(apiMessages)
-    console.log(
-      `[Token Estimate] ~${estimatedTokens} tokens for ${apiMessages.length} messages`
-    )
-  }
-
-  const response = await fetch(
-    "https://openrouter.ai/api/v1/chat/completions",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${API_KEY}`,
-        "HTTP-Referer": SITE_URL,
-        "X-Title": SITE_NAME,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: MODELS[modelIndex],
-        messages: apiMessages.map((m) => ({
-          role: m.role,
-          content: m.content,
-        })),
-        stream: true,
-        temperature: 0.7,
-        max_tokens: 1000,
-      }),
-      signal,
-    }
-  )
-
-  if (!response.ok) {
-    const errorText = await response.text()
-
-    if (response.status === 404) {
-      throw new Error(`MODEL_NOT_FOUND: ${MODELS[modelIndex]} tidak tersedia`)
-    } else if (response.status === 429) {
-      throw new Error(`RATE_LIMITED: Terlalu banyak permintaan`)
-    } else if (response.status === 402) {
-      throw new Error(`INSUFFICIENT_CREDITS: Saldo tidak cukup`)
-    } else if (response.status === 502 || response.status === 503) {
-      throw new Error(`MODEL_DOWN: Server model sedang bermasalah`)
-    } else if (response.status === 401) {
-      throw new Error("Autentikasi gagal. Periksa API key Anda.")
-    } else if (response.status >= 500) {
-      throw new Error(`SERVER_ERROR: ${errorText}`)
-    }
-
-    throw new Error(`API Error (${response.status}): ${errorText}`)
-  }
-
-  const reader = response.body?.getReader()
-  if (!reader) {
-    throw new Error("Gagal mendapatkan response reader")
-  }
-
-  let fullContent = ""
-
-  if (onStream) {
-    await parseStreamResponse(
-      reader,
-      (chunk) => {
-        fullContent += chunk
-        onStream(chunk)
-      },
-      signal
-    )
-  } else {
-    await parseStreamResponse(reader, (chunk) => {
-      fullContent += chunk
-    })
-  }
-
-  // Validate response is not empty
-  if (fullContent.trim().length === 0) {
     if (process.env.NODE_ENV === "development") {
-      console.warn(`[sendChatMessage] Model ${MODELS[modelIndex]} returned empty response`)
-    }
-    throw new Error("EMPTY_RESPONSE: Model returned empty response")
-  }
-
-  return {
-    content: fullContent,
-    model: MODELS[modelIndex],
-  }
-}
-
-export const handleModelFallback = async (
-  messages: Message[],
-  startModelIndex: number = 0,
-  onStream?: (chunk: string) => void,
-  signal?: AbortSignal,
-  ragContext?: RAGContext | EnhancedRAGContext
-): Promise<{ content: string; model: string; finalIndex: number }> => {
-  let lastError: Error | null = null
-  const unavailableModels: Set<number> = new Set()
-  const rateLimitedModels: Set<number> = new Set()
-  let retryDelay = 1000
-
-  const order: number[] = []
-  for (let i = startModelIndex; i < MODELS.length; i++) order.push(i)
-  for (let i = 0; i < startModelIndex; i++) order.push(i)
-
-  for (const i of order) {
-    if (unavailableModels.has(i)) {
-      continue
+      const estimatedTokens = estimateMessagesTokens(apiMessages)
+      console.log(
+        `[Chat API] ~${estimatedTokens} tokens for ${apiMessages.length} messages`
+      )
     }
 
-    try {
-      const result = await sendChatMessage(messages, i, onStream, signal, ragContext)
-      return { content: result.content, model: result.model, finalIndex: i }
-    } catch (error: unknown) {
-      if (error instanceof DOMException && error.name === "AbortError") {
-        throw error
+    let selectedModel = MODELS[modelIndex]
+    if (preferredModelId && MODELS.includes(preferredModelId)) {
+      selectedModel = preferredModelId
+    }
+
+    const response = await fetch(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${API_KEY}`,
+          "HTTP-Referer": SITE_URL,
+          "X-Title": SITE_NAME,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: selectedModel,
+          messages: apiMessages.map((m) => ({
+            role: m.role,
+            content: m.content,
+          })),
+          stream: true,
+          temperature: 0.7,
+          max_tokens: 1000,
+        }),
       }
+    )
 
-      const errorMessage =
-        error instanceof Error ? error.message : String(error)
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error(`[Chat API] OpenRouter error: ${response.status}`, errorText)
 
-      if (errorMessage.startsWith("MODEL_NOT_FOUND:")) {
-        unavailableModels.add(i)
-        console.warn(`Model ${MODELS[i]} not available, skipping`)
-        continue
-      }
+      return NextResponse.json(
+        {
+          error: `Model error (${response.status})`,
+          retryWithNextModel: response.status === 404 || response.status === 429 || response.status >= 500
+        },
+        { status: response.status }
+      )
+    }
 
-      if (
-        errorMessage.startsWith("RATE_LIMITED:") ||
-        errorMessage.startsWith("INSUFFICIENT_CREDITS:")
-      ) {
-        rateLimitedModels.add(i)
-
-        const availableModels = order.filter(idx => !unavailableModels.has(idx))
-        if (rateLimitedModels.size >= availableModels.length) {
-          throw new Error(
-            "Semua model sedang sibuk. Silakan coba lagi dalam beberapa menit."
-          )
+    const stream = new ReadableStream({
+      async start(controller) {
+        const reader = response.body?.getReader()
+        if (!reader) {
+          controller.close()
+          return
         }
 
-        await new Promise((resolve) => setTimeout(resolve, retryDelay))
-        retryDelay = Math.min(retryDelay * 2, 8000)
-        continue
-      }
+        const decoder = new TextDecoder()
+        let buffer = ""
 
-      if (errorMessage.startsWith("MODEL_DOWN:") || errorMessage.startsWith("SERVER_ERROR:")) {
-        console.warn(`Model ${MODELS[i]} temporarily down, trying next`)
-        await new Promise((resolve) => setTimeout(resolve, 500))
-        continue
-      }
+        try {
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
 
-      // Handle empty response - try next model
-      if (errorMessage.startsWith("EMPTY_RESPONSE:")) {
-        console.warn(`Model ${MODELS[i]} returned empty response, trying next model`)
-        continue
-      }
+            buffer += decoder.decode(value, { stream: true })
+            const lines = buffer.split("\n")
+            buffer = lines.pop() || ""
 
-      lastError = error instanceof Error ? error : new Error(errorMessage)
+            for (const line of lines) {
+              if (line.startsWith("data: ")) {
+                const data = line.slice(6)
+                if (data === "[DONE]") {
+                  controller.enqueue(new TextEncoder().encode("data: [DONE]\n\n"))
+                  continue
+                }
 
-      if (errorMessage.includes("Autentikasi gagal")) {
-        throw lastError
-      }
+                try {
+                  const chunk: StreamChunk = JSON.parse(data)
+                  if (chunk.choices && chunk.choices[0]?.delta?.content) {
+                    controller.enqueue(
+                      new TextEncoder().encode(`data: ${JSON.stringify(chunk)}\n\n`)
+                    )
+                  }
+                } catch {
+                  continue
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error("[Chat API] Stream error:", error)
+        } finally {
+          controller.close()
+        }
+      },
+    })
 
-      continue
-    }
-  }
-
-  throw (
-    lastError ||
-    new Error("Chatbot sedang tidak tersedia. Silakan coba lagi nanti.")
-  )
-}
-
-export const generateMessageId = (): string => {
-  return `msg_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
-}
-
-export const getGreetingMessage = (): Message => {
-  return {
-    id: generateMessageId(),
-    role: "assistant",
-    content:
-      "Halo! Saya SIKAS Bot. Ada yang bisa saya bantu tentang pencatatan keuangan? Kamu bisa tanya tentang cara pakai SIKAS, fitur yang tersedia, atau hal lainnya seputar aplikasi ini.",
-    timestamp: new Date(),
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
+    })
+  } catch (error) {
+    console.error("[Chat API] Error:", error)
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Unknown error" },
+      { status: 500 }
+    )
   }
 }

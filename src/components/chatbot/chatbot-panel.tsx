@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { usePathname } from "next/navigation"
-import { X, Bot } from "lucide-react"
+import { X, Bot, Trash2 } from "lucide-react"
 import { type ModelSelection } from "@/types/chatbot"
 import { LANDING_QUICK_REPLIES, DASHBOARD_QUICK_REPLIES, ALL_MODELS } from "@/services/chatbot"
 import { useChatMessages } from "@/components/chatbot/hooks/use-chat-messages"
@@ -10,6 +10,7 @@ import { useChatActions } from "@/components/chatbot/hooks/use-chat-actions"
 import { ChatMessages } from "@/components/chatbot/chat-messages"
 import { ChatInput } from "@/components/chatbot/chat-input"
 import { ModelSelector } from "@/components/chatbot/model-selector"
+import { useCurrentUser } from "@/hooks/use-user"
 
 interface PendingImage {
   file: File
@@ -24,6 +25,8 @@ interface ChatbotPanelProps {
 export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
   const pathname = usePathname()
   const isOnDashboard = pathname?.startsWith("/dashboard") ?? false
+  const { data: user, isLoading: isUserLoading } = useCurrentUser()
+  const userId = user?.id ?? null
 
   const [input, setInput] = useState("")
   const [pendingImage, setPendingImage] = useState<PendingImage | null>(null)
@@ -49,8 +52,11 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
     sendMessage,
     sendImageMessage,
     setShowQuickReplies,
+    clearMessages,
   } = useChatMessages({
     isOnDashboard,
+    userId,
+    isUserLoading,
     onPendingAction: setPendingAction,
   })
 
@@ -95,13 +101,13 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
     } else if (input.trim()) {
       const content = input
       setInput("")
-      await sendMessage(content)
+      await sendMessage(content, modelSelection)
     }
-  }, [pendingImage, input, sendImageMessage, sendMessage, setShowQuickReplies])
+  }, [pendingImage, input, sendImageMessage, sendMessage, setShowQuickReplies, modelSelection])
 
   const handleQuickReply = useCallback((message: string) => {
-    sendMessage(message)
-  }, [sendMessage])
+    sendMessage(message, modelSelection)
+  }, [sendMessage, modelSelection])
 
   if (!isOpen) return null
 
@@ -121,12 +127,21 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
             <p className="text-xs text-on-surface-variant">Asisten Keuangan Anda</p>
           </div>
         </div>
-        <button
-          onClick={onClose}
-          className="w-8 h-8 rounded-full hover:bg-on-surface-subtle flex items-center justify-center transition-colors cursor-pointer"
-        >
-          <X className="w-5 h-5 text-on-surface" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={clearMessages}
+            className="w-8 h-8 rounded-full hover:bg-on-surface-subtle flex items-center justify-center transition-colors cursor-pointer"
+            title="Hapus riwayat chat"
+          >
+            <Trash2 className="w-4 h-4 text-on-surface" />
+          </button>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full hover:bg-on-surface-subtle flex items-center justify-center transition-colors cursor-pointer"
+          >
+            <X className="w-5 h-5 text-on-surface" />
+          </button>
+        </div>
       </div>
 
       <div className="px-4 py-2 border-b border-border bg-muted/30 shrink-0">

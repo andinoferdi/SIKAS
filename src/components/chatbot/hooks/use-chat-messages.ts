@@ -1,14 +1,14 @@
 "use client"
 
-import { useState, useRef, useCallback } from "react"
+import { useState, useRef, useCallback, useEffect } from "react"
 import { useQueryClient } from "@tanstack/react-query"
-import { type Message } from "@/types/chatbot"
+import { type Message, type ModelSelection, type StreamChunk } from "@/types/chatbot"
 import type { EnhancedRAGContext } from "@/types/rag"
 import {
-  handleModelFallback,
   generateMessageId,
   getGreetingMessage,
   retrieveContext,
+  MODELS,
 } from "@/services/chatbot"
 import {
   parseActions,
@@ -16,9 +16,129 @@ import {
   cleanContentForDisplay,
 } from "@/components/chatbot/utils/action-parser"
 import type { PendingAction } from "@/components/chatbot/batch-action-confirmation"
+import { saveChatHistory, loadChatHistory, clearChatHistory } from "@/lib/utils/chat-storage"
+
+const streamChatFromServer = async (
+  messages: Message[],
+  modelIndex: number,
+  preferredModelId: string | undefined,
+  onChunk: (chunk: string) => void,
+  signal: AbortSignal,
+  ragContext?: EnhancedRAGContext
+): Promise<{ content: string; hasContent: boolean }> => {
+  const response = await fetch("/api/chatbot/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      messages,
+      modelIndex,
+      preferredModelId,
+      ragContext,
+    }),
+    signal,
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: "Request failed" }))
+    if (errorData.retryWithNextModel) {
+      throw new Error(`MODEL_ERROR:${response.status}`)
+    }
+    throw new Error(errorData.error || "Request failed")
+  }
+
+  const reader = response.body?.getReader()
+  if (!reader) {
+    throw new Error("No response body")
+  }
+
+  const decoder = new TextDecoder()
+  let buffer = ""
+  let fullContent = ""
+  let hasContent = false
+
+  while (true) {
+    if (signal.aborted) {
+      throw new DOMException("Aborted", "AbortError")
+    }
+
+    const { done, value } = await reader.read()
+    if (done) break
+
+    buffer += decoder.decode(value, { stream: true })
+    const lines = buffer.split("\n")
+    buffer = lines.pop() || ""
+
+    for (const line of lines) {
+      if (line.startsWith("data: ")) {
+        const data = line.slice(6)
+        if (data === "[DONE]") continue
+
+        try {
+          const chunk: StreamChunk = JSON.parse(data)
+          if (chunk.choices && chunk.choices[0]?.delta?.content) {
+            const content = chunk.choices[0].delta.content
+            fullContent += content
+            hasContent = true
+            onChunk(content)
+          }
+        } catch {
+          continue
+        }
+      }
+    }
+  }
+
+  return { content: fullContent, hasContent }
+}
+
+const handleModelFallbackClient = async (
+  messages: Message[],
+  preferredModelId: string | undefined,
+  onChunk: (chunk: string) => void,
+  signal: AbortSignal,
+  ragContext?: EnhancedRAGContext
+): Promise<string> => {
+  const startIndex = preferredModelId ? MODELS.indexOf(preferredModelId) : 0
+  const validStartIndex = startIndex >= 0 ? startIndex : 0
+
+  for (let attempt = 0; attempt < MODELS.length; attempt++) {
+    const modelIndex = (validStartIndex + attempt) % MODELS.length
+
+    try {
+      const result = await streamChatFromServer(
+        messages,
+        modelIndex,
+        attempt === 0 ? preferredModelId : undefined,
+        onChunk,
+        signal,
+        ragContext
+      )
+
+      if (result.hasContent && result.content.trim().length > 0) {
+        return result.content
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        throw error
+      }
+
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      if (errorMessage.startsWith("MODEL_ERROR:")) {
+        console.warn(`Model ${MODELS[modelIndex]} failed, trying next...`)
+        continue
+      }
+
+      throw error
+    }
+  }
+
+  throw new Error("Semua model sedang tidak tersedia. Silakan coba lagi nanti.")
+}
 
 interface UseChatMessagesOptions {
   isOnDashboard: boolean
+  userId: string | null
+  isUserLoading: boolean
   onPendingAction: (action: PendingAction) => void
 }
 
@@ -28,18 +148,20 @@ interface UseChatMessagesReturn {
   showQuickReplies: boolean
   initializeMessages: () => void
   addMessage: (message: Message) => void
-  sendMessage: (content: string) => Promise<void>
+  sendMessage: (content: string, modelSelection?: ModelSelection) => Promise<void>
   sendImageMessage: (imageFile: File, prompt: string, imageDataUrl: string) => Promise<void>
   setIsLoading: (loading: boolean) => void
   setShowQuickReplies: (show: boolean) => void
+  clearMessages: () => void
 }
 
-export function useChatMessages({ isOnDashboard, onPendingAction }: UseChatMessagesOptions): UseChatMessagesReturn {
+export function useChatMessages({ isOnDashboard, userId, isUserLoading, onPendingAction }: UseChatMessagesOptions): UseChatMessagesReturn {
   const queryClient = useQueryClient()
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [showQuickReplies, setShowQuickReplies] = useState(true)
   const abortControllerRef = useRef<AbortController | null>(null)
+  const prevUserIdRef = useRef<string | null | undefined>(undefined)
 
   const invalidateQueries = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["transactions"] })
@@ -47,17 +169,63 @@ export function useChatMessages({ isOnDashboard, onPendingAction }: UseChatMessa
     queryClient.invalidateQueries({ queryKey: ["user", "current"] })
   }, [queryClient])
 
+  // Reset chat state when userId changes (login/logout/user switch)
+  useEffect(() => {
+    // Don't reset while user data is loading - wait for actual userId
+    if (isUserLoading) return
+
+    // Skip on initial mount
+    if (prevUserIdRef.current === undefined) {
+      prevUserIdRef.current = userId
+      return
+    }
+
+    // userId changed - reset chat state for new auth context
+    if (prevUserIdRef.current !== userId) {
+      prevUserIdRef.current = userId
+
+      // Load new user's history or start fresh
+      const savedMessages = loadChatHistory(userId)
+      if (savedMessages.length > 0) {
+        setMessages(savedMessages)
+        setShowQuickReplies(false)
+      } else {
+        setMessages([getGreetingMessage()])
+        setShowQuickReplies(true)
+      }
+    }
+  }, [userId, isUserLoading])
+
   const initializeMessages = useCallback(() => {
     if (messages.length === 0) {
-      setMessages([getGreetingMessage()])
+      const savedMessages = loadChatHistory(userId)
+      if (savedMessages.length > 0) {
+        setMessages(savedMessages)
+        setShowQuickReplies(false)
+      } else {
+        setMessages([getGreetingMessage()])
+        setShowQuickReplies(true)
+      }
     }
-  }, [messages.length])
+  }, [messages.length, userId])
+
+  useEffect(() => {
+    if (messages.length > 0 && !messages.some((m) => m.isStreaming)) {
+      saveChatHistory(messages, userId)
+    }
+  }, [messages, userId])
 
   const addMessage = useCallback((message: Message) => {
     setMessages((prev) => [...prev, message])
   }, [])
 
-  const sendMessage = useCallback(async (content: string) => {
+  const clearMessages = useCallback(() => {
+    clearChatHistory(userId)
+    setMessages([getGreetingMessage()])
+    setShowQuickReplies(true)
+  }, [userId])
+
+  const sendMessage = useCallback(async (content: string, modelSelection?: ModelSelection) => {
     if (!content.trim() || isLoading) return
 
     setShowQuickReplies(false)
@@ -85,6 +253,8 @@ export function useChatMessages({ isOnDashboard, onPendingAction }: UseChatMessa
 
     abortControllerRef.current = new AbortController()
 
+    const preferredModelId = modelSelection?.mode === "manual" ? modelSelection.selectedModelId : undefined
+
     try {
       let ragContext: EnhancedRAGContext | undefined
       try {
@@ -109,10 +279,10 @@ export function useChatMessages({ isOnDashboard, onPendingAction }: UseChatMessa
       }
 
       let fullContent = ""
-      await handleModelFallback(
+      fullContent = await handleModelFallbackClient(
         [...messages, userMessage],
-        0,
-        (chunk) => {
+        preferredModelId,
+        (chunk: string) => {
           fullContent += chunk
           const displayContent = cleanContentForDisplay(fullContent)
           setMessages((prev) =>
@@ -268,5 +438,6 @@ export function useChatMessages({ isOnDashboard, onPendingAction }: UseChatMessa
     sendImageMessage,
     setIsLoading,
     setShowQuickReplies,
+    clearMessages,
   }
 }
