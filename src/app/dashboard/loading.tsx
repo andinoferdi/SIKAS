@@ -1,5 +1,3 @@
-"use client"
-
 export default function DashboardLoading() {
   return (
     <div className="p-4 lg:p-6 space-y-6 pb-24 lg:pb-6">

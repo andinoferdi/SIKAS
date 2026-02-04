@@ -12,19 +12,19 @@ export {
   handleModelFallback,
   generateMessageId,
   getGreetingMessage,
-} from "./core"
+} from "@/services/chatbot/core"
 
 export {
   retrieveContext,
   isContextUseful,
   formatContextDebug,
   ragService,
-} from "./rag"
+} from "@/services/chatbot/rag"
 
 export {
   knowledgeData,
   getKnowledgeCount,
   getKnowledgeByCategory,
-} from "./knowledge-seed"
+} from "@/services/chatbot/knowledge-seed"
 
 

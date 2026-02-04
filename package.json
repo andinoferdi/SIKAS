@@ -25,6 +25,7 @@
     "react-dom": "latest",
     "react-hook-form": "latest",
     "react-markdown": "latest",
+    "remark-gfm": "^4.0.1",
     "sonner": "latest",
     "zod": "latest",
     "zustand": "latest"

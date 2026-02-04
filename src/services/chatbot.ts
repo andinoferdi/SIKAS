@@ -1,6 +1,3 @@
-// Re-export from new modular structure
-// This file maintains backwards compatibility
-
 export {
   MODELS,
   MODEL_DISPLAY_NAMES,
@@ -15,16 +12,16 @@ export {
   handleModelFallback,
   generateMessageId,
   getGreetingMessage,
-} from "./chatbot/core"
+} from "@/services/chatbot/core"
 
 export {
   retrieveContext,
   isContextUseful,
   ragService,
-} from "./chatbot/rag"
+} from "@/services/chatbot/rag"
 
 export {
   knowledgeData,
   getKnowledgeCount,
-} from "./chatbot/knowledge-seed"
+} from "@/services/chatbot/knowledge-seed"
 

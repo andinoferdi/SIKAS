@@ -12,11 +12,11 @@ export default function FAQPage() {
   return (
     <main className="min-h-screen bg-background pb-20 lg:pb-0">
       <div className="bg-primary pt-12 pb-20 px-6 text-center text-primary-foreground relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full bg-[url('/images/pattern.png')] opacity-10 mix-blend-overlay"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-primary-foreground/15 via-transparent to-transparent opacity-80"></div>
         <div className="relative z-10 max-w-2xl mx-auto">
           <Link 
             href="/dashboard"
-            className="inline-flex items-center gap-2 text-primary-foreground/80 hover:text-white mb-6 text-sm font-medium transition-colors"
+            className="inline-flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground mb-6 text-sm font-medium transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Kembali ke Dashboard

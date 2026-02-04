@@ -31,7 +31,6 @@ export interface KnowledgeSeedEntry {
   metadata?: Record<string, unknown>
 }
 
-// User context types for chatbot
 export interface CategorySummary {
   category: string
   total: number
@@ -64,18 +63,15 @@ export interface EnhancedRAGContext extends RAGContext {
   formattedUserContext?: string
 }
 
-// Action types for chatbot
 export type ChatbotAction =
   | "create_transaction"
   | "delete_transaction"
   | "edit_transaction"
   | "search_transactions"
-  // Batch actions
   | "batch_create_transactions"
   | "batch_delete_transactions"
   | "batch_edit_transactions"
   | "delete_all_transactions"
-  // Error handling
   | "parse_error"
 
 export interface CreateTransactionPayload {
@@ -111,7 +107,6 @@ export interface SearchTransactionsPayload {
   description?: string
 }
 
-// Batch action payloads
 export interface BatchCreateTransactionsPayload {
   transactions: CreateTransactionPayload[]
 }
@@ -127,9 +122,9 @@ export interface BatchDeleteTransactionsPayload {
 }
 
 export interface DeleteAllTransactionsPayload {
-  confirmationText: string // Must be "HAPUS SEMUA"
-  month?: number // Optional: only delete specific month
-  year?: number // Optional: only delete specific year
+  confirmationText: string
+  month?: number
+  year?: number
 }
 
 export interface BatchEditTransactionsPayload {
@@ -146,7 +141,6 @@ export interface BatchEditTransactionsPayload {
   }>
 }
 
-// Batch action result
 export interface BatchActionResult {
   success: boolean
   totalRequested: number

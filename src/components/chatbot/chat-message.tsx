@@ -1,11 +1,11 @@
-"use client"
-
 import { memo } from "react"
 import Image from "next/image"
 import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 import { type Message } from "@/types/chatbot"
 import { Bot, User, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { ChatBubble } from "@/components/chatbot/chat-bubble"
 
 interface ChatMessageProps {
   message: Message
@@ -36,7 +36,40 @@ const MemoizedMarkdown = memo(
             {children}
           </a>
         ),
+        table: ({ children }) => (
+          <div className="my-2 w-full overflow-y-auto">
+            <table className="w-full text-sm border-collapse border border-border">
+              {children}
+            </table>
+          </div>
+        ),
+        thead: ({ children }) => (
+          <thead className="bg-muted/50">
+            {children}
+          </thead>
+        ),
+        tbody: ({ children }) => (
+          <tbody>
+            {children}
+          </tbody>
+        ),
+        tr: ({ children }) => (
+          <tr className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
+            {children}
+          </tr>
+        ),
+        th: ({ children }) => (
+          <th className="px-3 py-2 text-left font-medium text-muted-foreground border-r border-border last:border-0">
+            {children}
+          </th>
+        ),
+        td: ({ children }) => (
+          <td className="px-3 py-2 border-r border-border last:border-0 align-top">
+            {children}
+          </td>
+        ),
       }}
+      remarkPlugins={[remarkGfm]}
     >
       {content}
     </ReactMarkdown>
@@ -71,14 +104,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
         )}
       </div>
 
-      <div
-        className={cn(
-          "max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
-          isBot
-            ? "bg-muted text-card-foreground rounded-tl-sm"
-            : "bg-primary text-on-surface rounded-tr-sm"
-        )}
-      >
+      <ChatBubble variant={isBot ? "bot" : "user"}>
         {message.imageUrl && (
           <div className="mb-2">
             <Image
@@ -111,7 +137,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
             <span className="text-xs">Mengetik...</span>
           </div>
         )}
-      </div>
+      </ChatBubble>
     </div>
   )
 }

@@ -738,7 +738,6 @@ export const sendChatMessage = async (
     })
   }
 
-  // Validate response is not empty
   if (fullContent.trim().length === 0) {
     if (process.env.NODE_ENV === "development") {
       console.warn(`[sendChatMessage] Model ${MODELS[modelIndex]} returned empty response`)
@@ -814,7 +813,6 @@ export const handleModelFallback = async (
         continue
       }
 
-      // Handle empty response - try next model
       if (errorMessage.startsWith("EMPTY_RESPONSE:")) {
         console.warn(`Model ${MODELS[i]} returned empty response, trying next model`)
         continue

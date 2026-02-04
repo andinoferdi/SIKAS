@@ -1,6 +1,7 @@
 export { Chatbot } from "@/components/chatbot/chatbot"
 export { ChatbotButton } from "@/components/chatbot/chatbot-button"
 export { ChatbotPanel } from "@/components/chatbot/chatbot-panel"
+export { ChatBubble } from "@/components/chatbot/chat-bubble"
 export { ChatMessage } from "@/components/chatbot/chat-message"
 export { ChatMessages } from "@/components/chatbot/chat-messages"
 export { ChatInput } from "@/components/chatbot/chat-input"

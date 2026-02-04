@@ -67,7 +67,6 @@ async function handleBatchCreate(
     return errorResponse(`Maksimal ${MAX_BATCH_SIZE} transaksi per batch`, 400)
   }
 
-  // Validate all transactions first
   for (let i = 0; i < payload.transactions.length; i++) {
     const tx = payload.transactions[i]
     if (!tx.amount || !tx.type || !tx.category || !tx.payment_method) {
@@ -75,7 +74,6 @@ async function handleBatchCreate(
     }
   }
 
-  // Get current user balances
   const { data: user, error: userError } = await supabase
     .from("users")
     .select("mbanking_balance, cash_balance")
@@ -86,7 +84,6 @@ async function handleBatchCreate(
     return errorResponse("User tidak ditemukan", 404)
   }
 
-  // Calculate total balance changes
   let mbankingChange = 0
   let cashChange = 0
 
@@ -102,7 +99,6 @@ async function handleBatchCreate(
   const newMbankingBalance = Number(user.mbanking_balance) + mbankingChange
   const newCashBalance = Number(user.cash_balance) + cashChange
 
-  // Validate final balances
   if (newCashBalance < 0) {
     return errorResponse(`Saldo Cash tidak cukup. Perubahan total: Rp ${Math.abs(cashChange).toLocaleString("id-ID")}`, 400)
   }
@@ -111,7 +107,6 @@ async function handleBatchCreate(
     return errorResponse(`Saldo M-Banking akan di bawah minimum Rp ${MIN_MBANKING_BALANCE.toLocaleString("id-ID")}`, 400)
   }
 
-  // Prepare transactions for insert
   const today = getJakartaDateString()
   const transactionsToInsert = payload.transactions.map((tx: CreateTransactionPayload) => ({
     user_id: userId,
@@ -123,7 +118,6 @@ async function handleBatchCreate(
     transaction_date: tx.transaction_date || today,
   }))
 
-  // Insert all transactions
   const { data: insertedTransactions, error: insertError } = await supabase
     .from("transactions")
     .insert(transactionsToInsert)
@@ -133,7 +127,6 @@ async function handleBatchCreate(
     return errorResponse(insertError.message, 500)
   }
 
-  // Update user balance
   const { error: balanceError } = await supabase
     .from("users")
     .update({
@@ -143,7 +136,6 @@ async function handleBatchCreate(
     .eq("id", userId)
 
   if (balanceError) {
-    // Rollback: delete inserted transactions
     const insertedIds = insertedTransactions?.map((tx) => tx.id) || []
     if (insertedIds.length > 0) {
       await supabase.from("transactions").delete().in("id", insertedIds)
@@ -184,7 +176,6 @@ async function handleBatchDelete(
     return errorResponse("Filter tidak valid. Harap tentukan minimal 1 kriteria filter.", 400)
   }
 
-  // Build query to find matching transactions
   let query = supabase
     .from("transactions")
     .select("*")
@@ -231,7 +222,6 @@ async function handleBatchDelete(
     return errorResponse(`Terlalu banyak transaksi (${transactions.length}). Maksimal ${MAX_BATCH_SIZE} transaksi per batch. Persempit filter.`, 400)
   }
 
-  // Get current user balances
   const { data: user, error: userError } = await supabase
     .from("users")
     .select("mbanking_balance, cash_balance")
@@ -242,12 +232,10 @@ async function handleBatchDelete(
     return errorResponse("User tidak ditemukan", 404)
   }
 
-  // Calculate balance changes (reverse of the transactions)
   let mbankingChange = 0
   let cashChange = 0
 
   for (const tx of transactions) {
-    // Deleting expense = add back, deleting income = subtract
     const change = tx.type === "expense" ? Number(tx.amount) : -Number(tx.amount)
     if (tx.payment_method === "mbanking") {
       mbankingChange += change
@@ -259,7 +247,6 @@ async function handleBatchDelete(
   const newMbankingBalance = Number(user.mbanking_balance) + mbankingChange
   const newCashBalance = Number(user.cash_balance) + cashChange
 
-  // Validate final balances
   if (newCashBalance < 0) {
     return errorResponse("Tidak dapat menghapus: saldo Cash akan menjadi negatif", 400)
   }
@@ -268,7 +255,6 @@ async function handleBatchDelete(
     return errorResponse(`Tidak dapat menghapus: saldo M-Banking akan di bawah minimum Rp ${MIN_MBANKING_BALANCE.toLocaleString("id-ID")}`, 400)
   }
 
-  // Delete all matching transactions
   const transactionIds = transactions.map((tx) => tx.id)
   const { error: deleteError } = await supabase
     .from("transactions")
@@ -279,7 +265,6 @@ async function handleBatchDelete(
     return errorResponse(deleteError.message, 500)
   }
 
-  // Update user balance
   const { error: balanceError } = await supabase
     .from("users")
     .update({
@@ -289,7 +274,6 @@ async function handleBatchDelete(
     .eq("id", userId)
 
   if (balanceError) {
-    // Rollback: re-insert deleted transactions
     await supabase.from("transactions").insert(transactions)
     return errorResponse("Gagal memperbarui saldo", 500)
   }
@@ -336,7 +320,6 @@ async function handleBatchEdit(
     return errorResponse(`Maksimal ${MAX_BATCH_SIZE} transaksi per batch edit`, 400)
   }
 
-  // Validate all updates have transactionId
   for (let i = 0; i < payload.updates.length; i++) {
     const update = payload.updates[i]
     if (!update.transactionId) {
@@ -347,10 +330,8 @@ async function handleBatchEdit(
     }
   }
 
-  // Get all transaction IDs to fetch
   const transactionIds = payload.updates.map((u) => u.transactionId)
 
-  // Fetch all existing transactions
   const { data: existingTransactions, error: fetchError } = await supabase
     .from("transactions")
     .select("*")
@@ -367,7 +348,6 @@ async function handleBatchEdit(
     return errorResponse(`Transaksi tidak ditemukan: ${missingIds.length} transaksi tidak valid atau bukan milik user`, 404)
   }
 
-  // Get current user balances
   const { data: user, error: userError } = await supabase
     .from("users")
     .select("mbanking_balance, cash_balance")
@@ -378,8 +358,6 @@ async function handleBatchEdit(
     return errorResponse("User tidak ditemukan", 404)
   }
 
-  // Calculate balance changes for each edit
-  // For each edit: reverse old transaction, apply new values
   let mbankingChange = 0
   let cashChange = 0
 
@@ -389,7 +367,6 @@ async function handleBatchEdit(
     const oldTx = transactionMap.get(update.transactionId)!
     const newUpdates = update.updates
 
-    // Determine old and new values
     const oldAmount = Number(oldTx.amount)
     const oldType = oldTx.type as "income" | "expense"
     const oldPaymentMethod = oldTx.payment_method as "mbanking" | "cash"
@@ -398,7 +375,6 @@ async function handleBatchEdit(
     const newType = newUpdates.type ?? oldType
     const newPaymentMethod = newUpdates.payment_method ?? oldPaymentMethod
 
-    // Reverse old transaction
     const oldChange = oldType === "expense" ? oldAmount : -oldAmount
     if (oldPaymentMethod === "mbanking") {
       mbankingChange += oldChange
@@ -406,7 +382,6 @@ async function handleBatchEdit(
       cashChange += oldChange
     }
 
-    // Apply new transaction
     const newChange = newType === "expense" ? -newAmount : newAmount
     if (newPaymentMethod === "mbanking") {
       mbankingChange += newChange
@@ -418,7 +393,6 @@ async function handleBatchEdit(
   const newMbankingBalance = Number(user.mbanking_balance) + mbankingChange
   const newCashBalance = Number(user.cash_balance) + cashChange
 
-  // Validate final balances
   if (newCashBalance < 0) {
     return errorResponse("Tidak dapat mengubah: saldo Cash akan menjadi negatif", 400)
   }
@@ -427,10 +401,8 @@ async function handleBatchEdit(
     return errorResponse(`Tidak dapat mengubah: saldo M-Banking akan di bawah minimum Rp ${MIN_MBANKING_BALANCE.toLocaleString("id-ID")}`, 400)
   }
 
-  // Store original transactions for potential rollback
   const originalTransactions = [...existingTransactions]
 
-  // Update all transactions
   const updateResults: Array<{ index: number; success: boolean; message?: string; transactionId?: string }> = []
 
   for (let i = 0; i < payload.updates.length; i++) {
@@ -464,11 +436,9 @@ async function handleBatchEdit(
   const failedCount = updateResults.filter((r) => !r.success).length
 
   if (failedCount > 0 && failedCount === payload.updates.length) {
-    // All failed, no need to update balance
     return errorResponse("Semua update gagal", 500)
   }
 
-  // Update user balance
   const { error: balanceError } = await supabase
     .from("users")
     .update({
@@ -478,7 +448,6 @@ async function handleBatchEdit(
     .eq("id", userId)
 
   if (balanceError) {
-    // Rollback: restore original transactions
     for (const original of originalTransactions) {
       await supabase
         .from("transactions")
@@ -522,12 +491,10 @@ async function handleDeleteAll(
 ): Promise<NextResponse> {
   const supabase = await createClient()
 
-  // Validate confirmation text
   if (payload.confirmationText !== "HAPUS SEMUA") {
     return errorResponse("Konfirmasi tidak valid. Ketik 'HAPUS SEMUA' untuk melanjutkan.", 400)
   }
 
-  // Build query based on optional month/year filter
   let query = supabase
     .from("transactions")
     .select("*")
@@ -561,7 +528,6 @@ async function handleDeleteAll(
     })
   }
 
-  // Calculate balance changes
   let mbankingChange = 0
   let cashChange = 0
 
@@ -574,7 +540,6 @@ async function handleDeleteAll(
     }
   }
 
-  // Get current balances
   const { data: user, error: userError } = await supabase
     .from("users")
     .select("mbanking_balance, cash_balance")
@@ -588,11 +553,8 @@ async function handleDeleteAll(
   const newMbankingBalance = Number(user.mbanking_balance) + mbankingChange
   const newCashBalance = Number(user.cash_balance) + cashChange
 
-  // For delete all, we allow negative balances since user explicitly wants to reset
-  // But we'll warn if the balance would be unusual
   const hasNegativeBalance = newMbankingBalance < 0 || newCashBalance < 0
 
-  // Delete all matching transactions
   const transactionIds = transactions.map((tx) => tx.id)
   const { error: deleteError } = await supabase
     .from("transactions")
@@ -603,7 +565,6 @@ async function handleDeleteAll(
     return errorResponse(deleteError.message, 500)
   }
 
-  // Update user balance
   const { error: balanceError } = await supabase
     .from("users")
     .update({
@@ -613,7 +574,6 @@ async function handleDeleteAll(
     .eq("id", userId)
 
   if (balanceError) {
-    // Rollback: re-insert deleted transactions
     await supabase.from("transactions").insert(transactions)
     return errorResponse("Gagal memperbarui saldo", 500)
   }

@@ -40,6 +40,8 @@ Gunakan route groups (folder) untuk organisasi tanpa mempengaruhi URL. Gunakan p
 
 Gunakan nama deskriptif dan early return. Gunakan const arrow function untuk handlers. Sertakan semua imports. Jangan tinggalkan TODO. Tulis kode tanpa komentar kecuali penjelasan penting. **Selalu gunakan absolute path `@/` untuk semua imports, termasuk di barrel exports (index.ts). Jangan pernah gunakan relative path (`./` atau `../`).**
 
+Pengecualian: File `route.ts` di App Router wajib memakai `export async function GET/POST/PUT/DELETE` sesuai konvensi Next.js.
+
 ## 5. Components
 
 Server Component default. Tambahkan "use client" hanya jika butuh state, effects, atau event handlers.

@@ -14,7 +14,52 @@ const MODELS = [
   "xiaomi/mimo-v2-flash:free",
   "arcee-ai/trinity-mini:free",
   "tngtech/tng-r1t-chimera:free",
+  "tngtech/tng-r1t-chimera:free",
 ]
+
+const SMART_MODEL = "nvidia/nemotron-3-nano-30b-a3b:free"
+const FAST_MODEL = "xiaomi/mimo-v2-flash:free"
+
+interface IntentAnalysis {
+  isComplex: boolean
+  reason: string
+  suggestedModel: string
+}
+
+const detectIntent = (messages: Message[]): IntentAnalysis => {
+  const lastUserMessage = messages.slice().reverse().find(m => m.role === "user")?.content.toLowerCase() || ""
+  
+  const complexKeywords = [
+    "analisis", "analisa", "saran", "rekomendasi", "pendapat", 
+    "mengapa", "kenapa", "jelaskan", "bagaimana cara", 
+    "buatkan rencana", "strategi", "investasi", "budgeting",
+    "kesehatan keuangan", "bandingkan", "evaluasi", "menurutmu"
+  ]
+
+  const isLongQuery = lastUserMessage.length > 100
+
+  const hasComplexKeyword = complexKeywords.some(keyword => lastUserMessage.includes(keyword))
+  
+  if (hasComplexKeyword || isLongQuery) {
+    return {
+      isComplex: true,
+      reason: hasComplexKeyword ? "Complex keyword detected" : "Long query detected",
+      suggestedModel: SMART_MODEL
+    }
+  }
+
+  return {
+    isComplex: false,
+    reason: "Simple/Transactional query detected",
+    suggestedModel: FAST_MODEL
+  }
+}
+
+const selectModelAutomatically = (messages: Message[]): string => {
+  const analysis = detectIntent(messages)
+  console.log(`[AutoRouter] Intent: ${analysis.isComplex ? "COMPLEX" : "SIMPLE"} (${analysis.reason}) -> Routing to ${analysis.suggestedModel}`)
+  return analysis.suggestedModel
+}
 
 const BASE_SYSTEM_PROMPT = `Kamu adalah SIKAS Bot, asisten AI ramah sekaligus penasihat keuangan pribadi untuk pengguna SIKAS.
 
@@ -241,6 +286,12 @@ PENTING - WAJIB DIIKUTI:
 - Tanggal default: ${today} (gunakan ini jika user tidak menyebutkan tanggal)
 - Format tanggal: YYYY-MM-DD
 - Jelaskan SINGKAT apa yang akan dilakukan, lalu sertakan tag aksi
+
+PRIORITAS METODE PEMBAYARAN (CRITICAL):
+1. JIKA user menyebutkan konteks saldo spesifik (misal: "biar saldo mbanking pas", "pakai sisa cash", "dari mbanking"), MAKA semua transaksi dalam request itu HARUS menggunakan metode tersebut.
+2. JANGAN berasumsi "Cash" hanya karena nominal kecil (es krim, parkir, jajan) JIKA ada konteks "M-Banking" dari user.
+3. Contoh: User bilang "biar saldo mbanking jadi X", lalu beli es krim 5rb. MAKA catat es krim sebagai M-BANKING (bukan Cash), agar saldo mbanking berkurang sesuai keinginan user.
+4. KONSISTENSI: Jika user minta "atur saldo mbanking", maka semua penyesuaian (income/expense) harus di M-Banking.
 
 ATURAN KETAT UNTUK PENDING_ACTION (create/delete/edit):
 - Sertakan [PENDING_ACTION:...][/PENDING_ACTION] di respons
@@ -524,7 +575,12 @@ export async function POST(request: Request) {
     }
 
     let selectedModel = MODELS[modelIndex]
-    if (preferredModelId && MODELS.includes(preferredModelId)) {
+    
+    const isAutoMode = !preferredModelId && modelIndex === 0
+    
+    if (isAutoMode) {
+      selectedModel = selectModelAutomatically(apiMessages)
+    } else if (preferredModelId && MODELS.includes(preferredModelId)) {
       selectedModel = preferredModelId
     }
 
@@ -546,7 +602,7 @@ export async function POST(request: Request) {
           })),
           stream: true,
           temperature: 0.7,
-          max_tokens: 1000,
+          max_tokens: 4096,
         }),
       }
     )

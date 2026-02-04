@@ -10,22 +10,27 @@ export async function GET(request: NextRequest) {
     return errorResponse("Unauthorized", 401)
   }
 
-  const searchParams = request.nextUrl.searchParams
-  const type = searchParams.get("type")
+  try {
+    const searchParams = request.nextUrl.searchParams
+    const type = searchParams.get("type")
 
-  const supabase = await createClient()
+    const supabase = await createClient()
 
-  let query = supabase.from("categories").select("*").order("name")
+    let query = supabase.from("categories").select("*").order("name")
 
-  if (type) {
-    query = query.eq("type", type)
+    if (type) {
+      query = query.eq("type", type)
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+      return errorResponse(error.message, 500)
+    }
+
+    return jsonResponse({ categories: data })
+  } catch (error) {
+    console.error("Categories error:", error)
+    return errorResponse("Terjadi kesalahan server", 500)
   }
-
-  const { data, error } = await query
-
-  if (error) {
-    return errorResponse(error.message, 500)
-  }
-
-  return jsonResponse({ categories: data })
 }

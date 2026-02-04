@@ -1,4 +1,3 @@
-// Jakarta timezone constant
 export const JAKARTA_TIMEZONE = "Asia/Jakarta"
 
 export function formatCurrency(amount: number): string {
@@ -10,10 +9,6 @@ export function formatCurrency(amount: number): string {
   }).format(amount)
 }
 
-/**
- * Get current date in Jakarta timezone as YYYY-MM-DD string
- * Use this for default transaction dates and date comparisons
- */
 export function getJakartaDateString(): string {
   const now = new Date()
   const jakartaDate = new Intl.DateTimeFormat("sv-SE", {
@@ -22,12 +17,9 @@ export function getJakartaDateString(): string {
     month: "2-digit",
     day: "2-digit",
   }).format(now)
-  return jakartaDate // Returns YYYY-MM-DD format
+  return jakartaDate
 }
 
-/**
- * Get current date/time components in Jakarta timezone
- */
 export function getJakartaDateTime(): {
   year: number
   month: number
@@ -97,10 +89,6 @@ export function getCurrentYear(): number {
   return year
 }
 
-/**
- * Get last day of a month as YYYY-MM-DD string
- * This avoids timezone issues with toISOString()
- */
 export function getLastDayOfMonth(year: number, month: number): string {
   const lastDay = new Date(year, month, 0).getDate()
   return `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`

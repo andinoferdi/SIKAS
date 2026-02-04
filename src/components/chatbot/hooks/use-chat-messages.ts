@@ -171,22 +171,17 @@ export function useChatMessages({ isOnDashboard, userId, isUserLoading, onPendin
     queryClient.invalidateQueries({ queryKey: ["user", "current"] })
   }, [queryClient])
 
-  // Reset chat state when userId changes (login/logout/user switch)
   useEffect(() => {
-    // Don't reset while user data is loading - wait for actual userId
     if (isUserLoading) return
 
-    // Skip on initial mount
     if (prevUserIdRef.current === undefined) {
       prevUserIdRef.current = userId
       return
     }
 
-    // userId changed - reset chat state for new auth context
     if (prevUserIdRef.current !== userId) {
       prevUserIdRef.current = userId
 
-      // Load new user's history or start fresh
       const savedMessages = loadChatHistory(userId)
       if (savedMessages.length > 0) {
         setMessages(savedMessages)
@@ -284,7 +279,6 @@ export function useChatMessages({ isOnDashboard, userId, isUserLoading, onPendin
         ragContext
       )
 
-      // Fallback if response is still empty after all retries
       if (!fullContent || fullContent.trim().length === 0) {
         console.warn("[useChatMessages] All models returned empty response, using fallback message")
         fullContent = "Maaf, saya tidak bisa memberikan respons saat ini. Silakan coba lagi dalam beberapa saat."
@@ -293,12 +287,9 @@ export function useChatMessages({ isOnDashboard, userId, isUserLoading, onPendin
       const actions = parseActions(fullContent)
       const pendingActions = parsePendingActions(fullContent)
 
-      // PERBAIKAN: Konversi [ACTION:...] menjadi pending actions untuk konfirmasi
-      // AI seharusnya TIDAK menggunakan [ACTION:...], tapi jika terjadi, tetap minta konfirmasi
       if (actions.length > 0) {
         console.warn("[Security] AI menggunakan [ACTION:...] yang seharusnya tidak digunakan. Mengkonversi ke pending action.")
         for (const { action, payload } of actions) {
-          // Buat description berdasarkan tipe aksi
           let description = `Konfirmasi: ${action}?`
           if (action === "create_transaction" && payload && typeof payload === "object") {
             const p = payload as { type?: string; amount?: number }
@@ -314,7 +305,6 @@ export function useChatMessages({ isOnDashboard, userId, isUserLoading, onPendin
         onPendingAction(pendingActions[0])
       }
 
-      // Fallback: auto-detect transaksi jika model tidak generate PENDING_ACTION tag
       if (actions.length === 0 && pendingActions.length === 0) {
         const today = getJakartaDateString()
         const extracted = extractTransactionFromText(fullContent, today)
