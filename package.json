@@ -25,14 +25,13 @@
     "react-dom": "latest",
     "react-hook-form": "latest",
     "react-markdown": "latest",
-    "remark-gfm": "^4.0.1",
+    "remark-gfm": "latest",
     "sonner": "latest",
     "zod": "latest",
     "zustand": "latest"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "latest",
-    "@types/bcryptjs": "latest",
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
