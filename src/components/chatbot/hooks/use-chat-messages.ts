@@ -1,20 +1,15 @@
 "use client"
 
 import { useState, useRef, useCallback, useEffect } from "react"
-import { useQueryClient } from "@tanstack/react-query"
 import { type Message, type ModelSelection, type StreamChunk } from "@/types/chatbot"
 import type { EnhancedRAGContext } from "@/types/rag"
-import {
-  generateMessageId,
-  getGreetingMessage,
-  retrieveContext,
-  MODELS,
-} from "@/services/chatbot"
+import { generateMessageId, getGreetingMessage, retrieveContext } from "@/services/chatbot"
 import {
   parseActions,
   parsePendingActions,
   cleanContentForDisplay,
   extractTransactionFromText,
+  shouldRejectAssistantSuccess,
 } from "@/components/chatbot/utils/action-parser"
 import { getJakartaDateString } from "@/lib/utils/format"
 import type { PendingAction } from "@/components/chatbot/batch-action-confirmation"
@@ -22,7 +17,6 @@ import { saveChatHistory, loadChatHistory, clearChatHistory } from "@/lib/utils/
 
 const streamChatFromServer = async (
   messages: Message[],
-  modelIndex: number,
   preferredModelId: string | undefined,
   onChunk: (chunk: string) => void,
   signal: AbortSignal,
@@ -33,7 +27,6 @@ const streamChatFromServer = async (
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       messages,
-      modelIndex,
       preferredModelId,
       ragContext,
     }),
@@ -42,9 +35,6 @@ const streamChatFromServer = async (
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ error: "Request failed" }))
-    if (errorData.retryWithNextModel) {
-      throw new Error(`MODEL_ERROR:${response.status}`)
-    }
     throw new Error(errorData.error || "Request failed")
   }
 
@@ -71,21 +61,22 @@ const streamChatFromServer = async (
     buffer = lines.pop() || ""
 
     for (const line of lines) {
-      if (line.startsWith("data: ")) {
-        const data = line.slice(6)
-        if (data === "[DONE]") continue
+      if (!line.startsWith("data: ")) continue
 
-        try {
-          const chunk: StreamChunk = JSON.parse(data)
-          if (chunk.choices && chunk.choices[0]?.delta?.content) {
-            const content = chunk.choices[0].delta.content
-            fullContent += content
-            hasContent = true
-            onChunk(content)
-          }
-        } catch {
-          continue
+      const data = line.slice(6)
+      if (data === "[DONE]") continue
+
+      try {
+        const chunk: StreamChunk = JSON.parse(data)
+        const content = chunk.choices?.[0]?.delta?.content
+
+        if (content) {
+          fullContent += content
+          hasContent = true
+          onChunk(content)
         }
+      } catch {
+        continue
       }
     }
   }
@@ -93,55 +84,12 @@ const streamChatFromServer = async (
   return { content: fullContent, hasContent }
 }
 
-const handleModelFallbackClient = async (
-  messages: Message[],
-  preferredModelId: string | undefined,
-  onChunk: (chunk: string) => void,
-  signal: AbortSignal,
-  ragContext?: EnhancedRAGContext
-): Promise<string> => {
-  const startIndex = preferredModelId ? MODELS.indexOf(preferredModelId) : 0
-  const validStartIndex = startIndex >= 0 ? startIndex : 0
-
-  for (let attempt = 0; attempt < MODELS.length; attempt++) {
-    const modelIndex = (validStartIndex + attempt) % MODELS.length
-
-    try {
-      const result = await streamChatFromServer(
-        messages,
-        modelIndex,
-        attempt === 0 ? preferredModelId : undefined,
-        onChunk,
-        signal,
-        ragContext
-      )
-
-      if (result.hasContent && result.content.trim().length > 0) {
-        return result.content
-      }
-    } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") {
-        throw error
-      }
-
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      if (errorMessage.startsWith("MODEL_ERROR:")) {
-        console.warn(`Model ${MODELS[modelIndex]} failed, trying next...`)
-        continue
-      }
-
-      throw error
-    }
-  }
-
-  throw new Error("Semua model sedang tidak tersedia. Silakan coba lagi nanti.")
-}
-
 interface UseChatMessagesOptions {
-  isOnDashboard: boolean
+  includePersonalContext: boolean
   userId: string | null
   isUserLoading: boolean
   onPendingAction: (action: PendingAction) => void
+  onClearPendingAction: () => void
 }
 
 interface UseChatMessagesReturn {
@@ -151,25 +99,23 @@ interface UseChatMessagesReturn {
   initializeMessages: () => void
   addMessage: (message: Message) => void
   sendMessage: (content: string, modelSelection?: ModelSelection) => Promise<void>
-  sendImageMessage: (imageFile: File, prompt: string, imageDataUrl: string) => Promise<void>
   setIsLoading: (loading: boolean) => void
   setShowQuickReplies: (show: boolean) => void
   clearMessages: () => void
 }
 
-export function useChatMessages({ isOnDashboard, userId, isUserLoading, onPendingAction }: UseChatMessagesOptions): UseChatMessagesReturn {
-  const queryClient = useQueryClient()
+export function useChatMessages({
+  includePersonalContext,
+  userId,
+  isUserLoading,
+  onPendingAction,
+  onClearPendingAction,
+}: UseChatMessagesOptions): UseChatMessagesReturn {
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [showQuickReplies, setShowQuickReplies] = useState(true)
   const abortControllerRef = useRef<AbortController | null>(null)
   const prevUserIdRef = useRef<string | null | undefined>(undefined)
-
-  const invalidateQueries = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ["transactions"] })
-    queryClient.invalidateQueries({ queryKey: ["summary"] })
-    queryClient.invalidateQueries({ queryKey: ["user", "current"] })
-  }, [queryClient])
 
   useEffect(() => {
     if (isUserLoading) return
@@ -194,20 +140,21 @@ export function useChatMessages({ isOnDashboard, userId, isUserLoading, onPendin
   }, [userId, isUserLoading])
 
   const initializeMessages = useCallback(() => {
-    if (messages.length === 0) {
-      const savedMessages = loadChatHistory(userId)
-      if (savedMessages.length > 0) {
-        setMessages(savedMessages)
-        setShowQuickReplies(false)
-      } else {
-        setMessages([getGreetingMessage()])
-        setShowQuickReplies(true)
-      }
+    if (messages.length > 0) return
+
+    const savedMessages = loadChatHistory(userId)
+    if (savedMessages.length > 0) {
+      setMessages(savedMessages)
+      setShowQuickReplies(false)
+      return
     }
+
+    setMessages([getGreetingMessage()])
+    setShowQuickReplies(true)
   }, [messages.length, userId])
 
   useEffect(() => {
-    if (messages.length > 0 && !messages.some((m) => m.isStreaming)) {
+    if (messages.length > 0 && !messages.some((message) => message.isStreaming)) {
       saveChatHistory(messages, userId)
     }
   }, [messages, userId])
@@ -217,202 +164,173 @@ export function useChatMessages({ isOnDashboard, userId, isUserLoading, onPendin
   }, [])
 
   const clearMessages = useCallback(() => {
+    onClearPendingAction()
     clearChatHistory(userId)
     setMessages([getGreetingMessage()])
     setShowQuickReplies(true)
-  }, [userId])
+  }, [onClearPendingAction, userId])
 
-  const sendMessage = useCallback(async (content: string, modelSelection?: ModelSelection) => {
-    if (!content.trim() || isLoading) return
+  const sendMessage = useCallback(
+    async (content: string, modelSelection?: ModelSelection) => {
+      if (!content.trim() || isLoading) return
 
-    setShowQuickReplies(false)
+      onClearPendingAction()
+      setShowQuickReplies(false)
 
-    const userMessage: Message = {
-      id: generateMessageId(),
-      role: "user",
-      content: content.trim(),
-      timestamp: new Date(),
-    }
-
-    setMessages((prev) => [...prev, userMessage])
-    setIsLoading(true)
-
-    const assistantMessageId = generateMessageId()
-    const assistantMessage: Message = {
-      id: assistantMessageId,
-      role: "assistant",
-      content: "",
-      timestamp: new Date(),
-      isStreaming: true,
-    }
-
-    setMessages((prev) => [...prev, assistantMessage])
-
-    abortControllerRef.current = new AbortController()
-
-    const preferredModelId = modelSelection?.mode === "manual" ? modelSelection.selectedModelId : undefined
-
-    try {
-      let ragContext: EnhancedRAGContext | undefined
-      try {
-        ragContext = await retrieveContext(content.trim(), 0.4, 3, isOnDashboard)
-      } catch (ragError) {
-        console.warn("RAG retrieval failed:", ragError)
+      const userMessage: Message = {
+        id: generateMessageId(),
+        role: "user",
+        content: content.trim(),
+        timestamp: new Date(),
       }
 
-      let fullContent = ""
-      fullContent = await handleModelFallbackClient(
-        [...messages, userMessage],
-        preferredModelId,
-        (chunk: string) => {
-          fullContent += chunk
-          const displayContent = cleanContentForDisplay(fullContent)
+      setMessages((prev) => [...prev, userMessage])
+      setIsLoading(true)
+
+      const assistantMessageId = generateMessageId()
+      const assistantMessage: Message = {
+        id: assistantMessageId,
+        role: "assistant",
+        content: "",
+        timestamp: new Date(),
+        isStreaming: true,
+      }
+
+      setMessages((prev) => [...prev, assistantMessage])
+      abortControllerRef.current = new AbortController()
+
+      const preferredModelId =
+        modelSelection?.mode === "manual" ? modelSelection.selectedModelId : undefined
+
+      try {
+        let ragContext: EnhancedRAGContext | undefined
+
+        try {
+          ragContext = await retrieveContext(content.trim(), 0.4, 3, includePersonalContext)
+        } catch (ragError) {
+          console.warn("RAG retrieval failed:", ragError)
+        }
+
+        let fullContent = ""
+        const result = await streamChatFromServer(
+          [...messages, userMessage],
+          preferredModelId,
+          (chunk) => {
+            fullContent += chunk
+            const displayContent = cleanContentForDisplay(fullContent)
+            setMessages((prev) =>
+              prev.map((message) =>
+                message.id === assistantMessageId
+                  ? { ...message, content: displayContent }
+                  : message
+              )
+            )
+          },
+          abortControllerRef.current.signal,
+          ragContext
+        )
+
+        fullContent = result.content
+
+        if (!result.hasContent || fullContent.trim().length === 0) {
+          fullContent =
+            "Maaf, saya tidak bisa memberikan respons saat ini. Silakan coba lagi dalam beberapa saat."
+        }
+
+        const actions = parseActions(fullContent)
+        const pendingActions = parsePendingActions(fullContent)
+
+        if (actions.length > 0) {
+          console.warn(
+            "[Security] AI menggunakan [ACTION:...] yang seharusnya tidak digunakan. Mengkonversi ke pending action."
+          )
+
+          for (const { action, payload } of actions) {
+            let description = `Konfirmasi: ${action}?`
+
+            if (action === "create_transaction" && payload && typeof payload === "object") {
+              const draftPayload = payload as { type?: string; amount?: number }
+              if (draftPayload.type && draftPayload.amount) {
+                description = `Tambah transaksi ${
+                  draftPayload.type === "income" ? "pemasukan" : "pengeluaran"
+                } Rp ${draftPayload.amount.toLocaleString("id-ID")}?`
+              }
+            }
+
+            onPendingAction({ action, payload, description })
+          }
+        }
+
+        if (pendingActions.length > 0) {
+          onPendingAction(pendingActions[0])
+        }
+
+        if (actions.length === 0 && pendingActions.length === 0) {
+          const today = getJakartaDateString()
+          const extracted = extractTransactionFromText(fullContent, today, userMessage.content)
+          if (extracted) {
+            console.warn(
+              "[Fallback] Model tidak generate PENDING_ACTION, auto-detect dari text:",
+              extracted
+            )
+            onPendingAction(extracted)
+          }
+        }
+
+        let cleanedContent = cleanContentForDisplay(fullContent)
+
+        if (
+          actions.length === 0 &&
+          pendingActions.length === 0 &&
+          shouldRejectAssistantSuccess(userMessage.content, fullContent)
+        ) {
+          cleanedContent =
+            "Saya belum menjalankan transaksi apa pun. Kalau kamu mau, kirim ulang instruksinya dan saya akan siapkan konfirmasi transaksi yang jelas dulu."
+        }
+
+        if (cleanedContent.length > 0) {
           setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === assistantMessageId
-                ? { ...msg, content: displayContent }
-                : msg
+            prev.map((message) =>
+              message.id === assistantMessageId
+                ? { ...message, content: cleanedContent, isStreaming: false }
+                : message
             )
           )
-        },
-        abortControllerRef.current.signal,
-        ragContext
-      )
-
-      if (!fullContent || fullContent.trim().length === 0) {
-        console.warn("[useChatMessages] All models returned empty response, using fallback message")
-        fullContent = "Maaf, saya tidak bisa memberikan respons saat ini. Silakan coba lagi dalam beberapa saat."
-      }
-
-      const actions = parseActions(fullContent)
-      const pendingActions = parsePendingActions(fullContent)
-
-      if (actions.length > 0) {
-        console.warn("[Security] AI menggunakan [ACTION:...] yang seharusnya tidak digunakan. Mengkonversi ke pending action.")
-        for (const { action, payload } of actions) {
-          let description = `Konfirmasi: ${action}?`
-          if (action === "create_transaction" && payload && typeof payload === "object") {
-            const p = payload as { type?: string; amount?: number }
-            if (p.type && p.amount) {
-              description = `Tambah transaksi ${p.type === "income" ? "pemasukan" : "pengeluaran"} Rp ${p.amount.toLocaleString("id-ID")}?`
-            }
-          }
-          onPendingAction({ action, payload, description })
+        } else {
+          setMessages((prev) => prev.filter((message) => message.id !== assistantMessageId))
         }
-      }
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          setMessages((prev) =>
+            prev.map((message) =>
+              message.id === assistantMessageId
+                ? { ...message, content: message.content || "Dibatalkan.", isStreaming: false }
+                : message
+            )
+          )
+        } else {
+          const errorMessage =
+            error instanceof Error ? error.message : "Terjadi kesalahan"
 
-      if (pendingActions.length > 0) {
-        onPendingAction(pendingActions[0])
-      }
-
-      if (actions.length === 0 && pendingActions.length === 0) {
-        const today = getJakartaDateString()
-        const extracted = extractTransactionFromText(fullContent, today)
-        if (extracted) {
-          console.warn("[Fallback] Model tidak generate PENDING_ACTION, auto-detect dari text:", extracted)
-          onPendingAction(extracted)
+          setMessages((prev) =>
+            prev.map((message) =>
+              message.id === assistantMessageId
+                ? {
+                    ...message,
+                    content: `Maaf, terjadi kesalahan: ${errorMessage}. Silakan coba lagi.`,
+                    isStreaming: false,
+                  }
+                : message
+            )
+          )
         }
+      } finally {
+        setIsLoading(false)
+        abortControllerRef.current = null
       }
-
-      const cleanedContent = cleanContentForDisplay(fullContent)
-      
-      if (cleanedContent.length > 0) {
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === assistantMessageId
-              ? { ...msg, content: cleanedContent, isStreaming: false }
-              : msg
-          )
-        )
-      } else {
-        setMessages((prev) => prev.filter((msg) => msg.id !== assistantMessageId))
-      }
-    } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") {
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === assistantMessageId
-              ? { ...msg, content: msg.content || "Dibatalkan.", isStreaming: false }
-              : msg
-          )
-        )
-      } else {
-        const errorMessage =
-          error instanceof Error ? error.message : "Terjadi kesalahan"
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === assistantMessageId
-              ? {
-                  ...msg,
-                  content: `Maaf, terjadi kesalahan: ${errorMessage}. Silakan coba lagi.`,
-                  isStreaming: false,
-                }
-              : msg
-          )
-        )
-      }
-    } finally {
-      setIsLoading(false)
-      abortControllerRef.current = null
-    }
-  }, [isLoading, messages, isOnDashboard, onPendingAction])
-
-  const sendImageMessage = useCallback(async (
-    imageFile: File,
-    prompt: string,
-    imageDataUrl: string
-  ) => {
-    setShowQuickReplies(false)
-    setIsLoading(true)
-
-    const userMessage: Message = {
-      id: generateMessageId(),
-      role: "user",
-      content: prompt,
-      timestamp: new Date(),
-      imageUrl: imageDataUrl,
-    }
-    setMessages((prev) => [...prev, userMessage])
-
-    try {
-      const formData = new FormData()
-      formData.append("image", imageFile)
-      formData.append("prompt", prompt)
-
-      const response = await fetch("/api/chatbot/vision", {
-        method: "POST",
-        body: formData,
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || "Gagal menganalisis gambar")
-      }
-
-      const resultMessage: Message = {
-        id: generateMessageId(),
-        role: "assistant",
-        content: data.message,
-        timestamp: new Date(),
-      }
-      setMessages((prev) => [...prev, resultMessage])
-
-      if (data.transaction) {
-        invalidateQueries()
-      }
-    } catch (error) {
-      const errorMsg: Message = {
-        id: generateMessageId(),
-        role: "assistant",
-        content: `${error instanceof Error ? error.message : "Gagal menganalisis gambar"}`,
-        timestamp: new Date(),
-      }
-      setMessages((prev) => [...prev, errorMsg])
-    } finally {
-      setIsLoading(false)
-    }
-  }, [invalidateQueries])
+    },
+    [includePersonalContext, isLoading, messages, onClearPendingAction, onPendingAction]
+  )
 
   return {
     messages,
@@ -421,7 +339,6 @@ export function useChatMessages({ isOnDashboard, userId, isUserLoading, onPendin
     initializeMessages,
     addMessage,
     sendMessage,
-    sendImageMessage,
     setIsLoading,
     setShowQuickReplies,
     clearMessages,

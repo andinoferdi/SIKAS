@@ -81,14 +81,18 @@ export interface CreateTransactionPayload {
   description?: string
   payment_method: "mbanking" | "cash"
   transaction_date: string
+  transactionLabel?: string
 }
 
 export interface DeleteTransactionPayload {
   transactionId: string
+  transactionLabel?: string
 }
 
 export interface EditTransactionPayload {
   transactionId: string
+  transactionLabel?: string
+  changeSummary?: string
   updates: {
     amount?: number
     type?: "income" | "expense"

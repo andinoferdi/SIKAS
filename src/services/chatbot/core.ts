@@ -1,122 +1,114 @@
-import { type Message, type StreamChunk, type QuickReply } from "@/types/chatbot"
+import { type Message, type StreamChunk, type QuickReply, type AIModel } from "@/types/chatbot"
 import type { RAGContext, EnhancedRAGContext } from "@/types/rag"
-import { pruneConversationHistory, estimateMessagesTokens } from "@/services/chatbot/token-utils"
 import { getJakartaDateString } from "@/lib/utils/format"
 
-const API_KEY = process.env.NEXT_PUBLIC_OPENROUTER_API_KEY
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
-const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || "SIKAS"
+const KNOWN_MODEL_METADATA: Record<
+  string,
+  Pick<AIModel, "name" | "description" | "pros" | "free">
+> = {
+  "llama3.1-8b": {
+    name: "Llama 3.1 8B",
+    description: "Model utama Cerebras untuk chat harian yang cepat dan ringan.",
+    pros: ["Respon cepat", "Cocok untuk pertanyaan langsung", "Efisien untuk percakapan umum"],
+    free: false,
+  },
+  "zai-glm-4.7": {
+    name: "GLM 4.7",
+    description: "Fallback yang lebih kuat untuk analisis dan penjelasan panjang.",
+    pros: ["Konteks lebih dalam", "Bagus untuk analisis", "Layak untuk pertanyaan kompleks"],
+    free: false,
+  },
+  "qwen-3-235b-a22b-instruct-2507": {
+    name: "Qwen 3 235B A22B",
+    description: "Fallback premium untuk reasoning dan instruksi yang lebih berat.",
+    pros: ["Reasoning kuat", "Stabil untuk instruksi rinci", "Bagus untuk jawaban panjang"],
+    free: false,
+  },
+  "gpt-oss-120b": {
+    name: "GPT OSS 120B",
+    description: "Fallback besar untuk percakapan kompleks dan multi-langkah.",
+    pros: ["Cocok untuk diskusi kompleks", "Penalaran luas", "Fleksibel untuk berbagai tugas"],
+    free: false,
+  },
+}
 
-import type { AIModel } from "@/types/chatbot"
-
-export const MODELS = [
-  "mistralai/devstral-2512:free",
-  "nvidia/nemotron-3-nano-30b-a3b:free",
-  "xiaomi/mimo-v2-flash:free",
-  "arcee-ai/trinity-mini:free",
-  "tngtech/tng-r1t-chimera:free",
+const COMPLEX_KEYWORDS = [
+  "analisis",
+  "analisa",
+  "saran",
+  "rekomendasi",
+  "pendapat",
+  "mengapa",
+  "kenapa",
+  "jelaskan",
+  "bagaimana cara",
+  "buatkan rencana",
+  "strategi",
+  "investasi",
+  "budgeting",
+  "kesehatan keuangan",
+  "bandingkan",
+  "evaluasi",
+  "menurutmu",
 ]
 
-export const MODEL_DISPLAY_NAMES = [
-  "Devstral 2512",
-  "Nemotron Nano 30B",
-  "Mimo V2 Flash",
-  "Trinity Mini",
-  "TNG R1T Chimera",
-]
+const humanizeModelId = (modelId: string): string => {
+  return modelId
+    .split("/")
+    .pop()
+    ?.split("-")
+    .map((part) => {
+      if (!part) return part
+      if (/^\d/.test(part)) return part.toUpperCase()
+      return part.charAt(0).toUpperCase() + part.slice(1)
+    })
+    .join(" ") || modelId
+}
 
-export const VISION_MODELS = [
-  "meta-llama/llama-3.2-11b-vision-instruct:free",
-  "qwen/qwen2.5-vl-7b-instruct:free",
-  "google/gemini-2.0-flash-exp:free",
-]
+export const createAIModel = (modelId: string): AIModel => {
+  const known = KNOWN_MODEL_METADATA[modelId]
 
-export const ALL_MODELS: AIModel[] = [
-  {
-    id: "mistralai/devstral-2512:free",
-    name: "Devstral 2512",
-    description: "Model khusus untuk coding dan pemrograman",
-    supportsVision: false,
-    category: "text",
-    pros: ["Cepat untuk tugas pemrograman", "Bagus untuk code generation"],
-    free: true,
-  },
-  {
-    id: "nvidia/nemotron-3-nano-30b-a3b:free",
-    name: "Nemotron Nano 30B",
-    description: "Model ringan dengan performa tinggi",
-    supportsVision: false,
-    category: "text",
-    pros: ["Respon sangat cepat", "Efisien untuk percakapan umum"],
-    free: true,
-  },
-  {
-    id: "xiaomi/mimo-v2-flash:free",
-    name: "Mimo V2 Flash",
-    description: "Model cepat untuk respons real-time",
-    supportsVision: false,
-    category: "text",
-    pros: ["Latency rendah", "Bagus untuk chat real-time"],
-    free: true,
-  },
-  {
-    id: "arcee-ai/trinity-mini:free",
-    name: "Trinity Mini",
-    description: "Model compact dengan pemahaman konteks baik",
-    supportsVision: false,
-    category: "text",
-    pros: ["Balance speed and quality", "Hemat resource"],
-    free: true,
-  },
-  {
-    id: "tngtech/tng-r1t-chimera:free",
-    name: "TNG R1T Chimera",
-    description: "Model hybrid untuk berbagai tugas",
-    supportsVision: false,
-    category: "text",
-    pros: ["Versatile untuk banyak task", "Stable performance"],
-    free: true,
-  },
-  {
-    id: "meta-llama/llama-3.2-11b-vision-instruct:free",
-    name: "Llama 3.2 Vision",
-    description: "Model vision dari Meta untuk analisis gambar",
-    supportsVision: true,
-    category: "vision",
-    pros: [
-      "Bisa analyze image dengan text",
-      "Bagus untuk OCR dan object detection",
-      "Gratis dan reliable",
-    ],
-    free: true,
-  },
-  {
-    id: "qwen/qwen2.5-vl-7b-instruct:free",
-    name: "Qwen VL 7B",
-    description: "State-of-the-art vision model dari Alibaba",
-    supportsVision: true,
-    category: "vision",
-    pros: [
-      "Pemahaman gambar sangat akurat",
-      "Support multiple languages",
-      "Excellent untuk document analysis",
-    ],
-    free: true,
-  },
-  {
-    id: "google/gemini-2.0-flash-exp:free",
-    name: "Gemini 2.0 Flash",
-    description: "Multimodal model dari Google (experimental)",
-    supportsVision: true,
-    category: "vision",
-    pros: [
-      "Multimodal terbaik (text, image, video)",
-      "Fast inference speed",
-      "Advanced understanding",
-    ],
-    free: true,
-  },
-]
+  return {
+    id: modelId,
+    name: known?.name || humanizeModelId(modelId),
+    description: known?.description || "Model Cerebras untuk percakapan teks di SIKAS.",
+    pros: known?.pros || ["Chat teks", "Bisa dipakai sebagai model fallback"],
+    free: known?.free ?? false,
+  }
+}
+
+export const createModelCatalog = (modelIds: string[]): AIModel[] => {
+  const seen = new Set<string>()
+
+  return modelIds.filter(Boolean).filter((modelId) => {
+    if (seen.has(modelId)) return false
+    seen.add(modelId)
+    return true
+  }).map(createAIModel)
+}
+
+export const selectAutomaticModel = (
+  messages: Message[],
+  modelIds: string[]
+): string => {
+  const lastUserMessage =
+    messages
+      .slice()
+      .reverse()
+      .find((message) => message.role === "user")
+      ?.content.toLowerCase() || ""
+
+  const isLongQuery = lastUserMessage.length > 100
+  const hasComplexKeyword = COMPLEX_KEYWORDS.some((keyword) =>
+    lastUserMessage.includes(keyword)
+  )
+
+  if ((hasComplexKeyword || isLongQuery) && modelIds[1]) {
+    return modelIds[1]
+  }
+
+  return modelIds[0]
+}
 
 export const LANDING_QUICK_REPLIES: QuickReply[] = [
   {
@@ -166,7 +158,7 @@ export const DASHBOARD_QUICK_REPLIES: QuickReply[] = [
 
 export const QUICK_REPLIES = LANDING_QUICK_REPLIES
 
-export const BASE_SYSTEM_PROMPT = `Kamu adalah SIKAS Bot, asisten AI ramah untuk aplikasi pencatatan keuangan SIKAS.
+export const BASE_SYSTEM_PROMPT = `Kamu adalah SIKAS Bot, asisten AI ramah sekaligus penasihat keuangan pribadi untuk pengguna SIKAS.
 
 TENTANG SIKAS:
 - SIKAS adalah aplikasi pencatatan keuangan sederhana untuk keluarga dan pribadi
@@ -240,13 +232,43 @@ CARA MENJAWAB:
 - Gunakan Bahasa Indonesia yang ramah dan santai
 - Jawab dengan singkat, padat, dan jelas
 - Gunakan bullet points untuk langkah-langkah
-- Fokus pada fitur dan cara penggunaan SIKAS
-- Jika pertanyaan tidak terkait SIKAS, arahkan kembali dengan sopan
-- Jika tidak yakin, akui keterbatasan dan sarankan untuk mengeksplorasi aplikasi
+- Fokus pada pencatatan keuangan DAN analisis keuangan pribadi user
+- Jika pertanyaan sama sekali tidak terkait keuangan, arahkan kembali dengan sopan
+- Berikan analisis berbasis data yang tersedia di konteks user
 
 CONTOH JAWABAN:
-- Jika ditanya "Hai": "Halo! Saya SIKAS Bot. Ada yang bisa saya bantu tentang pencatatan keuangan?"
-- Jika ditanya di luar topik: "Hmm, sepertinya itu di luar jangkauan saya. Saya bisa membantu kamu dengan pencatatan keuangan di SIKAS. Mau tanya tentang cara catat transaksi atau fitur lainnya?"
+- Jika ditanya "Hai": "Halo! Saya SIKAS Bot. Ada yang bisa saya bantu tentang keuanganmu?"
+- Jika ditanya di luar topik keuangan: "Hmm, sepertinya itu di luar jangkauan saya. Saya bisa membantu kamu dengan pencatatan dan analisis keuangan. Mau tanya tentang kondisi keuanganmu atau cara catat transaksi?"
+
+KEMAMPUAN ADVISORY KEUANGAN:
+Selain mencatat transaksi, kamu BISA dan HARUS memberikan:
+1. Analisis Pengeluaran - Menilai pola spending berdasarkan data transaksi user
+2. Penilaian Kesehatan Keuangan - Menentukan apakah user boros atau hemat
+3. Rekomendasi Budget - Saran alokasi pengeluaran berdasarkan aturan 50/30/20
+4. Evaluasi Worth It - Menilai apakah pengeluaran tertentu worth it berdasarkan konteks
+
+BENCHMARK PENILAIAN PENGELUARAN (gunakan Rasio Pengeluaran dari konteks):
+- Sangat Hemat: Rasio < 50% (pengeluaran kurang dari setengah pemasukan)
+- Seimbang: Rasio 50-70% (kondisi ideal)
+- Perlu Perhatian: Rasio 70-90% (mulai ketat)
+- Boros: Rasio > 90% (hampir tidak ada sisa untuk tabungan)
+
+ATURAN 50/30/20 UNTUK REKOMENDASI:
+- 50% untuk Kebutuhan (Makan, Transport, Tagihan)
+- 30% untuk Keinginan (Belanja, Hiburan, Lainnya)
+- 20% untuk Tabungan/Dana Darurat
+
+CARA MENJAWAB PERTANYAAN ADVISORY:
+Ketika user bertanya "apakah saya boros?", "bagaimana kondisi keuangan saya?", atau sejenisnya:
+1. Lihat Rasio Pengeluaran Bulan Ini dari konteks
+2. Bandingkan dengan benchmark di atas
+3. Identifikasi kategori pengeluaran terbesar dari data
+4. Berikan penilaian yang jujur dan konstruktif
+5. Sertakan saran konkret untuk perbaikan
+6. Akhiri dengan disclaimer singkat
+
+DISCLAIMER WAJIB:
+Selalu sertakan di akhir analisis keuangan: "Catatan: Ini analisis berdasarkan data SIKAS, bukan nasihat keuangan profesional."
 
 WORKFLOW UNTUK PERMINTAAN FINANSIAL:
 Untuk setiap permintaan terkait transaksi atau saldo, WAJIB ikuti alur:
@@ -274,7 +296,7 @@ PERMINTAAN PERUBAHAN SALDO:
 
 Selalu mulai dengan sapaan ramah dan tawarkan bantuan!`
 
-export const getActionInstructions = (): string => {
+const getActionInstructions = (): string => {
   const today = getJakartaDateString()
 
   return `
@@ -311,213 +333,12 @@ TANGGAL HARI INI: ${today}
 [PENDING_ACTION:delete_transaction]{"transactionId":"uuid-transaksi"}[/PENDING_ACTION]
 
 3. **Cari Transaksi** (langsung dieksekusi):
-[ACTION:search_transactions]{"category":"Makan","type":"expense","startDate":"${today.slice(0, 8)}01","endDate":"${today}"}[/ACTION]
+[ACTION:search_transactions]{"query":"makan siang"}[/ACTION]
 
 4. **Edit Transaksi** (BUTUH KONFIRMASI - user harus klik tombol):
-[PENDING_ACTION:edit_transaction]{"transactionId":"uuid-transaksi","updates":{"amount":75000,"description":"Deskripsi baru"}}[/PENDING_ACTION]
+[PENDING_ACTION:edit_transaction]{"transactionId":"uuid-transaksi","updates":{"amount":75000,"description":"Makan malam"}}[/PENDING_ACTION]
 
-ATURAN AKSI:
-- HANYA untuk search_transactions: Gunakan [ACTION:...][/ACTION] - langsung dieksekusi (read-only, aman)
-- Untuk SEMUA aksi lain (create, delete, edit, batch): WAJIB gunakan [PENDING_ACTION:...][/PENDING_ACTION]
-- JANGAN PERNAH gunakan [ACTION:create_transaction], [ACTION:delete_transaction], dll. Tag ini TIDAK VALID!
-- type harus "income" atau "expense", payment_method harus "mbanking" atau "cash"
-- WAJIB gunakan ID transaksi yang TEPAT dari daftar Transaksi Terakhir
-- Jika user tidak menyebutkan transaksi spesifik, tampilkan daftar dan minta user memilih
-
-PENANGANAN REQUEST AMBIGU:
-- Jika user tidak jelas menyebutkan income/expense (misal: "catat transaksi 50rb"), TANYAKAN DULU:
-  "Apakah ini pemasukan (uang masuk) atau pengeluaran (uang keluar)?"
-- JANGAN berasumsi dan langsung buat transaksi jika jenisnya tidak jelas
-- Lebih baik bertanya sekali daripada salah mencatat
-
-PENANGANAN KATA "MINUS" DAN ANGKA NEGATIF:
-- Jika user menyebut "minus" atau angka negatif (misal: "pengeluaran minus 50rb", "-50000"), ini berarti PENGELUARAN
-- "Minus 50rb" = pengeluaran Rp 50.000 (amount selalu positif di payload, type: "expense")
-- Jika user bilang "pemasukan minus 50rb", ini AMBIGU - tanyakan maksudnya
-
-PENTING - WAJIB DIIKUTI:
-- Tanggal default: ${today} (gunakan ini jika user tidak menyebutkan tanggal)
-- Format tanggal: YYYY-MM-DD
-- Jelaskan SINGKAT apa yang akan dilakukan, lalu sertakan tag aksi
-
-ATURAN KETAT UNTUK PENDING_ACTION (create/delete/edit):
-- Sertakan [PENDING_ACTION:...][/PENDING_ACTION] di respons
-- BERHENTI MENULIS setelah tag PENDING_ACTION - JANGAN menambahkan teks apapun setelahnya
-- DILARANG KERAS menyertakan pesan sukses seperti "✅ Transaksi berhasil" atau "sudah dihapus" atau sejenisnya
-- Hasil aksi akan ditampilkan OTOMATIS oleh sistem SETELAH user mengklik tombol konfirmasi
-
-PENTING - JANGAN TULIS KONFIRMASI TEKS:
-- JANGAN menulis "Apakah kamu ingin saya tambahkan transaksi ini?" atau pertanyaan konfirmasi serupa
-- Tag PENDING_ACTION sudah akan menampilkan tombol konfirmasi ke user secara otomatis
-- Cukup jelaskan detail transaksi yang akan dibuat, lalu LANGSUNG tulis tag PENDING_ACTION
-- User akan klik tombol untuk konfirmasi, BUKAN membalas dengan teks
-
-Contoh respons yang BENAR untuk create_transaction:
-"Saldo kamu saat ini: M-Banking Rp 9.800.000, Cash Rp 850.000.
-
-Saya akan mencatat transaksi pengeluaran:
-- Jumlah: Rp 76.000
-- Kategori: Transfer
-- Metode: M-Banking
-
-[PENDING_ACTION:create_transaction]{...}[/PENDING_ACTION]"
-
-Contoh respons yang SALAH (JANGAN LAKUKAN):
-"Konfirmasi: Apakah kamu ingin saya tambahkan transaksi ini? Jika iya, saya akan langsung mengeksekusinya."
-
-ATURAN WAJIB UNTUK MULTI-TURN CONVERSATION (SANGAT PENTING):
-Ketika user memulai dengan permintaan transaksi TANPA detail lengkap (misal: "catat pemasukan", "tolong bantu saya mencatat transaksi pengeluaran"):
-
-1. TURN PERTAMA: Bot bertanya detail yang kurang
-   - Tanyakan: nominal, kategori, metode pembayaran, tanggal, deskripsi (jika belum disebutkan)
-
-2. TURN BERIKUTNYA: User memberikan detail yang diminta
-   - SEGERA setelah user memberikan SEMUA informasi yang diperlukan, LANGSUNG generate PENDING_ACTION
-   - JANGAN menunggu konfirmasi verbal seperti "iya", "ya", "ok", "lanjut", "setuju", "benar"
-   - JANGAN menulis "Apakah sudah benar?" atau "Mau saya proses?"
-   - JANGAN merangkum ulang dan menunggu persetujuan
-
-CONTOH MULTI-TURN yang BENAR:
-Turn 1 - User: "Tolong bantu saya mencatat transaksi pemasukan"
-Turn 1 - Bot: "Baik, saya bantu catat pemasukan. Mohon berikan detail:
-- Nominal berapa?
-- Kategori apa? (Gaji/Bonus/Transfer Masuk/Lainnya)
-- Metode: Cash atau M-Banking?
-- Tanggal berapa? (kosongkan jika hari ini)
-- Deskripsi/keterangan (opsional)"
-
-Turn 2 - User: "Pemasukan via cash 500 ribu rupiah, uang saku dari ortu saya untuk ke malang"
-Turn 2 - Bot: "Saldo kamu saat ini: M-Banking Rp X, Cash Rp Y.
-
-Saya akan mencatat transaksi pemasukan:
-- Jumlah: Rp 500.000
-- Kategori: Lainnya
-- Metode: Cash
-- Deskripsi: uang saku dari ortu untuk ke malang
-
-[PENDING_ACTION:create_transaction]{"amount":500000,"type":"income","category":"Lainnya","description":"uang saku dari ortu untuk ke malang","payment_method":"cash","transaction_date":"${today}"}[/PENDING_ACTION]"
-
-CONTOH MULTI-TURN yang SALAH (JANGAN LAKUKAN):
-Turn 2 - User: "Pemasukan via cash 500 ribu rupiah, uang saku dari ortu saya"
-Turn 2 - Bot: "Baik, saya akan mencatat transaksi pemasukan:
-- Jumlah: Rp 500.000
-- Kategori: Lainnya
-- Metode: Cash
-- Deskripsi: uang saku dari ortu
-
-Apakah sudah benar? Jika iya, saya akan proses." ← SALAH! Harus langsung PENDING_ACTION!
-
-PRINSIP UTAMA:
-- Informasi CUKUP = LANGSUNG PENDING_ACTION
-- JANGAN PERNAH menunggu kata "iya/ya/ok/lanjut/setuju" sebelum generate PENDING_ACTION
-- Tombol konfirmasi dari PENDING_ACTION adalah SATU-SATUNYA mekanisme konfirmasi yang diperlukan
-- Menunggu konfirmasi verbal = BUG = user experience buruk
-
-ATURAN UNTUK ACTION (search saja):
-- Gunakan [ACTION:...][/ACTION] - langsung dieksekusi
-- Boleh menambahkan penjelasan setelah tag ACTION karena hasilnya langsung muncul
-
----
-AKSI BATCH (BANYAK TRANSAKSI SEKALIGUS):
-
-ATURAN WAJIB UNTUK BATCH:
-- SELALU gunakan tag [PENDING_ACTION:batch_create_transactions] untuk membuat banyak transaksi
-- JANGAN pernah hanya menampilkan daftar transaksi tanpa tag PENDING_ACTION
-- SEMUA transaksi HARUS dalam format JSON array, bukan daftar teks
-- Tag PENDING_ACTION WAJIB ada agar tombol konfirmasi muncul
-
-5. **Tambah Banyak Transaksi Sekaligus** (BUTUH KONFIRMASI):
-Gunakan ketika user menyebut lebih dari 1 transaksi dalam satu pesan.
-
-Format respons yang BENAR:
-"Saya akan mencatat X transaksi:
-
-[PENDING_ACTION:batch_create_transactions]{"transactions":[{"amount":10000,"type":"expense","category":"Makan","payment_method":"cash","transaction_date":"${today}"},{"amount":50000,"type":"income","category":"Gaji","payment_method":"mbanking","transaction_date":"${today}"}]}[/PENDING_ACTION]"
-
-PENTING: JSON harus dalam SATU BARIS tanpa line break di dalam tag PENDING_ACTION.
-
-6. **Hapus Banyak Transaksi Berdasarkan Filter** (BUTUH KONFIRMASI):
-[PENDING_ACTION:batch_delete_transactions]{
-  "filter": {
-    "category": "Makan",
-    "startDate": "${today.slice(0, 8)}01",
-    "endDate": "${today}"
-  }
-}[/PENDING_ACTION]
-
-Filter yang tersedia:
-- category: nama kategori (Makan, Transport, Gaji, dll)
-- type: "income" atau "expense"
-- startDate / endDate: range tanggal format YYYY-MM-DD
-- payment_method: "mbanking" atau "cash"
-
-7. **Hapus Semua Transaksi** (SANGAT BERBAHAYA - BUTUH KONFIRMASI GANDA):
-[PENDING_ACTION:delete_all_transactions]{
-  "confirmationText": "HAPUS SEMUA"
-}[/PENDING_ACTION]
-
-Atau dengan filter bulan/tahun tertentu:
-[PENDING_ACTION:delete_all_transactions]{
-  "confirmationText": "HAPUS SEMUA",
-  "month": 1,
-  "year": 2025
-}[/PENDING_ACTION]
-
-8. **Edit Banyak Transaksi Sekaligus** (BUTUH KONFIRMASI):
-Gunakan ketika user minta edit lebih dari 1 transaksi dalam satu pesan.
-
-[PENDING_ACTION:batch_edit_transactions]{"updates":[{"transactionId":"uuid-1","updates":{"description":"penyesuaian tunai"}},{"transactionId":"uuid-2","updates":{"description":"penyesuaian mbanking"}}]}[/PENDING_ACTION]
-
-Contoh penggunaan:
-User: "Edit transaksi tunai dan mbanking tanggal 1 Feb. Yang tunai ubah keterangan jadi 'penyesuaian tunai', yang mbanking jadi 'penyesuaian mbanking'"
-Bot: "Saya akan mengubah 2 transaksi:
-1. Transaksi Cash Rp 50.000 (1 Feb) - ubah keterangan menjadi 'penyesuaian tunai'
-2. Transaksi M-Banking Rp 75.000 (1 Feb) - ubah keterangan menjadi 'penyesuaian mbanking'
-
-[PENDING_ACTION:batch_edit_transactions]{"updates":[{"transactionId":"uuid-tunai","updates":{"description":"penyesuaian tunai"}},{"transactionId":"uuid-mbanking","updates":{"description":"penyesuaian mbanking"}}]}[/PENDING_ACTION]"
-
-ATURAN KHUSUS BATCH:
-- Maksimal 20 transaksi per batch
-- Untuk batch_create: Validasi saldo total sebelum eksekusi
-- Untuk batch_delete: Jelaskan filter yang digunakan
-- Untuk batch_edit: Identifikasi semua transaksi yang diminta, buat satu tag dengan semua updates
-- Untuk delete_all: WAJIB peringatkan user bahwa aksi TIDAK BISA dibatalkan
-
-CONTOH PENGGUNAAN BATCH:
-
-User: "Catat 3 pengeluaran: makan 15rb, bensin 50rb, pulsa 25rb"
-Bot: "Saldo kamu saat ini: M-Banking Rp X, Cash Rp Y.
-
-Saya akan mencatat 3 transaksi pengeluaran (Total: Rp 90.000):
-
-[PENDING_ACTION:batch_create_transactions]{"transactions":[{"amount":15000,"type":"expense","category":"Makan","payment_method":"cash","transaction_date":"${today}"},{"amount":50000,"type":"expense","category":"Transport","description":"bensin","payment_method":"cash","transaction_date":"${today}"},{"amount":25000,"type":"expense","category":"Tagihan","description":"pulsa","payment_method":"cash","transaction_date":"${today}"}]}[/PENDING_ACTION]"
-
-SALAH (JANGAN LAKUKAN):
-"Saya akan mencatat:
-1. Makan: Rp 15.000
-2. Bensin: Rp 50.000
-..." (tanpa tag PENDING_ACTION = tombol konfirmasi TIDAK akan muncul!)
-
-User: "Hapus semua transaksi makan minggu ini"
-Bot: "Saya akan menghapus transaksi dengan kriteria:
-- Kategori: Makan
-- Periode: [tanggal awal] sampai [tanggal akhir]
-
-[PENDING_ACTION:batch_delete_transactions]{...}[/PENDING_ACTION]"
-
-User: "Hapus semua transaksi saya"
-Bot: "⚠️ PERINGATAN: Aksi ini akan menghapus SEMUA transaksi dan TIDAK BISA dibatalkan!
-
-Apakah kamu yakin ingin melanjutkan? Sistem akan meminta konfirmasi dengan mengetik 'HAPUS SEMUA'.
-
-[PENDING_ACTION:delete_all_transactions]{...}[/PENDING_ACTION]"
-
-PERINGATAN KERAS - WAJIB DIBACA:
-- Jika user meminta transaksi APAPUN, kamu WAJIB menyertakan tag [PENDING_ACTION:...][/PENDING_ACTION]
-- JANGAN PERNAH hanya menulis "Saya akan mencatat..." tanpa diikuti tag PENDING_ACTION
-- Respons TANPA tag = tombol konfirmasi TIDAK muncul = user TIDAK bisa melakukan aksi
-- Selalu selesaikan respons dengan tag lengkap, JANGAN terpotong di tengah
-- Tag PENDING_ACTION adalah SATU-SATUNYA cara agar aksi bisa dieksekusi
+PENTING:
 - JANGAN PERNAH gunakan tag [ACTION:create_transaction], [ACTION:delete_transaction], atau [ACTION:edit_transaction] - tag ini TIDAK VALID dan akan ditolak sistem
 - HANYA [ACTION:search_transactions] yang boleh dieksekusi langsung (karena read-only)
 
@@ -542,7 +363,9 @@ PENANGANAN "SET SALDO LANGSUNG":
 ---`
 }
 
-export const createSystemPrompt = (ragContext?: RAGContext | EnhancedRAGContext): Message => {
+export const createSystemPrompt = (
+  ragContext?: RAGContext | EnhancedRAGContext
+): Message => {
   let systemContent = BASE_SYSTEM_PROMPT
 
   const enhancedContext = ragContext as EnhancedRAGContext | undefined
@@ -591,247 +414,44 @@ export const parseStreamResponse = async (
   const decoder = new TextDecoder()
   let buffer = ""
   let hasReceivedContent = false
-  let chunkCount = 0
 
-  try {
-    while (true) {
-      if (signal?.aborted) {
-        throw new DOMException("The operation was aborted.", "AbortError")
+  while (true) {
+    if (signal?.aborted) {
+      throw new DOMException("The operation was aborted.", "AbortError")
+    }
+
+    const { done, value } = await reader.read()
+
+    if (done) break
+
+    buffer += decoder.decode(value, { stream: true })
+    const lines = buffer.split("\n")
+    buffer = lines.pop() || ""
+
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue
+
+      const data = line.slice(6)
+
+      if (data === "[DONE]") {
+        return { hasContent: hasReceivedContent }
       }
 
-      const { done, value } = await reader.read()
+      try {
+        const chunk: StreamChunk = JSON.parse(data)
+        const content = chunk.choices?.[0]?.delta?.content
 
-      if (done) break
-
-      buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split("\n")
-      buffer = lines.pop() || ""
-
-      for (const line of lines) {
-        if (line.startsWith("data: ")) {
-          const data = line.slice(6)
-
-          if (data === "[DONE]") {
-            if (process.env.NODE_ENV === "development") {
-              console.log(`[Stream] Done signal received. Chunks: ${chunkCount}, hasContent: ${hasReceivedContent}`)
-            }
-            return { hasContent: hasReceivedContent }
-          }
-
-          try {
-            const chunk: StreamChunk = JSON.parse(data)
-
-            if (chunk.choices && chunk.choices[0]?.delta?.content) {
-              hasReceivedContent = true
-              chunkCount++
-              onChunk(chunk.choices[0].delta.content)
-            }
-          } catch (parseError) {
-            if (process.env.NODE_ENV === "development") {
-              console.warn("[Stream] Failed to parse chunk:", data.substring(0, 100), parseError)
-            }
-          }
+        if (content) {
+          hasReceivedContent = true
+          onChunk(content)
         }
+      } catch {
+        continue
       }
     }
-  } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") {
-      throw error
-    }
-    throw error
   }
 
   return { hasContent: hasReceivedContent }
-}
-
-export const sendChatMessage = async (
-  messages: Message[],
-  modelIndex: number = 0,
-  onStream?: (chunk: string) => void,
-  signal?: AbortSignal,
-  ragContext?: RAGContext | EnhancedRAGContext
-): Promise<{ content: string; model: string }> => {
-  if (!API_KEY) {
-    throw new Error(
-      "OpenRouter API key tidak ditemukan. Pastikan NEXT_PUBLIC_OPENROUTER_API_KEY sudah diatur."
-    )
-  }
-
-  const systemPrompt = createSystemPrompt(ragContext)
-
-  const prunedMessages = pruneConversationHistory(
-    messages.filter((m) => m.role !== "system")
-  )
-
-  const apiMessages = [systemPrompt, ...prunedMessages]
-
-  if (process.env.NODE_ENV === "development") {
-    const estimatedTokens = estimateMessagesTokens(apiMessages)
-    console.log(
-      `[Token Estimate] ~${estimatedTokens} tokens for ${apiMessages.length} messages`
-    )
-  }
-
-  const response = await fetch(
-    "https://openrouter.ai/api/v1/chat/completions",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${API_KEY}`,
-        "HTTP-Referer": SITE_URL,
-        "X-Title": SITE_NAME,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: MODELS[modelIndex],
-        messages: apiMessages.map((m) => ({
-          role: m.role,
-          content: m.content,
-        })),
-        stream: true,
-        temperature: 0.7,
-        max_tokens: 1000,
-      }),
-      signal,
-    }
-  )
-
-  if (!response.ok) {
-    const errorText = await response.text()
-
-    if (response.status === 404) {
-      throw new Error(`MODEL_NOT_FOUND: ${MODELS[modelIndex]} tidak tersedia`)
-    } else if (response.status === 429) {
-      throw new Error(`RATE_LIMITED: Terlalu banyak permintaan`)
-    } else if (response.status === 402) {
-      throw new Error(`INSUFFICIENT_CREDITS: Saldo tidak cukup`)
-    } else if (response.status === 502 || response.status === 503) {
-      throw new Error(`MODEL_DOWN: Server model sedang bermasalah`)
-    } else if (response.status === 401) {
-      throw new Error("Autentikasi gagal. Periksa API key Anda.")
-    } else if (response.status >= 500) {
-      throw new Error(`SERVER_ERROR: ${errorText}`)
-    }
-
-    throw new Error(`API Error (${response.status}): ${errorText}`)
-  }
-
-  const reader = response.body?.getReader()
-  if (!reader) {
-    throw new Error("Gagal mendapatkan response reader")
-  }
-
-  let fullContent = ""
-
-  if (onStream) {
-    await parseStreamResponse(
-      reader,
-      (chunk) => {
-        fullContent += chunk
-        onStream(chunk)
-      },
-      signal
-    )
-  } else {
-    await parseStreamResponse(reader, (chunk) => {
-      fullContent += chunk
-    })
-  }
-
-  if (fullContent.trim().length === 0) {
-    if (process.env.NODE_ENV === "development") {
-      console.warn(`[sendChatMessage] Model ${MODELS[modelIndex]} returned empty response`)
-    }
-    throw new Error("EMPTY_RESPONSE: Model returned empty response")
-  }
-
-  return {
-    content: fullContent,
-    model: MODELS[modelIndex],
-  }
-}
-
-export const handleModelFallback = async (
-  messages: Message[],
-  startModelIndex: number = 0,
-  onStream?: (chunk: string) => void,
-  signal?: AbortSignal,
-  ragContext?: RAGContext | EnhancedRAGContext
-): Promise<{ content: string; model: string; finalIndex: number }> => {
-  let lastError: Error | null = null
-  const unavailableModels: Set<number> = new Set()
-  const rateLimitedModels: Set<number> = new Set()
-  let retryDelay = 1000
-
-  const order: number[] = []
-  for (let i = startModelIndex; i < MODELS.length; i++) order.push(i)
-  for (let i = 0; i < startModelIndex; i++) order.push(i)
-
-  for (const i of order) {
-    if (unavailableModels.has(i)) {
-      continue
-    }
-
-    try {
-      const result = await sendChatMessage(messages, i, onStream, signal, ragContext)
-      return { content: result.content, model: result.model, finalIndex: i }
-    } catch (error: unknown) {
-      if (error instanceof DOMException && error.name === "AbortError") {
-        throw error
-      }
-
-      const errorMessage =
-        error instanceof Error ? error.message : String(error)
-
-      if (errorMessage.startsWith("MODEL_NOT_FOUND:")) {
-        unavailableModels.add(i)
-        console.warn(`Model ${MODELS[i]} not available, skipping`)
-        continue
-      }
-
-      if (
-        errorMessage.startsWith("RATE_LIMITED:") ||
-        errorMessage.startsWith("INSUFFICIENT_CREDITS:")
-      ) {
-        rateLimitedModels.add(i)
-
-        const availableModels = order.filter(idx => !unavailableModels.has(idx))
-        if (rateLimitedModels.size >= availableModels.length) {
-          throw new Error(
-            "Semua model sedang sibuk. Silakan coba lagi dalam beberapa menit."
-          )
-        }
-
-        await new Promise((resolve) => setTimeout(resolve, retryDelay))
-        retryDelay = Math.min(retryDelay * 2, 8000)
-        continue
-      }
-
-      if (errorMessage.startsWith("MODEL_DOWN:") || errorMessage.startsWith("SERVER_ERROR:")) {
-        console.warn(`Model ${MODELS[i]} temporarily down, trying next`)
-        await new Promise((resolve) => setTimeout(resolve, 500))
-        continue
-      }
-
-      if (errorMessage.startsWith("EMPTY_RESPONSE:")) {
-        console.warn(`Model ${MODELS[i]} returned empty response, trying next model`)
-        continue
-      }
-
-      lastError = error instanceof Error ? error : new Error(errorMessage)
-
-      if (errorMessage.includes("Autentikasi gagal")) {
-        throw lastError
-      }
-
-      continue
-    }
-  }
-
-  throw (
-    lastError ||
-    new Error("Chatbot sedang tidak tersedia. Silakan coba lagi nanti.")
-  )
 }
 
 export const generateMessageId = (): string => {
@@ -843,7 +463,7 @@ export const getGreetingMessage = (): Message => {
     id: generateMessageId(),
     role: "assistant",
     content:
-      "Halo! Saya SIKAS Bot. Ada yang bisa saya bantu tentang pencatatan keuangan? Kamu bisa tanya tentang cara pakai SIKAS, fitur yang tersedia, atau hal lainnya seputar aplikasi ini.",
+      "Halo! Saya SIKAS Bot. Ada yang bisa saya bantu tentang pencatatan keuangan? Kamu bisa tanya tentang cara pakai SIKAS, fitur yang tersedia, atau kondisi keuanganmu.",
     timestamp: new Date(),
   }
 }

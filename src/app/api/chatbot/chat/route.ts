@@ -1,686 +1,545 @@
 import { NextResponse } from "next/server"
+import { getSession } from "@/lib/auth/session"
+import {
+  createModelAttemptOrder,
+  getCerebrasApiKey,
+  getCerebrasBaseUrl,
+  resolveRequestedModelId,
+} from "@/lib/config/cerebras"
+import { errorResponse } from "@/lib/utils/api-response"
+import { formatShortDate } from "@/lib/utils/format"
+import { createSystemPrompt } from "@/services/chatbot"
+import {
+  extractCreateTransactionPayload,
+  extractEditTransactionUpdates,
+  isLikelyBalanceQuery,
+  isLikelyDeleteLatestIntent,
+  isLikelyEditLatestIntent,
+  isLikelyLatestTransactionQuery,
+} from "@/services/chatbot/intent-parser"
+import {
+  formatAmount,
+  formatBalanceSentence,
+  formatDraftTransactionSummary,
+  formatTransactionSummary,
+  getPaymentMethodLabel,
+  getTransactionTypeLabel,
+} from "@/services/chatbot/presentation"
+import {
+  formatUserContextForPrompt,
+  getUserContext,
+  searchUserTransactions,
+} from "@/services/chatbot/user-context"
+import {
+  estimateMessagesTokens,
+  pruneConversationHistory,
+} from "@/services/chatbot/token-utils"
 import type { Message, StreamChunk } from "@/types/chatbot"
-import type { EnhancedRAGContext } from "@/types/rag"
-import { pruneConversationHistory, estimateMessagesTokens } from "@/services/chatbot/token-utils"
-import { getJakartaDateString } from "@/lib/utils/format"
-
-const API_KEY = process.env.OPENROUTER_API_KEY
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
-const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || "SIKAS"
-
-const MODELS = [
-  "mistralai/devstral-2512:free",
-  "nvidia/nemotron-3-nano-30b-a3b:free",
-  "xiaomi/mimo-v2-flash:free",
-  "arcee-ai/trinity-mini:free",
-  "tngtech/tng-r1t-chimera:free",
-  "tngtech/tng-r1t-chimera:free",
-]
-
-const SMART_MODEL = "nvidia/nemotron-3-nano-30b-a3b:free"
-const FAST_MODEL = "xiaomi/mimo-v2-flash:free"
-
-interface IntentAnalysis {
-  isComplex: boolean
-  reason: string
-  suggestedModel: string
-}
-
-const detectIntent = (messages: Message[]): IntentAnalysis => {
-  const lastUserMessage = messages.slice().reverse().find(m => m.role === "user")?.content.toLowerCase() || ""
-  
-  const complexKeywords = [
-    "analisis", "analisa", "saran", "rekomendasi", "pendapat", 
-    "mengapa", "kenapa", "jelaskan", "bagaimana cara", 
-    "buatkan rencana", "strategi", "investasi", "budgeting",
-    "kesehatan keuangan", "bandingkan", "evaluasi", "menurutmu"
-  ]
-
-  const isLongQuery = lastUserMessage.length > 100
-
-  const hasComplexKeyword = complexKeywords.some(keyword => lastUserMessage.includes(keyword))
-  
-  if (hasComplexKeyword || isLongQuery) {
-    return {
-      isComplex: true,
-      reason: hasComplexKeyword ? "Complex keyword detected" : "Long query detected",
-      suggestedModel: SMART_MODEL
-    }
-  }
-
-  return {
-    isComplex: false,
-    reason: "Simple/Transactional query detected",
-    suggestedModel: FAST_MODEL
-  }
-}
-
-const selectModelAutomatically = (messages: Message[]): string => {
-  const analysis = detectIntent(messages)
-  console.log(`[AutoRouter] Intent: ${analysis.isComplex ? "COMPLEX" : "SIMPLE"} (${analysis.reason}) -> Routing to ${analysis.suggestedModel}`)
-  return analysis.suggestedModel
-}
-
-const BASE_SYSTEM_PROMPT = `Kamu adalah SIKAS Bot, asisten AI ramah sekaligus penasihat keuangan pribadi untuk pengguna SIKAS.
-
-TENTANG SIKAS:
-- SIKAS adalah aplikasi pencatatan keuangan sederhana untuk keluarga dan pribadi
-- Gratis, aman dengan enkripsi, dan mudah digunakan
-- Dapat diakses 24/7 melalui browser
-
-FITUR UTAMA SIKAS:
-1. **Dashboard** - Halaman utama setelah login
-   - Lihat saldo M-Banking dan Cash secara terpisah
-   - Ringkasan bulanan: total pemasukan, pengeluaran, dan selisih
-   - Daftar transaksi terakhir
-
-2. **Tambah Transaksi** (Menu: Tambah Transaksi atau /dashboard/transactions/add)
-   - Pilih jenis: Pemasukan (uang masuk) atau Pengeluaran (uang keluar)
-   - Masukkan jumlah dalam Rupiah
-   - Pilih kategori (Makan, Transport, Gaji, dll)
-   - Pilih metode pembayaran: M-Banking atau Cash
-   - Tambahkan deskripsi (opsional)
-   - Pilih tanggal transaksi
-
-3. **Riwayat Transaksi** (Menu: Transaksi atau /dashboard/transactions)
-   - Lihat semua transaksi
-   - Filter berdasarkan bulan dan tahun
-   - Filter berdasarkan jenis (Semua/Masuk/Keluar)
-   - Edit atau hapus transaksi yang sudah ada
-
-4. **Dua Metode Pembayaran**:
-   - **M-Banking**: Saldo rekening digital/bank. Minimal saldo Rp 50.000
-   - **Cash**: Uang tunai yang dipegang
-
-5. **Kategori Transaksi**:
-   - Kategori untuk pemasukan: Gaji, Bonus, Transfer Masuk, Lainnya
-   - Kategori untuk pengeluaran: Makan, Transport, Belanja, Tagihan, Lainnya
-
-CARA MENGGUNAKAN SIKAS:
-1. **Daftar Akun**:
-   - Klik tombol "Daftar" di halaman utama
-   - Masukkan nama (minimal 2 karakter, hanya huruf dan spasi)
-   - Buat PIN 4-6 digit angka
-   - Konfirmasi PIN
-   - Klik "Daftar"
-
-2. **Login**:
-   - Klik tombol "Masuk"
-   - Masukkan nama yang sudah terdaftar
-   - Masukkan PIN
-   - Klik "Masuk"
-
-3. **Mencatat Transaksi**:
-   - Di dashboard, klik "Tambah Transaksi"
-   - Pilih tab Pengeluaran atau Pemasukan
-   - Isi jumlah (contoh: 50000 untuk Rp 50.000)
-   - Pilih kategori yang sesuai
-   - Pilih metode: Cash atau M-Banking
-   - Pilih tanggal
-   - Tambahkan deskripsi jika perlu
-   - Klik "Simpan Transaksi"
-
-4. **Melihat Riwayat**:
-   - Klik menu "Transaksi" di sidebar atau bottom nav
-   - Gunakan filter bulan/tahun untuk melihat periode tertentu
-   - Gunakan filter Masuk/Keluar untuk melihat jenis tertentu
-
-ATURAN PENTING:
-- Saldo M-Banking minimal Rp 50.000 (tidak bisa kurang dari ini)
-- PIN harus 4-6 digit angka
-- Nama minimal 2 karakter, hanya boleh huruf dan spasi
-- Transaksi pengeluaran tidak bisa melebihi saldo yang tersedia
-
-CARA MENJAWAB:
-- Gunakan Bahasa Indonesia yang ramah dan santai
-- Jawab dengan singkat, padat, dan jelas
-- Gunakan bullet points untuk langkah-langkah
-- Fokus pada pencatatan keuangan DAN analisis keuangan pribadi user
-- Jika pertanyaan sama sekali tidak terkait keuangan, arahkan kembali dengan sopan
-- Berikan analisis berbasis data yang tersedia di konteks user
-
-CONTOH JAWABAN:
-- Jika ditanya "Hai": "Halo! Saya SIKAS Bot. Ada yang bisa saya bantu tentang keuanganmu?"
-- Jika ditanya di luar topik keuangan: "Hmm, sepertinya itu di luar jangkauan saya. Saya bisa membantu kamu dengan pencatatan dan analisis keuangan. Mau tanya tentang kondisi keuanganmu atau cara catat transaksi?"
-
-KEMAMPUAN ADVISORY KEUANGAN:
-Selain mencatat transaksi, kamu BISA dan HARUS memberikan:
-1. Analisis Pengeluaran - Menilai pola spending berdasarkan data transaksi user
-2. Penilaian Kesehatan Keuangan - Menentukan apakah user boros atau hemat
-3. Rekomendasi Budget - Saran alokasi pengeluaran berdasarkan aturan 50/30/20
-4. Evaluasi Worth It - Menilai apakah pengeluaran tertentu worth it berdasarkan konteks
-
-BENCHMARK PENILAIAN PENGELUARAN (gunakan Rasio Pengeluaran dari konteks):
-- Sangat Hemat: Rasio < 50% (pengeluaran kurang dari setengah pemasukan)
-- Seimbang: Rasio 50-70% (kondisi ideal)
-- Perlu Perhatian: Rasio 70-90% (mulai ketat)
-- Boros: Rasio > 90% (hampir tidak ada sisa untuk tabungan)
-
-ATURAN 50/30/20 UNTUK REKOMENDASI:
-- 50% untuk Kebutuhan (Makan, Transport, Tagihan)
-- 30% untuk Keinginan (Belanja, Hiburan, Lainnya)
-- 20% untuk Tabungan/Dana Darurat
-
-CARA MENJAWAB PERTANYAAN ADVISORY:
-Ketika user bertanya "apakah saya boros?", "bagaimana kondisi keuangan saya?", atau sejenisnya:
-1. Lihat Rasio Pengeluaran Bulan Ini dari konteks
-2. Bandingkan dengan benchmark di atas
-3. Identifikasi kategori pengeluaran terbesar dari data
-4. Berikan penilaian yang jujur dan konstruktif
-5. Sertakan saran konkret untuk perbaikan
-6. Akhiri dengan disclaimer singkat
-
-CONTOH JAWABAN ADVISORY:
-User: "Apakah saya boros?"
-Bot: "Berdasarkan data SIKAS kamu bulan ini:
-
-Ringkasan:
-- Pemasukan: Rp 5.000.000
-- Pengeluaran: Rp 4.200.000
-- Rasio: 84%
-
-Penilaian: Rasio 84% masuk kategori "Perlu Perhatian". Kamu menghabiskan hampir seluruh pemasukan.
-
-Pengeluaran terbesar:
-1. Makan: Rp 1.500.000 (36%)
-2. Belanja: Rp 900.000 (21%)
-
-Saran:
-- Coba meal prep untuk mengurangi biaya makan di luar
-- Terapkan aturan 24 jam sebelum belanja non-esensial
-- Target sisihkan minimal 10% di awal bulan
-
-Catatan: Ini analisis berdasarkan data SIKAS, bukan nasihat keuangan profesional."
-
-DISCLAIMER WAJIB:
-Selalu sertakan di akhir analisis keuangan: "Catatan: Ini analisis berdasarkan data SIKAS, bukan nasihat keuangan profesional."
-
-WORKFLOW UNTUK PERMINTAAN FINANSIAL:
-Untuk setiap permintaan terkait transaksi atau saldo, WAJIB ikuti alur:
-
-1. AKUI STATUS SAAT INI
-   - Sebutkan saldo M-Banking dan Cash pengguna dari konteks
-   - Contoh: "Saldo kamu saat ini: M-Banking Rp X, Cash Rp Y"
-
-2. VERIFIKASI KELAYAKAN
-   - Untuk pengeluaran: pastikan saldo cukup (M-Banking min Rp 50.000)
-   - Jelaskan jika ada kendala
-
-3. LAKUKAN AKSI atau TOLAK
-   - Jika layak: lanjutkan dengan action tag
-   - Jika tidak: jelaskan alasan dan beri alternatif
-
-PERMINTAAN PERUBAHAN SALDO:
-- TOLAK permintaan perubahan saldo LANGSUNG seperti: "Set saldo ke X", "Reset saldo", "Hapus saldo"
-- TERIMA permintaan untuk MENCAPAI target saldo melalui transaksi
-- Jika user meminta "atur saldo jadi X", "buat saldo menjadi X", atau "tambah transaksi agar saldo jadi X":
-  1. Hitung selisih: target - saldo saat ini
-  2. Jika selisih positif: buat transaksi pemasukan (income) dengan kategori "Lainnya"
-  3. Jika selisih negatif: buat transaksi pengeluaran (expense) dengan kategori "Lainnya"
-  4. Jelaskan perhitungan sebelum membuat transaksi, lalu WAJIB sertakan tag PENDING_ACTION
-
-Selalu mulai dengan sapaan ramah dan tawarkan bantuan!`
-
-const getActionInstructions = (): string => {
-  const today = getJakartaDateString()
-
-  return `
----
-KEMAMPUAN AKSI:
-Kamu bisa melakukan aksi langsung pada data pengguna.
-
-PENTING - SEBELUM SETIAP AKSI:
-1. BACA informasi saldo pengguna dari konteks di bawah
-2. SEBUTKAN saldo saat ini sebelum menyarankan atau melakukan transaksi
-3. JANGAN langsung eksekusi tanpa acknowledge saldo terlebih dahulu
-4. Untuk pengeluaran, PASTIKAN saldo mencukupi sebelum membuat transaksi
-
-FITUR KHUSUS - MENGATUR SALDO KE TARGET:
-Jika user meminta saldo menjadi nominal tertentu (misal: "atur saldo cash jadi 105rb"):
-1. Baca saldo saat ini dari konteks user
-2. Hitung: selisih = target - saldo_saat_ini
-3. Jika selisih > 0: buat transaksi income sebesar selisih
-4. Jika selisih < 0: buat transaksi expense sebesar |selisih| (pastikan saldo cukup)
-5. Jika selisih = 0: informasikan saldo sudah sesuai target, tidak perlu transaksi
-
-Contoh:
-- User: "Atur saldo cash jadi 105rb" (saldo cash saat ini Rp 101.000)
-- Hitung: 105.000 - 101.000 = +4.000 (butuh income)
-- Respons: "Saldo Cash kamu saat ini Rp 101.000. Untuk mencapai Rp 105.000, saya akan menambah pemasukan Rp 4.000.
-[PENDING_ACTION:create_transaction]{"amount":4000,"type":"income","category":"Lainnya","payment_method":"cash","transaction_date":"${today}"}[/PENDING_ACTION]"
-
-TANGGAL HARI INI: ${today}
-
-1. **Tambah Transaksi Baru** (BUTUH KONFIRMASI - user harus klik tombol):
-[PENDING_ACTION:create_transaction]{"amount":50000,"type":"expense","category":"Makan","description":"Makan siang","payment_method":"cash","transaction_date":"${today}"}[/PENDING_ACTION]
-
-2. **Hapus Transaksi** (BUTUH KONFIRMASI - user harus klik tombol):
-[PENDING_ACTION:delete_transaction]{"transactionId":"uuid-transaksi"}[/PENDING_ACTION]
-
-3. **Cari Transaksi** (langsung dieksekusi):
-[ACTION:search_transactions]{"category":"Makan","type":"expense","startDate":"${today.slice(0, 8)}01","endDate":"${today}"}[/ACTION]
-
-4. **Edit Transaksi** (BUTUH KONFIRMASI - user harus klik tombol):
-[PENDING_ACTION:edit_transaction]{"transactionId":"uuid-transaksi","updates":{"amount":75000,"description":"Deskripsi baru"}}[/PENDING_ACTION]
-
-ATURAN AKSI:
-- HANYA untuk search_transactions: Gunakan [ACTION:...][/ACTION] - langsung dieksekusi (read-only, aman)
-- Untuk SEMUA aksi lain (create, delete, edit, batch): WAJIB gunakan [PENDING_ACTION:...][/PENDING_ACTION]
-- JANGAN PERNAH gunakan [ACTION:create_transaction], [ACTION:delete_transaction], dll. Tag ini TIDAK VALID!
-- type harus "income" atau "expense", payment_method harus "mbanking" atau "cash"
-- WAJIB gunakan ID transaksi yang TEPAT dari daftar Transaksi Terakhir
-- Jika user tidak menyebutkan transaksi spesifik, tampilkan daftar dan minta user memilih
-
-PENANGANAN REQUEST AMBIGU:
-- Jika user tidak jelas menyebutkan income/expense (misal: "catat transaksi 50rb"), TANYAKAN DULU:
-  "Apakah ini pemasukan (uang masuk) atau pengeluaran (uang keluar)?"
-- JANGAN berasumsi dan langsung buat transaksi jika jenisnya tidak jelas
-- Lebih baik bertanya sekali daripada salah mencatat
-
-PENANGANAN KATA "MINUS" DAN ANGKA NEGATIF:
-- Jika user menyebut "minus" atau angka negatif (misal: "pengeluaran minus 50rb", "-50000"), ini berarti PENGELUARAN
-- "Minus 50rb" = pengeluaran Rp 50.000 (amount selalu positif di payload, type: "expense")
-- Jika user bilang "pemasukan minus 50rb", ini AMBIGU - tanyakan maksudnya
-
-PENTING - WAJIB DIIKUTI:
-- Tanggal default: ${today} (gunakan ini jika user tidak menyebutkan tanggal)
-- Format tanggal: YYYY-MM-DD
-- Jelaskan SINGKAT apa yang akan dilakukan, lalu sertakan tag aksi
-
-PRIORITAS METODE PEMBAYARAN (CRITICAL):
-1. JIKA user menyebutkan konteks saldo spesifik (misal: "biar saldo mbanking pas", "pakai sisa cash", "dari mbanking"), MAKA semua transaksi dalam request itu HARUS menggunakan metode tersebut.
-2. JANGAN berasumsi "Cash" hanya karena nominal kecil (es krim, parkir, jajan) JIKA ada konteks "M-Banking" dari user.
-3. Contoh: User bilang "biar saldo mbanking jadi X", lalu beli es krim 5rb. MAKA catat es krim sebagai M-BANKING (bukan Cash), agar saldo mbanking berkurang sesuai keinginan user.
-4. KONSISTENSI: Jika user minta "atur saldo mbanking", maka semua penyesuaian (income/expense) harus di M-Banking.
-
-ATURAN KETAT UNTUK PENDING_ACTION (create/delete/edit):
-- Sertakan [PENDING_ACTION:...][/PENDING_ACTION] di respons
-- BERHENTI MENULIS setelah tag PENDING_ACTION - JANGAN menambahkan teks apapun setelahnya
-- DILARANG KERAS menyertakan pesan sukses seperti "✅ Transaksi berhasil" atau "sudah dihapus" atau sejenisnya
-- Hasil aksi akan ditampilkan OTOMATIS oleh sistem SETELAH user mengklik tombol konfirmasi
-
-PENTING - JANGAN TULIS KONFIRMASI TEKS:
-- JANGAN menulis "Apakah kamu ingin saya tambahkan transaksi ini?" atau pertanyaan konfirmasi serupa
-- Tag PENDING_ACTION sudah akan menampilkan tombol konfirmasi ke user secara otomatis
-- Cukup jelaskan detail transaksi yang akan dibuat, lalu LANGSUNG tulis tag PENDING_ACTION
-- User akan klik tombol untuk konfirmasi, BUKAN membalas dengan teks
-
-Contoh respons yang BENAR untuk create_transaction:
-"Saldo kamu saat ini: M-Banking Rp 9.800.000, Cash Rp 850.000.
-
-Saya akan mencatat transaksi pengeluaran:
-- Jumlah: Rp 76.000
-- Kategori: Transfer
-- Metode: M-Banking
-
-[PENDING_ACTION:create_transaction]{...}[/PENDING_ACTION]"
-
-Contoh respons yang SALAH (JANGAN LAKUKAN):
-"Konfirmasi: Apakah kamu ingin saya tambahkan transaksi ini? Jika iya, saya akan langsung mengeksekusinya."
-
-ATURAN WAJIB UNTUK MULTI-TURN CONVERSATION (SANGAT PENTING):
-Ketika user memulai dengan permintaan transaksi TANPA detail lengkap (misal: "catat pemasukan", "tolong bantu saya mencatat transaksi pengeluaran"):
-
-1. TURN PERTAMA: Bot bertanya detail yang kurang
-   - Tanyakan: nominal, kategori, metode pembayaran, tanggal, deskripsi (jika belum disebutkan)
-
-2. TURN BERIKUTNYA: User memberikan detail yang diminta
-   - SEGERA setelah user memberikan SEMUA informasi yang diperlukan, LANGSUNG generate PENDING_ACTION
-   - JANGAN menunggu konfirmasi verbal seperti "iya", "ya", "ok", "lanjut", "setuju", "benar"
-   - JANGAN menulis "Apakah sudah benar?" atau "Mau saya proses?"
-   - JANGAN merangkum ulang dan menunggu persetujuan
-
-CONTOH MULTI-TURN yang BENAR:
-Turn 1 - User: "Tolong bantu saya mencatat transaksi pemasukan"
-Turn 1 - Bot: "Baik, saya bantu catat pemasukan. Mohon berikan detail:
-- Nominal berapa?
-- Kategori apa? (Gaji/Bonus/Transfer Masuk/Lainnya)
-- Metode: Cash atau M-Banking?
-- Tanggal berapa? (kosongkan jika hari ini)
-- Deskripsi/keterangan (opsional)"
-
-Turn 2 - User: "Pemasukan via cash 500 ribu rupiah, uang saku dari ortu saya untuk ke malang"
-Turn 2 - Bot: "Saldo kamu saat ini: M-Banking Rp X, Cash Rp Y.
-
-Saya akan mencatat transaksi pemasukan:
-- Jumlah: Rp 500.000
-- Kategori: Lainnya
-- Metode: Cash
-- Deskripsi: uang saku dari ortu untuk ke malang
-
-[PENDING_ACTION:create_transaction]{"amount":500000,"type":"income","category":"Lainnya","description":"uang saku dari ortu untuk ke malang","payment_method":"cash","transaction_date":"${today}"}[/PENDING_ACTION]"
-
-CONTOH MULTI-TURN yang SALAH (JANGAN LAKUKAN):
-Turn 2 - User: "Pemasukan via cash 500 ribu rupiah, uang saku dari ortu saya"
-Turn 2 - Bot: "Baik, saya akan mencatat transaksi pemasukan:
-- Jumlah: Rp 500.000
-- Kategori: Lainnya
-- Metode: Cash
-- Deskripsi: uang saku dari ortu
-
-Apakah sudah benar? Jika iya, saya akan proses." ← SALAH! Harus langsung PENDING_ACTION!
-
-PRINSIP UTAMA:
-- Informasi CUKUP = LANGSUNG PENDING_ACTION
-- JANGAN PERNAH menunggu kata "iya/ya/ok/lanjut/setuju" sebelum generate PENDING_ACTION
-- Tombol konfirmasi dari PENDING_ACTION adalah SATU-SATUNYA mekanisme konfirmasi yang diperlukan
-- Menunggu konfirmasi verbal = BUG = user experience buruk
-
-ATURAN UNTUK ACTION (search saja):
-- Gunakan [ACTION:...][/ACTION] - langsung dieksekusi
-- Boleh menambahkan penjelasan setelah tag ACTION karena hasilnya langsung muncul
-
----
-AKSI BATCH (BANYAK TRANSAKSI SEKALIGUS):
-
-ATURAN WAJIB UNTUK BATCH:
-- SELALU gunakan tag [PENDING_ACTION:batch_create_transactions] untuk membuat banyak transaksi
-- JANGAN pernah hanya menampilkan daftar transaksi tanpa tag PENDING_ACTION
-- SEMUA transaksi HARUS dalam format JSON array, bukan daftar teks
-- Tag PENDING_ACTION WAJIB ada agar tombol konfirmasi muncul
-
-5. **Tambah Banyak Transaksi Sekaligus** (BUTUH KONFIRMASI):
-Gunakan ketika user menyebut lebih dari 1 transaksi dalam satu pesan.
-
-Format respons yang BENAR:
-"Saya akan mencatat X transaksi:
-
-[PENDING_ACTION:batch_create_transactions]{"transactions":[{"amount":10000,"type":"expense","category":"Makan","payment_method":"cash","transaction_date":"${today}"},{"amount":50000,"type":"income","category":"Gaji","payment_method":"mbanking","transaction_date":"${today}"}]}[/PENDING_ACTION]"
-
-PENTING: JSON harus dalam SATU BARIS tanpa line break di dalam tag PENDING_ACTION.
-
-6. **Hapus Banyak Transaksi Berdasarkan Filter** (BUTUH KONFIRMASI):
-[PENDING_ACTION:batch_delete_transactions]{
-  "filter": {
-    "category": "Makan",
-    "startDate": "${today.slice(0, 8)}01",
-    "endDate": "${today}"
-  }
-}[/PENDING_ACTION]
-
-Filter yang tersedia:
-- category: nama kategori (Makan, Transport, Gaji, dll)
-- type: "income" atau "expense"
-- startDate / endDate: range tanggal format YYYY-MM-DD
-- payment_method: "mbanking" atau "cash"
-
-7. **Hapus Semua Transaksi** (SANGAT BERBAHAYA - BUTUH KONFIRMASI GANDA):
-[PENDING_ACTION:delete_all_transactions]{
-  "confirmationText": "HAPUS SEMUA"
-}[/PENDING_ACTION]
-
-Atau dengan filter bulan/tahun tertentu:
-[PENDING_ACTION:delete_all_transactions]{
-  "confirmationText": "HAPUS SEMUA",
-  "month": 1,
-  "year": 2025
-}[/PENDING_ACTION]
-
-8. **Edit Banyak Transaksi Sekaligus** (BUTUH KONFIRMASI):
-Gunakan ketika user minta edit lebih dari 1 transaksi dalam satu pesan.
-
-[PENDING_ACTION:batch_edit_transactions]{"updates":[{"transactionId":"uuid-1","updates":{"description":"penyesuaian tunai"}},{"transactionId":"uuid-2","updates":{"description":"penyesuaian mbanking"}}]}[/PENDING_ACTION]
-
-Contoh penggunaan:
-User: "Edit transaksi tunai dan mbanking tanggal 1 Feb. Yang tunai ubah keterangan jadi 'penyesuaian tunai', yang mbanking jadi 'penyesuaian mbanking'"
-Bot: "Saya akan mengubah 2 transaksi:
-1. Transaksi Cash Rp 50.000 (1 Feb) - ubah keterangan menjadi 'penyesuaian tunai'
-2. Transaksi M-Banking Rp 75.000 (1 Feb) - ubah keterangan menjadi 'penyesuaian mbanking'
-
-[PENDING_ACTION:batch_edit_transactions]{"updates":[{"transactionId":"uuid-tunai","updates":{"description":"penyesuaian tunai"}},{"transactionId":"uuid-mbanking","updates":{"description":"penyesuaian mbanking"}}]}[/PENDING_ACTION]"
-
-ATURAN KHUSUS BATCH:
-- Maksimal 20 transaksi per batch
-- Untuk batch_create: Validasi saldo total sebelum eksekusi
-- Untuk batch_delete: Jelaskan filter yang digunakan
-- Untuk batch_edit: Identifikasi semua transaksi yang diminta, buat satu tag dengan semua updates
-- Untuk delete_all: WAJIB peringatkan user bahwa aksi TIDAK BISA dibatalkan
-
-CONTOH PENGGUNAAN BATCH:
-
-User: "Catat 3 pengeluaran: makan 15rb, bensin 50rb, pulsa 25rb"
-Bot: "Saldo kamu saat ini: M-Banking Rp X, Cash Rp Y.
-
-Saya akan mencatat 3 transaksi pengeluaran (Total: Rp 90.000):
-
-[PENDING_ACTION:batch_create_transactions]{"transactions":[{"amount":15000,"type":"expense","category":"Makan","payment_method":"cash","transaction_date":"${today}"},{"amount":50000,"type":"expense","category":"Transport","description":"bensin","payment_method":"cash","transaction_date":"${today}"},{"amount":25000,"type":"expense","category":"Tagihan","description":"pulsa","payment_method":"cash","transaction_date":"${today}"}]}[/PENDING_ACTION]"
-
-SALAH (JANGAN LAKUKAN):
-"Saya akan mencatat:
-1. Makan: Rp 15.000
-2. Bensin: Rp 50.000
-..." (tanpa tag PENDING_ACTION = tombol konfirmasi TIDAK akan muncul!)
-
-User: "Hapus semua transaksi makan minggu ini"
-Bot: "Saya akan menghapus transaksi dengan kriteria:
-- Kategori: Makan
-- Periode: [tanggal awal] sampai [tanggal akhir]
-
-[PENDING_ACTION:batch_delete_transactions]{...}[/PENDING_ACTION]"
-
-User: "Hapus semua transaksi saya"
-Bot: "⚠️ PERINGATAN: Aksi ini akan menghapus SEMUA transaksi dan TIDAK BISA dibatalkan!
-
-Apakah kamu yakin ingin melanjutkan? Sistem akan meminta konfirmasi dengan mengetik 'HAPUS SEMUA'.
-
-[PENDING_ACTION:delete_all_transactions]{...}[/PENDING_ACTION]"
-
-PERINGATAN KERAS - WAJIB DIBACA:
-- Jika user meminta transaksi APAPUN, kamu WAJIB menyertakan tag [PENDING_ACTION:...][/PENDING_ACTION]
-- JANGAN PERNAH hanya menulis "Saya akan mencatat..." tanpa diikuti tag PENDING_ACTION
-- Respons TANPA tag = tombol konfirmasi TIDAK muncul = user TIDAK bisa melakukan aksi
-- Selalu selesaikan respons dengan tag lengkap, JANGAN terpotong di tengah
-- Tag PENDING_ACTION adalah SATU-SATUNYA cara agar aksi bisa dieksekusi
-- JANGAN PERNAH gunakan tag [ACTION:create_transaction], [ACTION:delete_transaction], atau [ACTION:edit_transaction] - tag ini TIDAK VALID dan akan ditolak sistem
-- HANYA [ACTION:search_transactions] yang boleh dieksekusi langsung (karena read-only)
-
-KEAMANAN - JANGAN TAMPILKAN ID INTERNAL:
-- JANGAN tampilkan transaction ID (UUID) langsung ke user dalam teks respons
-- Gunakan deskripsi transaksi yang mudah dipahami user
-- Contoh SALAH: "Saya akan mengedit transaksi dengan ID dc98d996-..."
-- Contoh BENAR: "Saya akan mengedit transaksi Makan Rp 50.000 (1 Feb, Cash)"
-- Di dalam tag PENDING_ACTION, tetap gunakan ID yang benar dari konteks
-- Tujuan: User tidak perlu tahu internal ID, cukup paham transaksi mana yang dimaksud
-
-PENANGANAN "SET SALDO LANGSUNG":
-- TOLAK permintaan seperti "set saldo langsung jadi X tanpa transaksi", "ubah saldo manual", "reset saldo ke X"
-- Saldo HANYA bisa berubah melalui transaksi (income/expense)
-- Contoh respons penolakan:
-  User: "Set saldo cash langsung jadi 1jt tanpa transaksi"
-  Bot: "Maaf, saya tidak bisa mengubah saldo secara langsung tanpa transaksi. Saldo hanya bisa berubah melalui pencatatan pemasukan atau pengeluaran.
-
-  Jika kamu ingin saldo Cash menjadi Rp 1.000.000, saya bisa membantu dengan mencatat transaksi yang sesuai. Saldo Cash kamu saat ini Rp 50.000, jadi butuh pemasukan Rp 950.000.
-
-  Mau saya buatkan transaksi pemasukannya?"
----`
-}
+import type {
+  CreateTransactionPayload,
+  DeleteTransactionPayload,
+  EditTransactionPayload,
+  EnhancedRAGContext,
+  UserChatContext,
+} from "@/types/rag"
+import type { Transaction } from "@/types/transaction"
 
 interface ChatRequestBody {
-  messages: Message[]
+  messages?: Message[]
   modelIndex?: number
   preferredModelId?: string
   ragContext?: EnhancedRAGContext
 }
 
-const createSystemPrompt = (ragContext?: EnhancedRAGContext): Message => {
-  let systemContent = BASE_SYSTEM_PROMPT
+const MIN_MBANKING_BALANCE = 50_000
+const RETRYABLE_STATUS_CODES = new Set([404, 408, 409, 425, 429, 500, 502, 503, 504])
+const textEncoder = new TextEncoder()
 
-  const hasUserContext = ragContext?.userContext !== undefined
+const isRetryableStatus = (status: number) => {
+  return RETRYABLE_STATUS_CODES.has(status) || status >= 500
+}
 
-  if (hasUserContext) {
-    systemContent += getActionInstructions()
+const buildApiMessages = (messages: Message[], ragContext?: EnhancedRAGContext) => {
+  const systemPrompt = createSystemPrompt(ragContext)
+  const prunedMessages = pruneConversationHistory(
+    messages.filter((message) => message.role !== "system")
+  )
+
+  return [systemPrompt, ...prunedMessages].map((message) => ({
+    role: message.role,
+    content: message.content,
+  }))
+}
+
+const createSseResponse = (content: string, modelId = "deterministic-finance") => {
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      const chunk: StreamChunk = {
+        choices: [{ delta: { content } }],
+      }
+
+      controller.enqueue(textEncoder.encode(`data: ${JSON.stringify(chunk)}\n\n`))
+      controller.enqueue(textEncoder.encode("data: [DONE]\n\n"))
+      controller.close()
+    },
+  })
+
+  return new NextResponse(stream, {
+    headers: {
+      "Content-Type": "text/event-stream; charset=utf-8",
+      "Cache-Control": "no-store, no-cache, must-revalidate",
+      Connection: "keep-alive",
+      "X-Model-Used": modelId,
+    },
+  })
+}
+
+const getLastUserMessage = (messages: Message[]) => {
+  return (
+    messages
+      .slice()
+      .reverse()
+      .find((message) => message.role === "user")
+      ?.content.trim() || ""
+  )
+}
+
+const getPreviousUserMessage = (messages: Message[]) => {
+  const userMessages = messages.filter((message) => message.role === "user")
+  return userMessages.at(-2)?.content.trim() || ""
+}
+
+const getLastAssistantMessage = (messages: Message[]) => {
+  const assistantMessages = messages.filter((message) => message.role === "assistant")
+  return assistantMessages.at(-1)?.content.trim() || ""
+}
+
+const getLatestTransaction = (userContext?: UserChatContext): Transaction | null => {
+  if (!userContext?.recentTransactions.length) {
+    return null
   }
 
-  if (hasUserContext && ragContext?.formattedUserContext) {
-    systemContent += `
+  return userContext.recentTransactions[0]
+}
 
----
-${ragContext.formattedUserContext}
----`
+const SEARCH_INTENT_PATTERN = /\b(cari|temukan|tampilkan)\s+transaksi\s+(.+)/i
+
+const extractSearchFilters = (message: string) => {
+  const match = message.match(SEARCH_INTENT_PATTERN)
+  if (!match) {
+    return null
   }
 
-  if (ragContext && ragContext.relevantDocs.length > 0) {
-    const contextDocs = ragContext.relevantDocs
-      .map((doc) => `- ${doc.content}`)
-      .join("\n")
-
-    systemContent += `
-
----
-KONTEKS TAMBAHAN DARI BASIS PENGETAHUAN:
-${contextDocs}
-
-Gunakan informasi di atas untuk menjawab pertanyaan pengguna dengan lebih akurat.
----`
+  if (isLikelyLatestTransactionQuery(message)) {
+    return null
   }
+
+  const rawTerm = match[2]?.trim()
+  if (!rawTerm) {
+    return null
+  }
+
+  const normalizedTerm = rawTerm
+    .replace(/\b(saya|saya punya|dong|ya)\b/gi, "")
+    .trim()
+
+  if (!normalizedTerm) {
+    return null
+  }
+
+  const categoryMap: Array<{ keyword: RegExp; category: string }> = [
+    { keyword: /\bgaji\b/i, category: "Gaji" },
+    { keyword: /\bbonus\b/i, category: "Bonus" },
+    { keyword: /\btransfer masuk\b/i, category: "Transfer Masuk" },
+    { keyword: /\bmakan|makanan\b/i, category: "Makan" },
+    { keyword: /\btransport|bensin|ojek|taksi|taxi|grab|gojek|bus|kereta\b/i, category: "Transport" },
+    { keyword: /\bbelanja|shopping\b/i, category: "Belanja" },
+    { keyword: /\btagihan|listrik|air|internet|telepon|pulsa\b/i, category: "Tagihan" },
+  ]
+
+  const category = categoryMap.find(({ keyword }) => keyword.test(normalizedTerm))?.category
+  const type =
+    /\bpemasukan|income\b/i.test(normalizedTerm)
+      ? "income"
+      : /\bpengeluaran|expense\b/i.test(normalizedTerm)
+        ? "expense"
+        : undefined
 
   return {
-    id: "system-prompt",
-    role: "system",
-    content: systemContent,
-    timestamp: new Date(),
+    rawTerm: normalizedTerm,
+    filters: {
+      ...(category && { category }),
+      ...(type && { type }),
+      ...(!category && { description: normalizedTerm }),
+    },
   }
 }
 
-export async function POST(request: Request) {
-  if (!API_KEY) {
-    return NextResponse.json(
-      { error: "OpenRouter API key tidak dikonfigurasi di server" },
-      { status: 500 }
+const buildLoginRequiredMessage = () => {
+  return "Untuk cek saldo atau mengelola transaksi pribadimu, kamu perlu login dulu ke akun SIKAS. Setelah masuk, saya bisa bantu cek saldo, catat transaksi, edit, dan hapus transaksi lewat chat."
+}
+
+const buildBalanceReply = (userContext: UserChatContext) => {
+  return [
+    "Saldo kamu saat ini:",
+    `- ${formatBalanceSentence("M-Banking", userContext.balances.mbanking).replace(" kamu saat ini ", ": ")}`,
+    `- ${formatBalanceSentence("Cash", userContext.balances.cash).replace(" kamu saat ini ", ": ")}`,
+  ].join("\n")
+}
+
+const summarizeEditChanges = (updates: EditTransactionPayload["updates"]) => {
+  const changes: string[] = []
+
+  if (updates.amount !== undefined) {
+    changes.push(`jumlah ${formatAmount(updates.amount)}`)
+  }
+
+  if (updates.type !== undefined) {
+    changes.push(`jenis ${getTransactionTypeLabel(updates.type)}`)
+  }
+
+  if (updates.category !== undefined) {
+    changes.push(`kategori ${updates.category}`)
+  }
+
+  if (updates.payment_method !== undefined) {
+    changes.push(`metode ${getPaymentMethodLabel(updates.payment_method)}`)
+  }
+
+  if (updates.description !== undefined) {
+    changes.push(
+      updates.description ? `deskripsi "${updates.description}"` : "deskripsi dikosongkan"
     )
   }
 
-  try {
-    const body: ChatRequestBody = await request.json()
-    const { messages, modelIndex = 0, preferredModelId, ragContext } = body
+  if (updates.transaction_date !== undefined) {
+    changes.push(`tanggal ${formatShortDate(updates.transaction_date)}`)
+  }
 
-    if (!messages || !Array.isArray(messages)) {
-      return NextResponse.json(
-        { error: "Messages array is required" },
-        { status: 400 }
+  return changes.join(", ")
+}
+
+const validateCreateTransaction = (
+  userContext: UserChatContext,
+  payload: CreateTransactionPayload
+) => {
+  if (payload.type !== "expense") {
+    return null
+  }
+
+  const isMbanking = payload.payment_method === "mbanking"
+  const currentBalance = isMbanking
+    ? userContext.balances.mbanking
+    : userContext.balances.cash
+
+  if (payload.amount > currentBalance) {
+    return `Saldo ${isMbanking ? "M-Banking" : "Cash"} kamu saat ini ${formatAmount(currentBalance)}, jadi belum cukup untuk mencatat pengeluaran ${formatAmount(payload.amount)}.`
+  }
+
+  if (isMbanking && currentBalance - payload.amount < MIN_MBANKING_BALANCE) {
+    return `Saldo M-Banking kamu saat ini ${formatAmount(currentBalance)}. Pengeluaran ini akan membuat saldo di bawah batas minimum ${formatAmount(MIN_MBANKING_BALANCE)}.`
+  }
+
+  return null
+}
+
+const buildSearchReply = (transactions: Transaction[], rawTerm: string) => {
+  if (transactions.length === 0) {
+    return `Tidak ada transaksi yang cocok untuk kata kunci "${rawTerm}".`
+  }
+
+  const lines = transactions
+    .slice(0, 5)
+    .map((transaction) => `- ${formatTransactionSummary(transaction)}`)
+
+  return [`Berikut transaksi yang ditemukan untuk "${rawTerm}":`, ...lines].join("\n")
+}
+
+const ensureUserContext = async (
+  ragContext: EnhancedRAGContext | undefined,
+  sessionUserId: string | undefined
+) => {
+  let userContext = ragContext?.userContext
+  let formattedUserContext = ragContext?.formattedUserContext
+
+  if (!userContext && sessionUserId) {
+    try {
+      userContext = await getUserContext(sessionUserId)
+      formattedUserContext = formatUserContextForPrompt(userContext)
+    } catch (error) {
+      console.error("Failed to resolve user context inside chat route:", error)
+    }
+  }
+
+  const effectiveRagContext: EnhancedRAGContext | undefined =
+    userContext || ragContext
+      ? {
+          query: ragContext?.query || "",
+          relevantDocs: ragContext?.relevantDocs || [],
+          avgSimilarity: ragContext?.avgSimilarity || 0,
+          ...(userContext && { userContext }),
+          ...(formattedUserContext && { formattedUserContext }),
+        }
+      : undefined
+
+  return {
+    userContext,
+    effectiveRagContext,
+  }
+}
+
+const maybeHandleDeterministicIntent = async (
+  messages: Message[],
+  message: string,
+  sessionUserId: string | undefined,
+  userContext?: UserChatContext
+) => {
+  const latestTransaction = getLatestTransaction(userContext)
+  const previousUserMessage = getPreviousUserMessage(messages)
+  const lastAssistantMessage = getLastAssistantMessage(messages)
+  const editUpdates = extractEditTransactionUpdates(message)
+  const searchIntent = extractSearchFilters(message)
+  const isLatestEditFollowUp =
+    Object.keys(editUpdates).length > 0 &&
+    isLikelyEditLatestIntent(previousUserMessage) &&
+    lastAssistantMessage.includes("Bagian mana yang mau diubah?")
+
+  if (isLikelyBalanceQuery(message)) {
+    if (!sessionUserId || !userContext) {
+      return createSseResponse(buildLoginRequiredMessage())
+    }
+
+    return createSseResponse(buildBalanceReply(userContext))
+  }
+
+  if (isLikelyLatestTransactionQuery(message)) {
+    if (!sessionUserId || !userContext) {
+      return createSseResponse(buildLoginRequiredMessage())
+    }
+
+    if (!latestTransaction) {
+      return createSseResponse("Belum ada transaksi yang tercatat di akunmu.")
+    }
+
+    return createSseResponse(
+      `Transaksi terakhir kamu adalah ${formatTransactionSummary(latestTransaction)}.`
+    )
+  }
+
+  if (searchIntent) {
+    if (!sessionUserId) {
+      return createSseResponse(buildLoginRequiredMessage())
+    }
+
+    const transactions = await searchUserTransactions(sessionUserId, searchIntent.filters)
+    return createSseResponse(buildSearchReply(transactions, searchIntent.rawTerm))
+  }
+
+  if (isLikelyDeleteLatestIntent(message)) {
+    if (!sessionUserId || !userContext) {
+      return createSseResponse(buildLoginRequiredMessage())
+    }
+
+    if (!latestTransaction) {
+      return createSseResponse("Belum ada transaksi yang bisa dihapus.")
+    }
+
+    const transactionLabel = formatTransactionSummary(latestTransaction)
+    const payload: DeleteTransactionPayload = {
+      transactionId: latestTransaction.id,
+      transactionLabel,
+    }
+
+    return createSseResponse(
+      `Saya siap menghapus ${transactionLabel}. Mohon konfirmasi dulu ya.\n[PENDING_ACTION:delete_transaction]${JSON.stringify(payload)}[/PENDING_ACTION]`
+    )
+  }
+
+  if (isLikelyEditLatestIntent(message) || isLatestEditFollowUp) {
+    if (!sessionUserId || !userContext) {
+      return createSseResponse(buildLoginRequiredMessage())
+    }
+
+    if (!latestTransaction) {
+      return createSseResponse("Belum ada transaksi yang bisa diubah.")
+    }
+
+    const transactionLabel = formatTransactionSummary(latestTransaction)
+    const updates = editUpdates
+
+    if (Object.keys(updates).length === 0) {
+      return createSseResponse(
+        `Transaksi terakhir kamu adalah ${transactionLabel}. Bagian mana yang mau diubah? Kamu bisa sebut jumlah, kategori, metode pembayaran, jenis, deskripsi, atau tanggal baru.`
       )
     }
 
-    const systemPrompt = createSystemPrompt(ragContext)
-    const prunedMessages = pruneConversationHistory(
-      messages.filter((m) => m.role !== "system")
+    const changeSummary = summarizeEditChanges(updates)
+    const payload: EditTransactionPayload = {
+      transactionId: latestTransaction.id,
+      transactionLabel,
+      changeSummary,
+      updates,
+    }
+
+    return createSseResponse(
+      `Saya siap mengubah ${transactionLabel} menjadi ${changeSummary}. Mohon konfirmasi dulu ya.\n[PENDING_ACTION:edit_transaction]${JSON.stringify(payload)}[/PENDING_ACTION]`
     )
-    const apiMessages = [systemPrompt, ...prunedMessages]
+  }
+
+  const createPayload = extractCreateTransactionPayload(message)
+  if (createPayload) {
+    if (!sessionUserId || !userContext) {
+      return createSseResponse(buildLoginRequiredMessage())
+    }
+
+    const validationError = validateCreateTransaction(userContext, createPayload)
+    if (validationError) {
+      return createSseResponse(validationError)
+    }
+
+    const transactionLabel = formatDraftTransactionSummary(createPayload)
+    const payload: CreateTransactionPayload = {
+      ...createPayload,
+      transactionLabel,
+    }
+
+    return createSseResponse(
+      `Saya siap mencatat ${transactionLabel}. Mohon konfirmasi dulu ya.\n[PENDING_ACTION:create_transaction]${JSON.stringify(payload)}[/PENDING_ACTION]`
+    )
+  }
+
+  return null
+}
+
+export async function POST(request: Request) {
+  try {
+    const body = (await request.json()) as ChatRequestBody
+    const messages = body.messages ?? []
+
+    if (messages.length === 0) {
+      return errorResponse("Pesan tidak boleh kosong.", 400)
+    }
+
+    const lastUserMessage = getLastUserMessage(messages)
+    const session = await getSession()
+    const { userContext, effectiveRagContext } = await ensureUserContext(
+      body.ragContext,
+      session?.userId
+    )
+
+    const deterministicResponse = await maybeHandleDeterministicIntent(
+      messages,
+      lastUserMessage,
+      session?.userId,
+      userContext
+    )
+    if (deterministicResponse) {
+      return deterministicResponse
+    }
+
+    const selectedModelId = resolveRequestedModelId(
+      messages,
+      body.modelIndex,
+      body.preferredModelId
+    )
+    const attemptOrder = createModelAttemptOrder(selectedModelId)
+    const apiMessages = buildApiMessages(messages, effectiveRagContext)
 
     if (process.env.NODE_ENV === "development") {
-      const estimatedTokens = estimateMessagesTokens(apiMessages)
+      const estimatedTokens = estimateMessagesTokens(
+        apiMessages.map((message) => ({
+          ...message,
+          id: "debug",
+          timestamp: new Date(),
+        }))
+      )
       console.log(
-        `[Chat API] ~${estimatedTokens} tokens for ${apiMessages.length} messages`
+        `[Chatbot] Attempt order: ${attemptOrder.join(" -> ")} | ~${estimatedTokens} tokens`
       )
     }
 
-    let selectedModel = MODELS[modelIndex]
-    
-    const isAutoMode = !preferredModelId && modelIndex === 0
-    
-    if (isAutoMode) {
-      selectedModel = selectModelAutomatically(apiMessages)
-    } else if (preferredModelId && MODELS.includes(preferredModelId)) {
-      selectedModel = preferredModelId
-    }
+    let lastErrorMessage = "Semua model Cerebras sedang tidak tersedia."
 
-    const response = await fetch(
-      "https://openrouter.ai/api/v1/chat/completions",
-      {
+    for (const modelId of attemptOrder) {
+      const response = await fetch(`${getCerebrasBaseUrl()}/chat/completions`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${API_KEY}`,
-          "HTTP-Referer": SITE_URL,
-          "X-Title": SITE_NAME,
+          Authorization: `Bearer ${getCerebrasApiKey()}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: selectedModel,
-          messages: apiMessages.map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
+          model: modelId,
+          messages: apiMessages,
           stream: true,
           temperature: 0.7,
-          max_tokens: 4096,
+          max_tokens: 1000,
         }),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        const shouldRetry = isRetryableStatus(response.status)
+
+        console.warn("[Chatbot] Cerebras request failed", {
+          modelId,
+          status: response.status,
+          shouldRetry,
+        })
+
+        lastErrorMessage =
+          response.status === 401
+            ? "Autentikasi Cerebras gagal. Periksa konfigurasi server."
+            : errorText || lastErrorMessage
+
+        if (shouldRetry) {
+          continue
+        }
+
+        return errorResponse(lastErrorMessage, response.status)
       }
-    )
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error(`[Chat API] OpenRouter error: ${response.status}`, errorText)
+      if (!response.body) {
+        lastErrorMessage = `Model ${modelId} tidak mengirim stream respons.`
+        continue
+      }
 
-      return NextResponse.json(
-        {
-          error: `Model error (${response.status})`,
-          retryWithNextModel: response.status === 404 || response.status === 429 || response.status >= 500
+      const reader = response.body.getReader()
+
+      const stream = new ReadableStream<Uint8Array>({
+        async start(controller) {
+          try {
+            while (true) {
+              const { done, value } = await reader.read()
+
+              if (done) break
+              controller.enqueue(value)
+            }
+          } catch (error) {
+            controller.error(error)
+            return
+          } finally {
+            reader.releaseLock()
+          }
+
+          controller.close()
         },
-        { status: response.status }
-      )
+      })
+
+      return new NextResponse(stream, {
+        headers: {
+          "Content-Type": "text/event-stream; charset=utf-8",
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+          Connection: "keep-alive",
+          "X-Model-Used": modelId,
+        },
+      })
     }
 
-    const stream = new ReadableStream({
-      async start(controller) {
-        const reader = response.body?.getReader()
-        if (!reader) {
-          controller.close()
-          return
-        }
-
-        const decoder = new TextDecoder()
-        let buffer = ""
-
-        try {
-          while (true) {
-            const { done, value } = await reader.read()
-            if (done) break
-
-            buffer += decoder.decode(value, { stream: true })
-            const lines = buffer.split("\n")
-            buffer = lines.pop() || ""
-
-            for (const line of lines) {
-              if (line.startsWith("data: ")) {
-                const data = line.slice(6)
-                if (data === "[DONE]") {
-                  controller.enqueue(new TextEncoder().encode("data: [DONE]\n\n"))
-                  continue
-                }
-
-                try {
-                  const chunk: StreamChunk = JSON.parse(data)
-                  if (chunk.choices && chunk.choices[0]?.delta?.content) {
-                    controller.enqueue(
-                      new TextEncoder().encode(`data: ${JSON.stringify(chunk)}\n\n`)
-                    )
-                  }
-                } catch {
-                  continue
-                }
-              }
-            }
-          }
-        } catch (error) {
-          console.error("[Chat API] Stream error:", error)
-        } finally {
-          controller.close()
-        }
-      },
-    })
-
-    return new Response(stream, {
-      headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
-      },
-    })
+    return errorResponse(lastErrorMessage, 503)
   } catch (error) {
-    console.error("[Chat API] Error:", error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unknown error" },
-      { status: 500 }
+    return errorResponse(
+      error instanceof Error ? error.message : "Terjadi kesalahan server.",
+      500
     )
   }
 }

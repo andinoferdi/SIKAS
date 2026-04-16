@@ -121,15 +121,15 @@ export function HeroSection() {
                           <span className="font-bold text-sm text-primary">SIKAS</span>
                         </div>
                         <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold text-xs">
-                          A
+                          D
                         </div>
                       </div>
                     </div>
 
                     <div className="px-4 pb-6 space-y-3.5">
                       <div className="pt-3">
-                        <p className="text-[10px] text-muted-foreground">Selamat datang kembali,</p>
-                        <p className="font-semibold text-sm text-foreground">Andino</p>
+                        <p className="text-[10px] text-muted-foreground">Tampilan demo antarmuka</p>
+                        <p className="font-semibold text-sm text-foreground">Pengguna Contoh</p>
                       </div>
 
                       <div className="grid grid-cols-2 gap-2">
@@ -145,8 +145,8 @@ export function HeroSection() {
                             </div>
                             <p className="text-[9px] font-medium">M-Banking</p>
                           </div>
-                          <p className="text-[10px] opacity-80">Saldo</p>
-                          <p className="text-sm font-bold mt-0.5">Rp 372.370</p>
+                          <p className="text-[10px] opacity-80">Contoh saldo</p>
+                          <p className="text-sm font-bold mt-0.5">Rp 320.000</p>
                         </div>
 
                         <div
@@ -161,34 +161,34 @@ export function HeroSection() {
                             </div>
                             <p className="text-[9px] font-medium">Cash</p>
                           </div>
-                          <p className="text-[10px] opacity-80">Saldo</p>
-                          <p className="text-sm font-bold mt-0.5">Rp 141.000</p>
+                          <p className="text-[10px] opacity-80">Contoh saldo</p>
+                          <p className="text-sm font-bold mt-0.5">Rp 85.000</p>
                         </div>
                       </div>
 
                       <div className="bg-card rounded-lg p-3 border border-border">
                         <p className="text-[10px] font-medium text-foreground mb-2">Ringkasan Bulanan</p>
-                        <p className="text-[9px] text-muted-foreground mb-2">Januari 2026</p>
+                        <p className="text-[9px] text-muted-foreground mb-2">Contoh data bulan ini</p>
                         <div className="space-y-2">
                           <div className="bg-success/10 rounded-md p-2 flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <TrendingUp className="w-3 h-3 text-success" />
                               <span className="text-[10px] text-success-text">Pemasukan</span>
                             </div>
-                            <span className="text-xs font-semibold text-success">+Rp 532.370</span>
+                            <span className="text-xs font-semibold text-success">+Rp 640.000</span>
                           </div>
                           <div className="bg-danger-bg rounded-md p-2 flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <TrendingUp className="w-3 h-3 text-danger rotate-180" />
                               <span className="text-[10px] text-danger-text">Pengeluaran</span>
                             </div>
-                            <span className="text-xs font-semibold text-danger">-Rp 19.000</span>
+                            <span className="text-xs font-semibold text-danger">-Rp 235.000</span>
                           </div>
                         </div>
                       </div>
 
                       <button className="w-full bg-primary text-primary-foreground rounded-lg py-2.5 text-xs font-semibold">
-                        Catat Transaksi
+                        Lihat Contoh Dashboard
                       </button>
                     </div>
                   </div>

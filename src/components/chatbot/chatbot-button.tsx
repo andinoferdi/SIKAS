@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import { MessageCircle, X } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { MessageCircle, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ChatbotButtonProps {
-  isOpen: boolean
-  onClick: () => void
+  isOpen: boolean;
+  onClick: () => void;
 }
 
 export function ChatbotButton({ isOpen, onClick }: ChatbotButtonProps) {
@@ -13,10 +13,28 @@ export function ChatbotButton({ isOpen, onClick }: ChatbotButtonProps) {
     <button
       onClick={onClick}
       className={cn(
-        "fixed bottom-20 right-4 sm:bottom-4 sm:right-6 w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 z-50 cursor-pointer",
+        // Base
+        "fixed w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 z-50 cursor-pointer",
+        /*
+         * MOBILE POSITIONING FIX:
+         *   - Lama: `bottom-20` (80px) — dihitung dari asumsi bottom nav 64px + gap 16px.
+         *     Namun jika bottom nav ada `pb-safe` (env safe-area-inset-bottom),
+         *     actual nav bisa lebih tinggi → button tertimpa nav.
+         *   - Baru: `bottom-[calc(4rem+env(safe-area-inset-bottom,0px)+1rem)]`
+         *     = 64px nav height + safe area + 16px gap.
+         *     Fallback: jika browser tidak support env(), tetap 80px (sama seperti semula).
+         *   - `right-4` (16px): konsisten dengan panel.
+         *
+         * DESKTOP POSITIONING FIX:
+         *   - Lama: `sm:bottom-4 sm:right-6`. Button di 16px dari bawah, 24px dari kanan.
+         *   - Baru: `sm:bottom-4 sm:right-4`. Samakan right dengan panel (sm:right-4)
+         *     agar button dan panel tepi kanannya rata.
+         */
+        "bottom-[calc(4rem+env(safe-area-inset-bottom,0px)+1rem)] right-4",
+        "sm:bottom-4 sm:right-4",
         isOpen
           ? "bg-foreground hover:bg-card-foreground rotate-0 hidden lg:flex"
-          : "bg-primary hover:bg-primary/90 hover:scale-110"
+          : "bg-primary hover:bg-primary/90 hover:scale-110",
       )}
       aria-label={isOpen ? "Tutup chat" : "Buka chat"}
     >
@@ -29,5 +47,5 @@ export function ChatbotButton({ isOpen, onClick }: ChatbotButtonProps) {
         </>
       )}
     </button>
-  )
+  );
 }

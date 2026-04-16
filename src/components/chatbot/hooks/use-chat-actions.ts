@@ -1,11 +1,15 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useCallback, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
-import { type Message } from "@/types/chatbot"
-import { generateMessageId } from "@/services/chatbot"
-import { executeAction, executeBatchAction, isBatchAction } from "@/components/chatbot/utils/action-parser"
 import type { PendingAction } from "@/components/chatbot/batch-action-confirmation"
+import {
+  executeAction,
+  executeBatchAction,
+  isBatchAction,
+} from "@/components/chatbot/utils/action-parser"
+import { generateMessageId } from "@/services/chatbot"
+import type { Message } from "@/types/chatbot"
 
 interface UseChatActionsOptions {
   onAddMessage: (message: Message) => void
@@ -36,21 +40,21 @@ export function useChatActions({ onAddMessage }: UseChatActionsOptions) {
       onAddMessage({
         id: generateMessageId(),
         role: "assistant",
-        content: `✅ ${result.message}`,
+        content: `Berhasil: ${result.message}`,
         timestamp: new Date(),
       })
     } else {
       onAddMessage({
         id: generateMessageId(),
         role: "assistant",
-        content: `❌ ${result.message}`,
+        content: `Gagal: ${result.message}`,
         timestamp: new Date(),
       })
     }
 
     setPendingAction(null)
     setIsExecuting(false)
-  }, [pendingAction, invalidateQueries, onAddMessage])
+  }, [invalidateQueries, onAddMessage, pendingAction])
 
   const handleCancelAction = useCallback(() => {
     onAddMessage({

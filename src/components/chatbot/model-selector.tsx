@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import { Check, ChevronDown, Sparkles, Eye } from "lucide-react"
+import { Check, ChevronDown, Sparkles } from "lucide-react"
 import type { AIModel, ModelSelection } from "@/types/chatbot"
 import { cn } from "@/lib/utils"
 
@@ -18,7 +18,7 @@ export function ModelSelector({
 }: ModelSelectorProps) {
   const selectedModel =
     currentSelection.mode === "manual" && currentSelection.selectedModelId
-      ? models.find((m) => m.id === currentSelection.selectedModelId)
+      ? models.find((model) => model.id === currentSelection.selectedModelId)
       : null
 
   const displayText =
@@ -51,10 +51,7 @@ export function ModelSelector({
 
       {isOpen && (
         <>
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setIsOpen(false)}
-          />
+          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
           <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
             <div className="p-2 space-y-1">
               <button
@@ -64,18 +61,15 @@ export function ModelSelector({
                   currentSelection.mode === "auto" && "bg-primary/10"
                 )}
               >
-                {currentSelection.mode === "auto" && (
+                {currentSelection.mode === "auto" ? (
                   <Check className="w-4 h-4 text-primary" />
-                )}
-                {currentSelection.mode !== "auto" && (
+                ) : (
                   <div className="w-4 h-4" />
                 )}
                 <div className="flex-1">
-                  <div className="font-medium text-foreground">
-                    Auto Selection
-                  </div>
+                  <div className="font-medium text-foreground">Auto Selection</div>
                   <div className="text-xs text-muted-foreground">
-                    Otomatis pilih model terbaik yang tersedia
+                    Otomatis pilih model Cerebras terbaik yang tersedia
                   </div>
                 </div>
               </button>
@@ -102,24 +96,18 @@ export function ModelSelector({
                     ) : (
                       <div className="w-4 h-4 shrink-0" />
                     )}
-                    <span className="font-medium text-foreground">
-                      {model.name}
-                    </span>
-                    {model.supportsVision && (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs bg-primary/20 text-primary rounded">
-                        <Eye className="w-3 h-3" />
-                        Vision
-                      </span>
-                    )}
+                    <span className="font-medium text-foreground">{model.name}</span>
                   </div>
+
                   <div className="text-xs text-muted-foreground ml-6">
                     {model.description}
                   </div>
+
                   {model.pros.length > 0 && (
                     <ul className="text-xs text-muted-foreground ml-6 space-y-0.5">
-                      {model.pros.map((pro, idx) => (
-                        <li key={idx} className="flex items-start gap-1">
-                          <span className="text-primary">•</span>
+                      {model.pros.map((pro) => (
+                        <li key={pro} className="flex items-start gap-1">
+                          <span className="text-primary">*</span>
                           <span>{pro}</span>
                         </li>
                       ))}

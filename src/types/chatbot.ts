@@ -26,8 +26,6 @@ export interface AIModel {
   name: string
 
   description: string
-  supportsVision: boolean
-  category: "text" | "vision"
   pros: string[]
   free: boolean
 }

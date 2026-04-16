@@ -33,17 +33,16 @@ Kunjungi website langsung di: **[sikas-noyu.vercel.app](https://sikas-noyu.verce
    Buat file `.env.local` di root folder dan isi dengan:
 
    ```env
-   NEXT_PUBLIC_OPENROUTER_API_KEY=your_openrouter_api_key
-   NEXT_PUBLIC_SITE_NAME=SIKAS
-   NEXT_PUBLIC_PRODUCTION_URL=https://sikas-noyu.vercel.app/
-   NEXT_PUBLIC_SITE_URL=http://localhost:3000
+   CEREBRAS_API_KEY=your_cerebras_api_key
+   CEREBRAS_MODEL=llama3.1-8b
+   CEREBRAS_MODEL_FALLBACKS=zai-glm-4.7,qwen-3-235b-a22b-instruct-2507,gpt-oss-120b
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
    SESSION_SECRET=your_session_secret_key
    ```
 
-   Cara mendapatkan API key:
-   - **OpenRouter**: Daftar di [openrouter.ai](https://openrouter.ai/) dan buat API key
+   Cara mendapatkan kredensial:
+   - **Cerebras**: Buat API key di dashboard Cerebras lalu pilih model teks yang ingin digunakan
    - **Supabase**: Buat project di [supabase.com](https://supabase.com/), lalu copy URL dan anon key dari Settings > API
 
 4. **Setup database Supabase**
@@ -87,16 +86,7 @@ Kunjungi website langsung di: **[sikas-noyu.vercel.app](https://sikas-noyu.verce
 
    Aktifkan extension `vector` di Supabase: Database > Extensions > cari "vector" > Enable
 
-   Kemudian disable RLS (Row Level Security) untuk semua tabel agar aplikasi bisa mengakses data:
-
-   ```sql
-   -- Disable RLS untuk semua tabel
-   alter table users disable row level security;
-   alter table transactions disable row level security;
-   alter table knowledge_base_embeddings disable row level security;
-   ```
-
-   Atau melalui UI: Klik tabel > Authentication > Disable RLS
+   Setelah tabel dibuat, aktifkan RLS dan buat policy yang sesuai untuk kebutuhan aplikasi Anda. Jangan menonaktifkan RLS pada tabel yang terekspos ke client.
 
 5. **Seed knowledge base untuk chatbot**
 
@@ -141,6 +131,7 @@ Kunjungi website langsung di: **[sikas-noyu.vercel.app](https://sikas-noyu.verce
   - _"Tampilkan transaksi bulan ini"_
   - _"Berapa saldo saya?"_
 - AI akan membantu mencatat dan mengelola keuangan Anda
+- Fitur analisis gambar dan scan nota saat ini dinonaktifkan pada integrasi Cerebras, jadi semua interaksi AI dilakukan lewat chat teks
 
 ### 4. Melihat Ringkasan
 
@@ -154,7 +145,8 @@ Kunjungi website langsung di: **[sikas-noyu.vercel.app](https://sikas-noyu.verce
 - **Styling**: Tailwind CSS
 - **State Management**: Zustand, TanStack Query
 - **Form**: React Hook Form + Zod
-- **AI**: Xenova Transformers
+- **AI Chat**: Cerebras
+- **Embeddings**: Xenova Transformers
 
 ## Lisensi
 

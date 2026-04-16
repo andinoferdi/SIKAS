@@ -6,7 +6,8 @@ import type {
   SearchTransactionsPayload,
 } from "@/types/rag"
 import type { Transaction, MonthlySummary } from "@/types/transaction"
-import { getJakartaDateTime, JAKARTA_TIMEZONE } from "@/lib/utils/format"
+import { formatCurrency, getJakartaDateTime } from "@/lib/utils/format"
+import { formatTransactionSummary } from "@/services/chatbot/presentation"
 
 
 export async function getUserContext(userId: string): Promise<UserChatContext> {
@@ -167,20 +168,11 @@ export async function searchUserTransactions(
 export function formatUserContextForPrompt(context: UserChatContext): string {
   const { userName, balances, monthlySummary, recentTransactions, allTimeSummary } = context
 
-  const formatRp = (amount: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount)
-  }
-
   let prompt = `## ${userName}\n`
-  prompt += `Saldo: M-Banking ${formatRp(balances.mbanking)} | Cash ${formatRp(balances.cash)}\n`
+  prompt += `Saldo: M-Banking ${formatCurrency(balances.mbanking)} | Cash ${formatCurrency(balances.cash)}\n`
 
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]
-  prompt += `${monthNames[monthlySummary.month - 1]} ${monthlySummary.year}: +${formatRp(monthlySummary.total_income)} -${formatRp(monthlySummary.total_expense)} = ${formatRp(monthlySummary.net)}\n`
+  prompt += `${monthNames[monthlySummary.month - 1]} ${monthlySummary.year}: +${formatCurrency(monthlySummary.total_income)} -${formatCurrency(monthlySummary.total_expense)} = ${formatCurrency(monthlySummary.net)}\n`
 
   if (monthlySummary.total_income > 0) {
     const expenseRatio = (monthlySummary.total_expense / monthlySummary.total_income * 100).toFixed(1)
@@ -208,19 +200,15 @@ export function formatUserContextForPrompt(context: UserChatContext): string {
       prompt += `\n### Top 5 Kategori Pengeluaran (Sepanjang Waktu)\n`
       for (const cat of expenseCategories) {
         const categoryName = cat.category.split(":")[1]
-        prompt += `- ${categoryName}: ${formatRp(cat.total)} (${cat.count}x transaksi)\n`
+        prompt += `- ${categoryName}: ${formatCurrency(cat.total)} (${cat.count}x transaksi)\n`
       }
     }
   }
 
   if (recentTransactions.length > 0) {
-    prompt += `\n### Transaksi Terakhir (ID untuk edit/hapus)\n`
+    prompt += `\n### Transaksi Terakhir\n`
     for (const tx of recentTransactions.slice(0, 8)) {
-      const sign = tx.type === "income" ? "+" : "-"
-      const date = new Date(tx.transaction_date).toLocaleDateString("id-ID", { timeZone: JAKARTA_TIMEZONE, day: "2-digit", month: "short" })
-      prompt += `[${tx.id}] ${date}: ${sign}${formatRp(tx.amount)} ${tx.category}`
-      if (tx.description) prompt += ` (${tx.description})`
-      prompt += ` [${tx.payment_method}]\n`
+      prompt += `- ${formatTransactionSummary(tx)}\n`
     }
   }
 
