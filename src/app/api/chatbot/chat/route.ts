@@ -40,6 +40,7 @@ import type {
   DeleteTransactionPayload,
   EditTransactionPayload,
   EnhancedRAGContext,
+  SearchTransactionsPayload,
   UserChatContext,
 } from "@/types/rag"
 import type { Transaction } from "@/types/transaction"
@@ -124,7 +125,12 @@ const getLatestTransaction = (userContext?: UserChatContext): Transaction | null
 
 const SEARCH_INTENT_PATTERN = /\b(cari|temukan|tampilkan)\s+transaksi\s+(.+)/i
 
-const extractSearchFilters = (message: string) => {
+interface SearchIntentResult {
+  rawTerm: string
+  filters: SearchTransactionsPayload
+}
+
+const extractSearchFilters = (message: string): SearchIntentResult | null => {
   const match = message.match(SEARCH_INTENT_PATTERN)
   if (!match) {
     return null
@@ -158,20 +164,22 @@ const extractSearchFilters = (message: string) => {
   ]
 
   const category = categoryMap.find(({ keyword }) => keyword.test(normalizedTerm))?.category
-  const type =
+  const type: SearchTransactionsPayload["type"] =
     /\bpemasukan|income\b/i.test(normalizedTerm)
       ? "income"
       : /\bpengeluaran|expense\b/i.test(normalizedTerm)
         ? "expense"
         : undefined
 
+  const filters: SearchTransactionsPayload = {
+    ...(category && { category }),
+    ...(type && { type }),
+    ...(!category && { description: normalizedTerm }),
+  }
+
   return {
     rawTerm: normalizedTerm,
-    filters: {
-      ...(category && { category }),
-      ...(type && { type }),
-      ...(!category && { description: normalizedTerm }),
-    },
+    filters,
   }
 }
 

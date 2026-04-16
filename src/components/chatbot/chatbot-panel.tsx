@@ -138,23 +138,23 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
         // --- Mobile: full-screen panel ---
         // bottom-0 + h-[100dvh] = panel dari atas sampai bawah viewport
         // dvh memperhitungkan browser toolbar dinamis (mobile Safari/Chrome)
-        "inset-x-0 bottom-0 h-[100dvh]",
+        "inset-x-0 bottom-0 h-dvh",
         // --- Desktop (sm+): floating panel di kanan bawah ---
         // Reset mobile inset, gunakan positioning eksplisit
         "sm:inset-auto",
         // Jarak dari bawah: button (h-14=56px) + bottom-4 (16px) + gap (16px) = 88px = 5.5rem
-        "sm:bottom-[5.5rem]",
+        "sm:bottom-22",
         // Jarak dari kanan: 16px lebih aman dari 24px di layar ~1024px
         "sm:right-4",
         // Lebar 22rem (≈352px) — lebih ramping dari sebelumnya (26rem)
-        "sm:w-[22rem]",
+        "sm:w-88",
         // Tinggi: auto, dibatasi oleh max-height
         "sm:h-auto",
         // Max-height: kurangi offset jadi 7rem (dari 9rem) → panel lebih tinggi
         // dvh = dynamic viewport height, akurat di browser modern
         "sm:max-h-[calc(100dvh-7rem)]",
         // Min-height agar panel tidak terlalu kecil di viewport sangat pendek
-        "sm:min-h-[24rem]",
+        "sm:min-h-96",
         // Styling
         "bg-card sm:rounded-2xl shadow-2xl sm:border sm:border-border",
         "flex flex-col overflow-hidden",
