@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(xargs:*)",
-      "mcp__chrome-devtools__evaluate_script"
-    ]
-  }
-}

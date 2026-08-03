@@ -39,3 +39,40 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# AI / agent tooling (local-only, machine-specific)
+.claude/
+.serena/
+.cursor/
+.aider*
+.codeium/
+.continue/
+
+# graphify knowledge graph (regenerate with `graphify`)
+graphify-out/
+
+# editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+desktop.ini
+
+# secrets & credentials
+*.key
+*.pfx
+*.p12
+*.crt
+secrets.json
+.env.local
+.env.*.local
+
+# logs & caches
+*.log
+logs/
+.cache/
+.turbo/
+.eslintcache
