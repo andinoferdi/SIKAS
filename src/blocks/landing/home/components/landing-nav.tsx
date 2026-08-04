@@ -1,46 +1,49 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { Wallet, PiggyBank, TrendingUp, BarChart3, X } from "lucide-react"
-import { LandingNavDesktop } from "@/blocks/landing/home/components/landing-nav-desktop"
-import { LandingNavMobile } from "@/blocks/landing/home/components/landing-nav-mobile"
+import { Menu, X } from "lucide-react"
 import { startPageScroll, stopPageScroll } from "@/components/scroll"
 
-const features = [
-  {
-    icon: Wallet,
-    title: "Kelola Saldo",
-    description: "Pantau saldo M-Banking dan Cash dalam satu tempat",
-  },
-  {
-    icon: PiggyBank,
-    title: "Catat Transaksi",
-    description: "Catat pemasukan dan pengeluaran dengan mudah",
-  },
-  {
-    icon: TrendingUp,
-    title: "Analisis Keuangan",
-    description: "Lihat ringkasan keuangan bulanan Anda",
-  },
-  {
-    icon: BarChart3,
-    title: "Laporan",
-    description: "Laporan lengkap untuk keputusan finansial",
-  },
+const NAV_LINKS = [
+  { href: "#fitur", label: "Fitur" },
+  { href: "#tentang", label: "Tentang" },
+  { href: "/guide", label: "Panduan" },
+  { href: "/faq", label: "FAQ" },
 ]
 
 export function LandingNav() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const sentinelRef = useRef<HTMLDivElement>(null)
+
+  /*
+    Status "sudah di-scroll" dibaca dari sentinel setinggi 1px di paling
+    atas halaman, bukan dari listener scroll. IntersectionObserver hanya
+    bekerja saat sentinel melewati batas viewport, jadi tidak ada
+    re-render tiap frame seperti pada window.addEventListener("scroll").
+  */
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsScrolled(!entry.isIntersecting),
+      { threshold: 0 }
+    )
+    observer.observe(el)
+
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
-    if (!isMobileMenuOpen) return
+    if (!isMenuOpen) return
 
     stopPageScroll()
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setIsMobileMenuOpen(false)
+      if (event.key === "Escape") setIsMenuOpen(false)
     }
     window.addEventListener("keydown", onKeyDown)
 
@@ -48,51 +51,92 @@ export function LandingNav() {
       window.removeEventListener("keydown", onKeyDown)
       startPageScroll()
     }
-  }, [isMobileMenuOpen])
+  }, [isMenuOpen])
+
+  const shellClass = isScrolled
+    ? "border-border bg-card/90 backdrop-blur-sm"
+    : "border-transparent bg-transparent"
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-card">
-      <div className="mx-auto max-w-6xl px-5 md:px-8">
-        <div className="flex h-18 items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="relative w-30 h-9">
-              <Image
-                src="/images/logo.png"
-                alt="SIKAS"
-                fill
-                className="object-contain"
-                priority
-              />
-            </div>
+    <>
+      <div ref={sentinelRef} aria-hidden="true" className="h-px w-full" />
+
+      <header
+        className={`sticky top-0 z-50 w-full border-b transition-colors duration-300 ${shellClass}`}
+      >
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 md:h-18 md:px-8">
+          <Link href="/" className="flex items-center" aria-label="SIKAS, beranda">
+            <Image
+              src="/images/logo.png"
+              alt="SIKAS"
+              width={120}
+              height={36}
+              priority
+              className="h-9 w-auto object-contain"
+            />
           </Link>
+
+          <nav className="hidden items-center gap-8 lg:flex" aria-label="Navigasi utama">
+            {NAV_LINKS.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {link.label}
+              </Link>
+            ))}
+            <Link
+              href="/login"
+              className="rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-btn-primary-hover"
+            >
+              Masuk
+            </Link>
+          </nav>
 
           <button
             type="button"
-            className="lg:hidden flex flex-col justify-center items-center w-10 h-10 gap-1.5 cursor-pointer"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            aria-label="Toggle menu"
-            aria-expanded={isMobileMenuOpen}
+            onClick={() => setIsMenuOpen((open) => !open)}
+            aria-label={isMenuOpen ? "Tutup menu" : "Buka menu"}
+            aria-expanded={isMenuOpen}
+            aria-controls="menu-mobile"
+            className="-mr-2 flex h-11 w-11 items-center justify-center text-foreground lg:hidden"
           >
-            {isMobileMenuOpen ? (
-              <X className="w-6 h-6 text-foreground" />
+            {isMenuOpen ? (
+              <X className="h-6 w-6" aria-hidden="true" />
             ) : (
-              <>
-                <span className="block w-5 h-0.5 bg-foreground rounded-full" />
-                <span className="block w-5 h-0.5 bg-foreground rounded-full" />
-                <span className="block w-5 h-0.5 bg-foreground rounded-full" />
-              </>
+              <Menu className="h-6 w-6" aria-hidden="true" />
             )}
           </button>
-
-          <LandingNavDesktop features={features} />
         </div>
-      </div>
+      </header>
 
-      <LandingNavMobile
-        features={features}
-        isOpen={isMobileMenuOpen}
-        onClose={() => setIsMobileMenuOpen(false)}
-      />
-    </header>
+      {isMenuOpen ? (
+        <div
+          id="menu-mobile"
+          className="fixed inset-x-0 bottom-0 top-16 z-40 bg-background px-5 lg:hidden"
+        >
+          <nav className="flex flex-col" aria-label="Navigasi mobile">
+            {NAV_LINKS.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setIsMenuOpen(false)}
+                className="border-b border-border py-4 text-base text-foreground"
+              >
+                {link.label}
+              </Link>
+            ))}
+            <Link
+              href="/login"
+              onClick={() => setIsMenuOpen(false)}
+              className="mt-8 rounded-full bg-primary py-3 text-center text-base font-semibold text-primary-foreground"
+            >
+              Masuk
+            </Link>
+          </nav>
+        </div>
+      ) : null}
+    </>
   )
 }
