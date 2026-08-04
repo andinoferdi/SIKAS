@@ -1,4 +1,4 @@
-﻿export default function FaqLoading() {
+export default function FaqLoading() {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-2xl mx-auto space-y-4">
