@@ -52,7 +52,7 @@ export const LandingNavDesktop = memo(function LandingNavDesktop({ features }: L
         <button
           type="button"
           className={cn(
-            "flex items-center gap-1 px-4 py-2 text-[15px] font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer",
+            "flex items-center gap-1 px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer",
             isDropdownOpen && "text-foreground"
           )}
         >
@@ -71,20 +71,20 @@ export const LandingNavDesktop = memo(function LandingNavDesktop({ features }: L
             isDropdownOpen ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-2"
           )}
         >
-          <div className="bg-card rounded-2xl shadow-xl border border-border/50 p-4 min-w-100">
+          <div className="min-w-100 rounded-lg border border-border bg-card p-4">
             <div className="grid grid-cols-1 gap-1">
               {features.map((feature) => (
                 <Link
                   key={feature.title}
                   href="#fitur"
-                  className="flex items-center gap-4 p-3 rounded-xl hover:bg-muted/50 transition-colors group"
+                  className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors group"
                   onClick={() => setIsDropdownOpen(false)}
                 >
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
                     <feature.icon className="w-6 h-6 text-primary" />
                   </div>
                   <div>
-                    <div className="font-semibold text-foreground text-[15px]">
+                    <div className="font-semibold text-foreground text-sm">
                       {feature.title}
                     </div>
                     <p className="text-sm text-muted-foreground mt-0.5">
@@ -100,26 +100,26 @@ export const LandingNavDesktop = memo(function LandingNavDesktop({ features }: L
 
       <Link
         href="#tentang"
-        className="px-4 py-2 text-[15px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+        className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
       >
         Tentang
       </Link>
       <Link
         href="/guide"
-        className="px-4 py-2 text-[15px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+        className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
       >
         Panduan
       </Link>
       <Link
         href="/faq"
-        className="px-4 py-2 text-[15px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+        className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
       >
         FAQ
       </Link>
 
       <Link
         href="/login"
-        className="ml-4 px-6 py-2.5 text-[15px] font-semibold text-primary-foreground bg-primary hover:bg-primary/90 rounded-full transition-colors"
+        className="ml-4 px-6 py-2.5 text-sm font-semibold text-primary-foreground bg-primary hover:bg-primary/90 rounded-full transition-colors"
       >
         Login
       </Link>

@@ -63,7 +63,7 @@ export const LandingNavMobile = memo(function LandingNavMobile({
                 <Link
                   key={feature.title}
                   href="#fitur"
-                  className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors"
+                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors"
                   onClick={handleLinkClick}
                 >
                   <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
@@ -73,7 +73,7 @@ export const LandingNavMobile = memo(function LandingNavMobile({
                     <div className="font-medium text-foreground text-sm">
                       {feature.title}
                     </div>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-sm text-muted-foreground">
                       {feature.description}
                     </p>
                   </div>

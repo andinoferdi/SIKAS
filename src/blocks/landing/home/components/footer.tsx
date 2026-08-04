@@ -5,7 +5,7 @@ import { Mail, MapPin } from "lucide-react"
 export function Footer() {
   return (
     <footer className="bg-card border-t border-border">
-      <div className="max-w-300 mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
+      <div className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-24">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12">
           <div className="lg:col-span-1">
             <div className="flex items-center gap-2.5 mb-6">
@@ -19,16 +19,13 @@ export function Footer() {
               <span className="font-bold text-xl text-foreground">SIKAS</span>
             </div>
 
-            <h5 className="font-semibold text-foreground mb-4">SIKAS Indonesia</h5>
+            <h5 className="mb-4 font-serif text-lg text-foreground">SIKAS Indonesia</h5>
 
             <div className="space-y-3 text-sm text-muted-foreground">
-              <a
-                href="#"
-                className="flex items-start gap-3 hover:text-primary transition-colors"
-              >
-                <MapPin className="w-5 h-5 shrink-0 mt-0.5" />
+              <div className="flex items-start gap-3">
+                <MapPin className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
                 <span>Surabaya, Indonesia</span>
-              </a>
+              </div>
 
               <a
                 href="mailto:andinoferdiansah@gmail.com"
@@ -41,65 +38,62 @@ export function Footer() {
           </div>
 
           <div>
-            <h5 className="font-semibold text-foreground mb-4">Navigasi</h5>
+            <h5 className="mb-4 font-serif text-lg text-foreground">Navigasi</h5>
             <nav className="flex flex-col gap-3 text-sm text-muted-foreground">
-              <Link href="/" className="hover:text-primary transition-colors">
+              <Link href="/" className="py-2 hover:text-primary transition-colors">
                 Beranda
               </Link>
-              <Link href="#fitur" className="hover:text-primary transition-colors">
+              <Link href="#fitur" className="py-2 hover:text-primary transition-colors">
                 Fitur
               </Link>
-              <Link href="#tentang" className="hover:text-primary transition-colors">
+              <Link href="#tentang" className="py-2 hover:text-primary transition-colors">
                 Tentang
               </Link>
             </nav>
 
-            <h5 className="font-semibold text-foreground mt-6 mb-4">Fitur</h5>
+            <h5 className="mb-4 mt-6 font-serif text-lg text-foreground">Fitur</h5>
             <nav className="flex flex-col gap-3 text-sm text-muted-foreground">
-              <Link href="#" className="hover:text-primary transition-colors">
+              <Link href="#fitur" className="py-2 hover:text-primary transition-colors">
                 Kelola Saldo
               </Link>
-              <Link href="#" className="hover:text-primary transition-colors">
+              <Link href="#fitur" className="py-2 hover:text-primary transition-colors">
                 Catat Transaksi
               </Link>
-              <Link href="#" className="hover:text-primary transition-colors">
+              <Link href="#fitur" className="py-2 hover:text-primary transition-colors">
                 Laporan Keuangan
               </Link>
             </nav>
           </div>
 
           <div>
-            <h5 className="font-semibold text-foreground mb-4">Lainnya</h5>
+            <h5 className="mb-4 font-serif text-lg text-foreground">Lainnya</h5>
             <nav className="flex flex-col gap-3 text-sm text-muted-foreground">
-              <Link href="#" className="hover:text-primary transition-colors">
+              <Link href="/faq" className="py-2 hover:text-primary transition-colors">
                 FAQ
               </Link>
-              <Link href="#" className="hover:text-primary transition-colors">
-                Kebijakan Privasi
-              </Link>
-              <Link href="#" className="hover:text-primary transition-colors">
-                Syarat dan Ketentuan
+              <Link href="/guide" className="py-2 hover:text-primary transition-colors">
+                Panduan
               </Link>
             </nav>
 
-            <h5 className="font-semibold text-foreground mt-6 mb-4">Akun</h5>
+            <h5 className="mb-4 mt-6 font-serif text-lg text-foreground">Akun</h5>
             <nav className="flex flex-col gap-3 text-sm text-muted-foreground">
-              <Link href="/login" className="hover:text-primary transition-colors">
+              <Link href="/login" className="py-2 hover:text-primary transition-colors">
                 Masuk
               </Link>
-              <Link href="/register" className="hover:text-primary transition-colors">
+              <Link href="/register" className="py-2 hover:text-primary transition-colors">
                 Daftar
               </Link>
             </nav>
           </div>
 
           <div>
-            <h5 className="font-semibold text-foreground mb-4">Tentang Aplikasi</h5>
+            <h5 className="mb-4 font-serif text-lg text-foreground">Tentang Aplikasi</h5>
             <p className="text-sm text-muted-foreground leading-relaxed mb-6">
               SIKAS adalah aplikasi pencatatan keuangan sederhana yang membantu Anda mengelola pengeluaran dan pemasukan dengan mudah.
             </p>
 
-            <h5 className="font-semibold text-foreground mb-4">Keamanan Data</h5>
+            <h5 className="mb-4 font-serif text-lg text-foreground">Keamanan Data</h5>
             <p className="text-sm text-muted-foreground leading-relaxed">
               Data Anda terenkripsi dan tersimpan dengan aman. Kami berkomitmen menjaga privasi pengguna.
             </p>

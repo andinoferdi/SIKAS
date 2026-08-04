@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Wallet, PiggyBank, TrendingUp, BarChart3, X } from "lucide-react"
 import { LandingNavDesktop } from "@/blocks/landing/home/components/landing-nav-desktop"
 import { LandingNavMobile } from "@/blocks/landing/home/components/landing-nav-mobile"
+import { startPageScroll, stopPageScroll } from "@/components/scroll"
 
 const features = [
   {
@@ -33,9 +34,25 @@ const features = [
 export function LandingNav() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
+  useEffect(() => {
+    if (!isMobileMenuOpen) return
+
+    stopPageScroll()
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsMobileMenuOpen(false)
+    }
+    window.addEventListener("keydown", onKeyDown)
+
+    return () => {
+      window.removeEventListener("keydown", onKeyDown)
+      startPageScroll()
+    }
+  }, [isMobileMenuOpen])
+
   return (
-    <header className="sticky top-0 z-50 w-full bg-card">
-      <div className="max-w-300 mx-auto px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-card">
+      <div className="mx-auto max-w-6xl px-5 md:px-8">
         <div className="flex h-18 items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <div className="relative w-30 h-9">
@@ -54,6 +71,7 @@ export function LandingNav() {
             className="lg:hidden flex flex-col justify-center items-center w-10 h-10 gap-1.5 cursor-pointer"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-label="Toggle menu"
+            aria-expanded={isMobileMenuOpen}
           >
             {isMobileMenuOpen ? (
               <X className="w-6 h-6 text-foreground" />
