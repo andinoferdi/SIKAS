@@ -7,19 +7,20 @@
   --card-foreground: #0f172a;
   --popover: #ffffff;
   --popover-foreground: #0f172a;
-  --primary: #0ea5e9;
+  --primary: #0369a1;
   --primary-foreground: #ffffff;
+  --primary-surface: #0ea5e9;
   --secondary: #f1f5f9;
   --secondary-foreground: #0f172a;
   --muted: #f1f5f9;
-  --muted-foreground: #64748b;
+  --muted-foreground: #475569;
   --accent: #e2e8f0;
   --accent-foreground: #0f172a;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
   --border: #e2e8f0;
   --input: #ffffff;
-  --ring: #0ea5e9;
+  --ring: #0369a1;
   --radius: 0.75rem;
 
   --sky-50: #f0f9ff;
@@ -64,25 +65,25 @@
 
   --input-bg: #ffffff;
   --input-border: #e2e8f0;
-  --input-focus: #0ea5e9;
+  --input-focus: #0369a1;
   --input-error: #ef4444;
-  --ring-focus: #0ea5e9;
+  --ring-focus: #0369a1;
   --ring-error: #ef4444;
 
-  --success: #10b981;
+  --success: #047857;
   --success-light: #34d399;
   --success-bg: #ecfdf5;
   --success-text: #065f46;
   --success-border: #a7f3d0;
   --success-bg-dark: rgba(16, 185, 129, 0.1);
 
-  --danger: #ef4444;
+  --danger: #b91c1c;
   --danger-light: #f87171;
   --danger-bg: #fef2f2;
   --danger-text: #991b1b;
   --danger-border: #fecaca;
   --danger-bg-dark: rgba(239, 68, 68, 0.1);
-  --danger-hover: #dc2626;
+  --danger-hover: #991b1b;
 
   --warning: #f59e0b;
   --warning-light: #fbbf24;
@@ -96,9 +97,9 @@
   --info-bg: #f0f9ff;
   --info-text: #0c4a6e;
 
-  --btn-primary-bg: #0ea5e9;
+  --btn-primary-bg: #0369a1;
   --btn-primary-text: #ffffff;
-  --btn-primary-hover: #0284c7;
+  --btn-primary-hover: #075985;
   --btn-secondary-bg: #f1f5f9;
   --btn-secondary-text: #0f172a;
   --btn-secondary-hover: #e2e8f0;
@@ -108,7 +109,7 @@
 
   --text-primary: #0f172a;
   --text-secondary: #334155;
-  --text-muted: #64748b;
+  --text-muted: #475569;
   --text-placeholder: #94a3b8;
 
   --icon-muted: #94a3b8;
@@ -179,6 +180,7 @@
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-surface: var(--primary-surface);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
