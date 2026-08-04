@@ -326,3 +326,17 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Plumbing smooth scroll Lenis (https://lenis.dev) */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis:not(.lenis-autoToggle).lenis-stopped {
+  overflow: clip;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}

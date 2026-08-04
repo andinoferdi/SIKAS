@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next"
 import { Archivo, Instrument_Serif } from "next/font/google"
 import { Toaster } from "sonner"
 import { Providers } from "@/components/providers"
+import { LenisProvider } from "@/components/scroll"
 import "@/app/globals.css"
 
 
@@ -58,7 +59,7 @@ export default function RootLayout({
     <html lang="id" suppressHydrationWarning>
       <body className={`${archivo.variable} ${instrumentSerif.variable} font-sans antialiased`}>
         <Providers>
-          {children}
+          <LenisProvider>{children}</LenisProvider>
           <Toaster position="top-center" richColors closeButton />
         </Providers>
       </body>
