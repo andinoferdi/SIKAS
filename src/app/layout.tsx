@@ -1,15 +1,26 @@
 import type React from "react"
 import type { Metadata, Viewport } from "next"
-import { Plus_Jakarta_Sans } from "next/font/google"
+import { Archivo, Instrument_Serif } from "next/font/google"
 import { Toaster } from "sonner"
 import { Providers } from "@/components/providers"
 import "@/app/globals.css"
 
 
-const plusJakarta = Plus_Jakarta_Sans({
-  variable: "--font-plus-jakarta",
+// Archivo untuk seluruh teks dan UI. Variable font, jadi tidak perlu
+// mendaftar weight satu per satu.
+const archivo = Archivo({
+  variable: "--font-archivo",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  display: "swap",
+})
+
+// Instrument Serif hanya punya satu weight dan dipakai khusus untuk
+// display dan heading.
+const instrumentSerif = Instrument_Serif({
+  variable: "--font-instrument-serif",
+  subsets: ["latin"],
+  weight: "400",
+  display: "swap",
 })
 
 export const metadata: Metadata = {
@@ -34,7 +45,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
-  themeColor: "#c9b896",
+  themeColor: "#0369a1",
   colorScheme: "light",
 }
 
@@ -45,7 +56,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id" suppressHydrationWarning>
-      <body className={`${plusJakarta.variable} font-sans antialiased`}>
+      <body className={`${archivo.variable} ${instrumentSerif.variable} font-sans antialiased`}>
         <Providers>
           {children}
           <Toaster position="top-center" richColors closeButton />
