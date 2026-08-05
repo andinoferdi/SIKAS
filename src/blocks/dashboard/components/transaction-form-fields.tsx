@@ -105,12 +105,12 @@ export const TransactionFormFields = memo(function TransactionFormFields({
           />
         </div>
         {showBalanceInfo && type === "expense" && (
-          <p className="text-xs text-muted-foreground mt-2">
+          <p className="text-sm text-muted-foreground mt-2">
             Saldo {paymentMethod === "mbanking" ? "M-Banking" : "Cash"}: {formatCurrency(currentBalance)}
           </p>
         )}
         {errors?.amount && (
-          <p className="text-xs text-danger-text mt-1">{errors.amount.message}</p>
+          <p className="text-sm text-danger-text mt-1">{errors.amount.message}</p>
         )}
       </div>
 
@@ -129,7 +129,7 @@ export const TransactionFormFields = memo(function TransactionFormFields({
           </SelectContent>
         </Select>
         {errors?.category && (
-          <p className="text-xs text-danger-text mt-1">{errors.category.message}</p>
+          <p className="text-sm text-danger-text mt-1">{errors.category.message}</p>
         )}
       </div>
 

@@ -148,7 +148,7 @@ export default function AddTransactionPage() {
               </div>
 
               <div className="mt-5 pt-4 border-t border-border/50">
-                <p className="text-xs text-muted-foreground leading-relaxed">
+                <p className="text-sm text-muted-foreground leading-relaxed">
                   Minimal saldo M-Banking: {formatCurrency(MIN_MBANKING_BALANCE)}
                 </p>
               </div>

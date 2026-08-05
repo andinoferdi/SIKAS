@@ -42,6 +42,8 @@ const CHECKS = [
   ["success", "card", 4.5, "nominal pemasukan"],
   ["danger", "card", 4.5, "nominal pengeluaran dan pesan error"],
   ["foreground", "card", 4.5, "teks utama"],
+  ["destructive", "card", 4.5, "teks error lewat kelas text-destructive"],
+  ["destructive", "destructive-foreground", 4.5, "teks putih di tombol destructive"],
   // Ambang 2,5:1 disengaja. Token ini hanya untuk bidang besar tanpa teks
   // dan tanpa fungsi batas komponen, jadi ambang 3:1 tidak berlaku. Yang
   // dijaga di sini cuma agar nilainya tidak pernah dibuat lebih pucat lagi.

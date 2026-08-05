@@ -16,7 +16,7 @@
   --muted-foreground: #475569;
   --accent: #e2e8f0;
   --accent-foreground: #0f172a;
-  --destructive: #ef4444;
+  --destructive: #b91c1c;
   --destructive-foreground: #ffffff;
   --border: #e2e8f0;
   --input: #ffffff;
@@ -310,7 +310,6 @@
   --color-sidebar-ring: var(--sidebar-ring);
 
   --font-sans: var(--font-archivo), system-ui, sans-serif;
-  --font-serif: var(--font-instrument-serif), Georgia, serif;
 
   --text-display: clamp(2.5rem, 8vw, 5rem);
   --text-display--line-height: 1.05;

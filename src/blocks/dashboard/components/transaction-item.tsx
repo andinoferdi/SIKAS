@@ -47,7 +47,7 @@ export function TransactionItem({ transaction, onDelete, onEdit }: TransactionIt
 
       <div className="min-w-0 flex-1">
         <p className="font-medium text-foreground text-sm truncate">{transaction.category}</p>
-        <p className="text-xs text-muted-foreground mt-0.5 truncate">
+        <p className="text-sm text-muted-foreground mt-0.5 truncate">
           {formatShortDate(transaction.transaction_date)}
           {transaction.description && (
             <span className="text-muted-foreground/70"> - {transaction.description}</span>
@@ -61,7 +61,7 @@ export function TransactionItem({ transaction, onDelete, onEdit }: TransactionIt
             {isIncome ? "+" : "-"}
             {formatCurrency(transaction.amount)}
           </p>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-sm text-muted-foreground mt-0.5">
             {transaction.payment_method === "mbanking" ? "M-Banking" : "Cash"}
           </p>
         </div>

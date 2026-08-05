@@ -153,7 +153,7 @@ const SelectLabel = React.forwardRef<
   <SelectPrimitive.Label
     ref={ref}
     data-slot="select-label"
-    className={cn("text-text-muted px-3 py-2 text-xs font-semibold uppercase tracking-wide", className)}
+    className={cn("text-text-muted px-3 py-2 text-sm font-semibold uppercase tracking-wide", className)}
     {...props}
   />
 ))
@@ -180,7 +180,7 @@ const SelectItem = React.forwardRef<React.ElementRef<typeof SelectPrimitive.Item
     >
       {icon && <div className="shrink-0">{icon}</div>}
       <SelectPrimitive.ItemText className="flex-1">{children}</SelectPrimitive.ItemText>
-      {badge && <div className="shrink-0 text-xs">{badge}</div>}
+      {badge && <div className="shrink-0 text-sm">{badge}</div>}
       <div className="absolute right-2 flex size-4 items-center justify-center">
         <SelectPrimitive.ItemIndicator>
           <CheckIcon className="size-4 text-primary" />

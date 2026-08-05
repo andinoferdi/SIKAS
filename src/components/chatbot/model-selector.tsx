@@ -68,7 +68,7 @@ export function ModelSelector({
                 )}
                 <div className="flex-1">
                   <div className="font-medium text-foreground">Auto Selection</div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-sm text-muted-foreground">
                     Otomatis pilih model Cerebras terbaik yang tersedia
                   </div>
                 </div>
@@ -99,12 +99,12 @@ export function ModelSelector({
                     <span className="font-medium text-foreground">{model.name}</span>
                   </div>
 
-                  <div className="text-xs text-muted-foreground ml-6">
+                  <div className="text-sm text-muted-foreground ml-6">
                     {model.description}
                   </div>
 
                   {model.pros.length > 0 && (
-                    <ul className="text-xs text-muted-foreground ml-6 space-y-0.5">
+                    <ul className="text-sm text-muted-foreground ml-6 space-y-0.5">
                       {model.pros.map((pro) => (
                         <li key={pro} className="flex items-start gap-1">
                           <span className="text-primary">*</span>

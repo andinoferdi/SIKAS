@@ -122,7 +122,7 @@ export default function FAQList() {
                 className="w-full flex items-center justify-between p-4 text-left cursor-pointer"
               >
                 <div className="flex items-center gap-3">
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary uppercase tracking-wider">
+                  <span className="text-sm font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary uppercase tracking-wider">
                     {faq.category}
                   </span>
                   <span className="font-medium text-foreground text-sm sm:text-base">

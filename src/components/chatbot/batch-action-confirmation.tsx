@@ -163,7 +163,7 @@ export function BatchActionConfirmation({
 
       {batchDetails?.type === "edit" && batchDetails.items && (
         <div className="mb-3 space-y-1 max-h-32 overflow-y-auto">
-          <p className="text-xs text-muted-foreground mb-2">
+          <p className="text-sm text-muted-foreground mb-2">
             Transaksi yang akan diubah:
           </p>
           {batchDetails.items.map((item) => (
@@ -183,7 +183,7 @@ export function BatchActionConfirmation({
 
       {batchDetails?.type === "delete_filter" && batchDetails.filters && (
         <div className="mb-3 space-y-1">
-          <p className="text-xs text-muted-foreground mb-2">
+          <p className="text-sm text-muted-foreground mb-2">
             Transaksi yang sesuai filter akan dihapus:
           </p>
           {batchDetails.filters.map((filter, i) => (
@@ -204,13 +204,13 @@ export function BatchActionConfirmation({
             <p className="text-sm text-destructive font-medium mb-1">
               Peringatan: Aksi ini tidak dapat dibatalkan!
             </p>
-            <p className="text-xs text-destructive/80">
+            <p className="text-sm text-destructive/80">
               Semua transaksi {batchDetails.scope} akan dihapus permanen.
             </p>
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs text-muted-foreground">
+            <label className="text-sm text-muted-foreground">
               Ketik <span className="font-mono font-bold">HAPUS SEMUA</span> untuk konfirmasi:
             </label>
             <input

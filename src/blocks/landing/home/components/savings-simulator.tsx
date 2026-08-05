@@ -74,7 +74,7 @@ export function SavingsSimulator() {
     <section className="border-b border-border">
       <div className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-24 lg:py-32">
         <Reveal className="max-w-2xl">
-          <h2 className="font-serif text-h2 text-foreground">
+          <h2 className="font-bold tracking-tight text-h2 text-foreground">
             Yuk coba simulasikan tabungan kamu
           </h2>
           <p className="mt-4 text-base leading-relaxed text-muted-foreground">
@@ -144,7 +144,7 @@ export function SavingsSimulator() {
 
             {result ? (
               <div aria-live="polite">
-                <p className="mt-2 font-serif text-h2 text-primary">
+                <p className="mt-2 font-bold tracking-tight text-h2 text-primary">
                   {describeDuration(result.months)}
                 </p>
                 <dl className="mt-8 flex flex-col">

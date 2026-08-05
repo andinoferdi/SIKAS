@@ -66,7 +66,7 @@ export function HeaderUserDropdown({ userName }: HeaderUserDropdownProps) {
         <div className="absolute right-0 mt-2 w-56 bg-card rounded-xl shadow-lg border border-border py-1 z-50">
           <div className="px-4 py-3 border-b border-border">
             <p className="text-sm font-medium text-foreground">{displayName}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Akun Personal</p>
+            <p className="text-sm text-muted-foreground mt-0.5">Akun Personal</p>
           </div>
 
           <div className="py-1">

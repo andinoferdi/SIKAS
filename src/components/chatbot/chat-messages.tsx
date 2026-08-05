@@ -45,7 +45,7 @@ export const ChatMessages = memo(function ChatMessages({
 
       {showQuickReplies && messages.length === 1 && (
         <div className="pt-2">
-          <p className="text-xs text-muted-foreground mb-2 px-1">
+          <p className="text-sm text-muted-foreground mb-2 px-1">
             {quickRepliesLabel}
           </p>
           <QuickReplies

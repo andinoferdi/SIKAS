@@ -1,6 +1,6 @@
 import type React from "react"
 import type { Metadata, Viewport } from "next"
-import { Archivo, Instrument_Serif } from "next/font/google"
+import { Archivo } from "next/font/google"
 import { Toaster } from "sonner"
 import { Providers } from "@/components/providers"
 import { LenisProvider } from "@/components/scroll"
@@ -12,15 +12,6 @@ import "@/app/globals.css"
 const archivo = Archivo({
   variable: "--font-archivo",
   subsets: ["latin"],
-  display: "swap",
-})
-
-// Instrument Serif hanya punya satu weight dan dipakai khusus untuk
-// display dan heading.
-const instrumentSerif = Instrument_Serif({
-  variable: "--font-instrument-serif",
-  subsets: ["latin"],
-  weight: "400",
   display: "swap",
 })
 
@@ -57,7 +48,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id" suppressHydrationWarning>
-      <body className={`${archivo.variable} ${instrumentSerif.variable} font-sans antialiased`}>
+      <body className={`${archivo.variable} font-sans antialiased`}>
         <Providers>
           <LenisProvider>{children}</LenisProvider>
           <Toaster position="top-center" richColors closeButton />

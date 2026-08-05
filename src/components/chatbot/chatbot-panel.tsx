@@ -170,7 +170,7 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
           </div>
           <div>
             <h3 className="font-semibold text-on-surface text-sm">SIKAS Bot</h3>
-            <p className="text-xs text-on-surface-variant">
+            <p className="text-sm text-on-surface-variant">
               Asisten Keuangan Anda
             </p>
           </div>

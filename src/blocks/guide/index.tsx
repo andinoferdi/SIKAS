@@ -61,7 +61,7 @@ export default function GuideList() {
                 <p className="text-sm text-muted-foreground leading-relaxed mb-4">
                   {guide.description}
                 </p>
-                <div className="flex items-center text-primary text-xs font-medium font-mono uppercase tracking-wider">
+                <div className="flex items-center text-primary text-sm font-medium font-mono uppercase tracking-wider">
                   Baca Panduan <ArrowRight className="w-3.5 h-3.5 ml-1 transition-transform group-hover:translate-x-1" />
                 </div>
               </div>

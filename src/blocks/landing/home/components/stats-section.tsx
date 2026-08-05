@@ -15,7 +15,7 @@ export function StatsSection() {
           {stats.map((stat) => (
             <div key={stat.label} className="bg-background p-6">
               <p className="text-sm text-muted-foreground">{stat.label}</p>
-              <p className="mt-2 font-serif text-3xl text-primary">{stat.value}</p>
+              <p className="mt-2 font-bold tracking-tight text-3xl text-primary">{stat.value}</p>
               <p className="mt-1 text-sm text-muted-foreground">{stat.description}</p>
             </div>
           ))}

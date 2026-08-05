@@ -87,7 +87,7 @@ export function MobileSearchModal({
                     <p className="text-sm font-medium text-foreground truncate">
                       {transaction.category}
                     </p>
-                    <p className="text-xs text-muted-foreground truncate">
+                    <p className="text-sm text-muted-foreground truncate">
                       {formatShortDate(transaction.transaction_date)}
                       {transaction.description && ` - ${transaction.description}`}
                     </p>

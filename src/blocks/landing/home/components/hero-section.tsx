@@ -89,7 +89,7 @@ export function HeroSection() {
       <div className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-24 lg:py-32">
         <div className="grid gap-12 lg:grid-cols-2 lg:items-center lg:gap-16">
           <div className="flex flex-col gap-6">
-            <h1 className="font-serif text-display text-foreground">
+            <h1 className="font-bold tracking-tight text-display text-foreground">
               Kelola keuangan
               <br />
               untuk{" "}

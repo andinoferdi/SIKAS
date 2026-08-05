@@ -22,7 +22,7 @@ export function TransactionList({
           <Receipt className="w-7 h-7 text-muted-foreground" />
         </div>
         <p className="text-foreground text-sm font-medium">{emptyMessage}</p>
-        <p className="text-muted-foreground text-xs mt-1">Mulai dengan menambah transaksi baru</p>
+        <p className="text-muted-foreground text-sm mt-1">Mulai dengan menambah transaksi baru</p>
       </div>
     )
   }

@@ -33,7 +33,7 @@ export function FeaturesSection() {
     <section id="tentang" className="border-b border-border">
       <div className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-24 lg:py-32">
         <Reveal className="max-w-2xl">
-          <h2 className="font-serif text-h2 text-foreground">
+          <h2 className="font-bold tracking-tight text-h2 text-foreground">
             Beragam fitur berkualitas untuk kelola keuangan
           </h2>
           <p className="mt-4 text-base leading-relaxed text-muted-foreground">
@@ -51,7 +51,7 @@ export function FeaturesSection() {
                 className="border-t border-border py-8 md:px-8 md:first:pl-0 md:[&:nth-child(2)]:pr-0"
               >
                 <div className="flex items-baseline gap-4">
-                  <span className="font-serif text-2xl tabular-nums text-muted-foreground">
+                  <span className="font-bold tracking-tight text-2xl tabular-nums text-muted-foreground">
                     {String(index + 1).padStart(2, "0")}
                   </span>
                   <div>

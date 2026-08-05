@@ -63,7 +63,7 @@ export function BottomNav() {
               )}
             >
               <Icon className={cn("h-5 w-5", isActive && "text-primary")} />
-              <span className={cn("text-xs font-medium", isActive && "text-primary")}>
+              <span className={cn("text-sm font-medium", isActive && "text-primary")}>
                 {item.label}
               </span>
             </Link>

@@ -8,7 +8,7 @@ export function CtaSection() {
     <section className="border-b border-border">
       <div className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-24 lg:py-32">
         <Reveal className="flex max-w-2xl flex-col items-start gap-6">
-          <h2 className="font-serif text-h2 text-foreground">
+          <h2 className="font-bold tracking-tight text-h2 text-foreground">
             Siap untuk mulai mencatat dan merencanakan keuanganmu?
           </h2>
           <Link href="/register">

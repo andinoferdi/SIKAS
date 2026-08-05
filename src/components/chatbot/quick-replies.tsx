@@ -16,7 +16,7 @@ export function QuickReplies({ replies, onSelect, disabled }: QuickRepliesProps)
           key={reply.id}
           onClick={() => onSelect(reply.message)}
           disabled={disabled}
-          className="px-3 py-1.5 text-xs font-medium text-sky-600 bg-sky-50 border border-sky-200 rounded-full hover:bg-sky-100 hover:border-sky-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          className="px-3 py-1.5 text-sm font-medium text-sky-600 bg-sky-50 border border-sky-200 rounded-full hover:bg-sky-100 hover:border-sky-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
           {reply.text}
         </button>

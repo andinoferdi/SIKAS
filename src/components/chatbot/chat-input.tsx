@@ -50,7 +50,7 @@ export const ChatInput = memo(function ChatInput({
 
   return (
     <div className="border-t border-border shrink-0">
-      <div className="px-4 pt-3 text-xs text-muted-foreground">
+      <div className="px-4 pt-3 text-sm text-muted-foreground">
         Analisis gambar dan scan nota sedang dinonaktifkan setelah migrasi AI ke Cerebras.
       </div>
 

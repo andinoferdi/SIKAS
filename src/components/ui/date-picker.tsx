@@ -120,7 +120,7 @@ export const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(
               {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
                 <div
                   key={day}
-                  className="text-center text-xs font-medium text-text-muted h-8 flex items-center justify-center"
+                  className="text-center text-sm font-medium text-text-muted h-8 flex items-center justify-center"
                 >
                   {day}
                 </div>
