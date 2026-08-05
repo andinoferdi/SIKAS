@@ -87,6 +87,16 @@ penambahan warna baru wajib dihitung rasionya sebelum masuk token.
 
 ## 6. Sistem tipografi
 
+> **REVISI 2026-08-05.** Instrument Serif dibatalkan. `taste-skill` melarangnya sebagai
+> display serif default dan menyebutnya salah satu dari dua serif yang paling mudah
+> dikenali sebagai buatan generator. Atas persetujuan user, seluruh aplikasi kini memakai
+> **satu keluarga font saja, Archivo**. Display dibedakan lewat `font-bold tracking-tight`,
+> bukan lewat keluarga kedua. Tabel di bawah dipertahankan sebagai catatan keputusan
+> lama; baris "Display dan heading" sudah tidak berlaku.
+>
+> Lantai 14px kini berlaku untuk **seluruh aplikasi**, bukan hanya landing page. 46
+> pemakaian `text-xs` diganti `text-sm` di 24 berkas.
+
 Plus Jakarta Sans dilepas. Font itu termasuk yang paling sering muncul di landing page
 buatan generator, bersama Inter, Poppins, dan Manrope. Selama font-nya bertahan,
 halamannya tetap terbaca sebagai template walau layout-nya dirombak.
