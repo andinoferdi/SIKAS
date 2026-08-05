@@ -60,7 +60,33 @@ Setiap butir diuji dengan build produksi bersih tersendiri.
 | Versi React dan Next tidak cocok | Tidak terbukti. react 19.2.4, react-dom 19.2.4, next 16.1.6, semuanya sinkron dan dalam rentang peerDependencies |
 | Dependensi berubah karena `npm install gsap lenis` | Bukan. Lockfile membuktikan versi react, react-dom, dan next tidak berubah |
 
-## Dugaan yang tersisa
+## KOREKSI PENTING: pengukuran ini kemungkinan besar tidak sahih
+
+Ditemukan setelah seluruh tabel di atas selesai dikumpulkan.
+
+Browser yang dipakai untuk semua pengukuran melaporkan `document.hidden === true` dan
+`document.visibilityState === "hidden"` sepanjang sesi. Panelnya memang tidak pernah
+ditampilkan, sehingga halaman tidak meng-compose frame sama sekali.
+
+React 19 memecah hidrasi menjadi beberapa potongan terjadwal. Pada tab tersembunyi,
+penjadwalnya dapat tidak pernah melanjutkan potongan berikutnya. Itu menjelaskan seluruh
+pola yang terlihat seperti ambang ukuran: halaman kecil selesai dalam potongan pertama,
+halaman besar berhenti setelah cangkang layout.
+
+Bukti tandingan yang menguatkan koreksi ini: tangkapan layar dari browser asli pengguna
+menunjukkan kata berotasi di hero berganti dari "Pribadi" ke "Keluarga". Rotasi itu
+digerakkan state React. Kalau halaman benar-benar tidak ter-hydrate, kata itu tidak akan
+pernah berubah.
+
+Pengujian di Chrome asli belum dapat dilakukan karena ekstensi Claude in Chrome tidak
+terhubung di sesi ini.
+
+**Kesimpulan sementara: bug ini belum terbukti ada.** Seluruh tabel di atas harus
+diperlakukan sebagai data dari lingkungan ukur yang cacat, bukan sebagai bukti cacat
+aplikasi. Yang harus dilakukan lebih dulu adalah verifikasi manual di browser biasa dengan
+jendela terlihat, memakai cuplikan pengukuran di bagian akhir dokumen ini.
+
+## Dugaan yang tersisa, bila bug ternyata memang nyata
 
 Bug pada integrasi Next.js dan React di kombinasi versi ini, pada jalur streaming SSR
 untuk payload di atas ukuran tertentu. Gejalanya cocok: boundary Suspense yang membungkus
