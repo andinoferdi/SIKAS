@@ -26,12 +26,24 @@ const contrast = (a, b) => {
   return (high + 0.05) / (low + 0.05)
 }
 
-// [tokenDepan, tokenBelakang, ambang, keterangan]
+/*
+  Empat pasangan biru ditandai DITERIMA sejak 2026-08-05. Pengguna memilih
+  biru cerah #0ea5e9 demi identitas merek, dengan sadar bahwa rasionya di
+  bawah ambang WCAG AA. Skrip ini TIDAK menyembunyikan fakta itu: rasionya
+  tetap dicetak dan diringkas di akhir. Yang dilakukan penandaan ini hanya
+  membuat skrip tidak gagal pada keputusan yang memang disengaja, sehingga
+  ia tetap berguna menjaga token lain dari regresi baru.
+
+  Bila suatu saat biru dibuat lebih pekat lagi, hapus `true` di kolom
+  terakhir supaya pasangan itu kembali menjadi gate yang keras.
+*/
+
+// [tokenDepan, tokenBelakang, ambang, keterangan, diterimaMeskiGagal?]
 const CHECKS = [
-  ["primary", "card", 4.5, "teks dan angka biru di atas kartu"],
-  ["primary", "background", 4.5, "teks biru di atas latar halaman"],
-  ["btn-primary-bg", "primary-foreground", 4.5, "teks putih di tombol utama"],
-  ["btn-primary-hover", "primary-foreground", 4.5, "teks putih di tombol utama saat hover"],
+  ["primary", "card", 4.5, "teks dan angka biru di atas kartu", true],
+  ["primary", "background", 4.5, "teks biru di atas latar halaman", true],
+  ["btn-primary-bg", "primary-foreground", 4.5, "teks putih di tombol utama", true],
+  ["btn-primary-hover", "primary-foreground", 4.5, "teks putih di tombol utama saat hover", true],
   ["text-muted", "card", 4.5, "teks sekunder di atas kartu"],
   ["text-muted", "background", 4.5, "teks sekunder di atas latar halaman"],
   // --muted-foreground yang sebenarnya dipakai komponen lewat kelas
@@ -51,14 +63,34 @@ const CHECKS = [
 ]
 
 let failed = 0
+let accepted = 0
 
-for (const [front, back, threshold, note] of CHECKS) {
+for (const [front, back, threshold, note, acceptedFailure] of CHECKS) {
   const ratio = contrast(readToken(front), readToken(back))
   const ok = ratio >= threshold
-  if (!ok) failed += 1
-  const status = ok ? "LOLOS" : "GAGAL"
+
+  let status
+  if (ok) {
+    status = "LOLOS   "
+  } else if (acceptedFailure) {
+    status = "DITERIMA"
+    accepted += 1
+  } else {
+    status = "GAGAL   "
+    failed += 1
+  }
+
   console.log(
     `${status}  --${front} / --${back}  ${ratio.toFixed(2)}:1  (min ${threshold}:1)  ${note}`
+  )
+}
+
+if (accepted > 0) {
+  console.log(
+    `\nCATATAN: ${accepted} pasangan berada DI BAWAH ambang WCAG AA dan diterima secara sadar.`
+  )
+  console.log(
+    "Halaman ini tidak memenuhi WCAG AA untuk teks dan tombol berwarna biru."
   )
 }
 
@@ -67,4 +99,4 @@ if (failed > 0) {
   process.exit(1)
 }
 
-console.log(`\nSemua ${CHECKS.length} pasangan warna lolos.`)
+console.log(`\n${CHECKS.length - accepted} pasangan lolos, ${accepted} diterima meski gagal.`)

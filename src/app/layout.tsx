@@ -1,16 +1,16 @@
 import type React from "react"
 import type { Metadata, Viewport } from "next"
-import { Archivo } from "next/font/google"
+import { Inter } from "next/font/google"
 import { Toaster } from "sonner"
 import { Providers } from "@/components/providers"
 import { LenisProvider } from "@/components/scroll"
 import "@/app/globals.css"
 
 
-// Archivo untuk seluruh teks dan UI. Variable font, jadi tidak perlu
+// Inter untuk seluruh teks dan UI. Variable font, jadi tidak perlu
 // mendaftar weight satu per satu.
-const archivo = Archivo({
-  variable: "--font-archivo",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
   display: "swap",
 })
@@ -48,7 +48,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id" suppressHydrationWarning>
-      <body className={`${archivo.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} font-sans antialiased`}>
         <Providers>
           <LenisProvider>{children}</LenisProvider>
           <Toaster position="top-center" richColors closeButton />
