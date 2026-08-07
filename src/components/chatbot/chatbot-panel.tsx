@@ -29,6 +29,11 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
   const userId = user?.id ?? null;
 
   const [input, setInput] = useState("");
+  const [attachment, setAttachment] = useState<{
+    name: string;
+    dataUrl: string;
+  } | null>(null);
+  const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
   const [modelSelection, setModelSelection] = useState<ModelSelection>({
     mode: "auto",
   });
@@ -65,13 +70,61 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
     }
   }, [isOpen, initializeMessages]);
 
+  /*
+    Bila ada gambar terlampir, gambar dikirim ke route vision lebih dulu.
+    Hasil bacaannya dimasukkan sebagai pesan asisten, bukan diteruskan ke
+    endpoint chat, karena tidak semua model gratis mendukung gambar.
+  */
   const handleSubmit = useCallback(async () => {
+    if (attachment) {
+      const prompt = input.trim();
+      const image = attachment.dataUrl;
+
+      setInput("");
+      setAttachment(null);
+      addMessage({
+        id: `img-${Date.now()}`,
+        role: "user",
+        content: prompt || `Membaca gambar: ${attachment.name}`,
+        timestamp: new Date(),
+      });
+
+      setIsAnalyzingImage(true);
+      try {
+        const response = await fetch("/api/chatbot/vision", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image, prompt }),
+        });
+        const json = await response.json();
+
+        addMessage({
+          id: `img-res-${Date.now()}`,
+          role: "assistant",
+          content: response.ok
+            ? (json?.data?.result ?? json?.result ?? "Gambar tidak terbaca.")
+            : (json?.error ?? "Gambar gagal dianalisis."),
+          timestamp: new Date(),
+        });
+      } catch {
+        addMessage({
+          id: `img-err-${Date.now()}`,
+          role: "assistant",
+          content: "Gambar gagal dikirim. Periksa koneksi lalu coba lagi.",
+          timestamp: new Date(),
+        });
+      } finally {
+        setIsAnalyzingImage(false);
+      }
+      return;
+    }
+
     if (!input.trim()) return;
 
     const content = input;
     setInput("");
     await sendMessage(content, modelSelection);
-  }, [input, sendMessage, modelSelection]);
+  }, [attachment, input, sendMessage, modelSelection, addMessage]);
 
   const handleQuickReply = useCallback(
     (message: string) => {
@@ -93,7 +146,7 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
   const quickRepliesLabel = isOnDashboard
     ? "Aksi cepat:"
     : "Pertanyaan populer:";
-  const combinedLoading = isLoading || isExecuting;
+  const combinedLoading = isLoading || isExecuting || isAnalyzingImage;
 
   return (
     /*
@@ -156,38 +209,35 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
         // Min-height agar panel tidak terlalu kecil di viewport sangat pendek
         "sm:min-h-96",
         // Styling
-        "bg-card sm:rounded-2xl shadow-2xl sm:border sm:border-border",
+        "bg-card sm:rounded-lg sm:border sm:border-border",
         "flex flex-col overflow-hidden",
         // Animasi
         "animate-in slide-in-from-bottom-4 fade-in-0 duration-300",
       ].join(" ")}
     >
-      {/* Header — selalu shrink-0 agar tidak tercompress */}
-      <div className="bg-primary px-4 py-3 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-on-surface-subtle flex items-center justify-center">
-            <Bot className="w-4 h-4 text-on-surface" />
-          </div>
+      {/* Header netral mengikuti sistem halaman, bukan bilah berwarna */}
+      <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
+        <div className="flex items-center gap-3">
+          <Bot className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
           <div>
-            <h3 className="font-semibold text-on-surface text-sm">SIKAS Bot</h3>
-            <p className="text-sm text-on-surface-variant">
-              Asisten Keuangan Anda
-            </p>
+            <h2 className="text-base font-semibold text-foreground">SIKAS Bot</h2>
+            <p className="text-sm text-muted-foreground">Asisten keuangan kamu</p>
           </div>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center">
           <button
             onClick={handleClearMessages}
-            className="w-8 h-8 rounded-full hover:bg-on-surface-subtle flex items-center justify-center transition-colors cursor-pointer"
-            title="Hapus riwayat chat"
+            aria-label="Hapus riwayat chat"
+            className="flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground"
           >
-            <Trash2 className="w-4 h-4 text-on-surface" />
+            <Trash2 className="h-5 w-5" aria-hidden="true" />
           </button>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full hover:bg-on-surface-subtle flex items-center justify-center transition-colors cursor-pointer"
+            aria-label="Tutup chat"
+            className="flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground"
           >
-            <X className="w-5 h-5 text-on-surface" />
+            <X className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -225,6 +275,8 @@ export function ChatbotPanel({ isOpen, onClose }: ChatbotPanelProps) {
         onInputChange={setInput}
         onSubmit={handleSubmit}
         isLoading={combinedLoading}
+        attachment={attachment}
+        onAttachmentChange={setAttachment}
       />
     </div>
   );

@@ -144,13 +144,16 @@ export const pickAutoModel = (
   return pool[0] ?? chat[0] ?? models[0] ?? null
 }
 
+/*
+  Seluruh daftar ini sudah pasti gratis, jadi menuliskan "Gratis" di setiap
+  baris tidak menambah informasi apa pun. Yang benar-benar membedakan antar
+  model hanyalah kemampuan membaca gambar dan mana yang paling baru.
+*/
 const toAIModel = (model: FreeModel, index: number): AIModel => ({
   id: model.id,
   name: model.label,
-  description: model.vision
-    ? "Model gratis OpenRouter yang bisa membaca teks dan gambar."
-    : "Model gratis OpenRouter untuk percakapan teks.",
-  pros: model.vision ? ["Gratis", "Bisa baca gambar"] : ["Gratis"],
+  description: model.id,
+  pros: model.vision ? ["Bisa baca gambar"] : [],
   free: true,
   vision: model.vision,
   recommended: index === 0,

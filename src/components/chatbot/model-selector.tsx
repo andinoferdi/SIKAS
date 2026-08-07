@@ -69,7 +69,7 @@ export function ModelSelector({
                 <div className="flex-1">
                   <div className="font-medium text-foreground">Auto Selection</div>
                   <div className="text-sm text-muted-foreground">
-                    Otomatis pilih model Cerebras terbaik yang tersedia
+                    Pakai model gratis OpenRouter terbaru yang tersedia
                   </div>
                 </div>
               </button>
@@ -97,22 +97,21 @@ export function ModelSelector({
                       <div className="w-4 h-4 shrink-0" />
                     )}
                     <span className="font-medium text-foreground">{model.name}</span>
+                    {model.recommended ? (
+                      <span className="rounded-full border border-border px-2 py-0.5 text-sm text-muted-foreground">
+                        Terbaru
+                      </span>
+                    ) : null}
+                    {model.vision ? (
+                      <span className="rounded-full border border-border px-2 py-0.5 text-sm text-muted-foreground">
+                        Gambar
+                      </span>
+                    ) : null}
                   </div>
 
-                  <div className="text-sm text-muted-foreground ml-6">
+                  <div className="ml-6 truncate text-sm text-muted-foreground">
                     {model.description}
                   </div>
-
-                  {model.pros.length > 0 && (
-                    <ul className="text-sm text-muted-foreground ml-6 space-y-0.5">
-                      {model.pros.map((pro) => (
-                        <li key={pro} className="flex items-start gap-1">
-                          <span className="text-primary">*</span>
-                          <span>{pro}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
                 </button>
               ))}
             </div>

@@ -40,7 +40,7 @@ Aktif bersama A + B, atau saat pengguna meminta implementasi, audit, refactor, a
 - Response tidak membocorkan stack trace, secret, token, atau path internal.
 - Tampilkan pesan user jelas dan bisa ditindaklanjuti. Jangan telan exception diam-diam bila memengaruhi data atau alur bisnis.
 
-## 6. Integrasi eksternal `Cerebras API + Supabase`
+## 6. Integrasi eksternal `OpenRouter API + Supabase`
 - Semua URL, token, key, dan secret dari environment/config server-side.
 - Tambahkan timeout, retry terbatas, fallback, atau idempotency bila relevan.
 - Jangan anggap request sukses jika response eksternal masih 4xx/5xx atau data belum valid.

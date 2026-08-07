@@ -39,7 +39,7 @@ Aktif bersama A + B, atau saat pengguna meminta audit backend, route/API, databa
 - Jangan telan exception bila memengaruhi data atau alur bisnis.
 - Proses besar (export, import, report, sync) pakai pagination, chunk, queue, atau job. Jangan sinkron di request utama bila berisiko timeout.
 - Pastikan job, webhook, import, dan sync aman dijalankan ulang.
-- Integrasi eksternal `Cerebras API + Supabase` punya timeout, error handling, logging aman, dan fallback.
+- Integrasi eksternal `OpenRouter API + Supabase` punya timeout, error handling, logging aman, dan fallback.
 
 ## Cara berpikir sebelum coding (internal)
 1. Route/controller/validasi/model/service/job apa yang terkait?
