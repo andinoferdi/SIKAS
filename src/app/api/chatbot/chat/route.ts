@@ -2,10 +2,10 @@ import { NextResponse } from "next/server"
 import { getSession } from "@/lib/auth/session"
 import {
   createModelAttemptOrder,
-  getCerebrasApiKey,
-  getCerebrasBaseUrl,
+  getOpenRouterBaseUrl,
+  getOpenRouterHeaders,
   resolveRequestedModelId,
-} from "@/lib/config/cerebras"
+} from "@/lib/config/openrouter"
 import { errorResponse } from "@/lib/utils/api-response"
 import { formatShortDate } from "@/lib/utils/format"
 import { createSystemPrompt } from "@/services/chatbot"
@@ -445,12 +445,12 @@ export async function POST(request: Request) {
       return deterministicResponse
     }
 
-    const selectedModelId = resolveRequestedModelId(
+    const selectedModelId = await resolveRequestedModelId(
       messages,
       body.modelIndex,
       body.preferredModelId
     )
-    const attemptOrder = createModelAttemptOrder(selectedModelId)
+    const attemptOrder = await createModelAttemptOrder(selectedModelId)
     const apiMessages = buildApiMessages(messages, effectiveRagContext)
 
     if (process.env.NODE_ENV === "development") {
@@ -466,15 +466,12 @@ export async function POST(request: Request) {
       )
     }
 
-    let lastErrorMessage = "Semua model Cerebras sedang tidak tersedia."
+    let lastErrorMessage = "Semua model gratis sedang tidak tersedia. Coba lagi sebentar lagi."
 
     for (const modelId of attemptOrder) {
-      const response = await fetch(`${getCerebrasBaseUrl()}/chat/completions`, {
+      const response = await fetch(`${getOpenRouterBaseUrl()}/chat/completions`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${getCerebrasApiKey()}`,
-          "Content-Type": "application/json",
-        },
+        headers: getOpenRouterHeaders(),
         body: JSON.stringify({
           model: modelId,
           messages: apiMessages,
@@ -488,7 +485,7 @@ export async function POST(request: Request) {
         const errorText = await response.text()
         const shouldRetry = isRetryableStatus(response.status)
 
-        console.warn("[Chatbot] Cerebras request failed", {
+        console.warn("[Chatbot] Permintaan OpenRouter gagal", {
           modelId,
           status: response.status,
           shouldRetry,
@@ -496,7 +493,7 @@ export async function POST(request: Request) {
 
         lastErrorMessage =
           response.status === 401
-            ? "Autentikasi Cerebras gagal. Periksa konfigurasi server."
+            ? "Autentikasi OpenRouter gagal. Periksa OPENROUTER_API_KEY di server."
             : errorText || lastErrorMessage
 
         if (shouldRetry) {

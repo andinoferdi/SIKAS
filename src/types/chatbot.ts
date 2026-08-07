@@ -28,6 +28,10 @@ export interface AIModel {
   description: string
   pros: string[]
   free: boolean
+  /* Model dapat menerima gambar sebagai masukan. */
+  vision: boolean
+  /* Pilihan otomatis saat ini, ditandai di pemilih model. */
+  recommended: boolean
 }
 
 export interface ModelSelection {
