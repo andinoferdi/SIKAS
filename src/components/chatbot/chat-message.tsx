@@ -91,9 +91,9 @@ export function ChatMessage({ message }: ChatMessageProps) {
     >
       <div
         className={cn(
-          "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
+          "h-8 w-8 shrink-0 rounded-full flex items-center justify-center",
           isBot
-            ? "bg-primary text-on-surface"
+            ? "border border-border bg-card text-primary"
             : "bg-muted text-muted-foreground"
         )}
       >

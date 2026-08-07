@@ -65,23 +65,27 @@ export const ChatMessages = memo(function ChatMessages({
             isLoading={isLoading}
           />
         ) : (
-          <div className="bg-muted/50 rounded-lg p-3 mx-1">
-            <p className="text-sm text-foreground mb-3">{pendingAction.description}</p>
-            <div className="flex gap-2">
+          <div className="rounded-lg border border-border p-4">
+            <p className="text-base leading-relaxed text-foreground">
+              {pendingAction.description}
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
               <button
+                type="button"
                 onClick={onConfirmAction}
                 disabled={isLoading}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground text-sm rounded-md hover:bg-primary/90 transition-colors cursor-pointer disabled:opacity-50"
+                className="inline-flex h-11 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-btn-primary-hover disabled:opacity-50"
               >
-                <Check className="w-4 h-4" />
-                {isLoading ? "Memproses..." : "Ya, Lanjutkan"}
+                <Check className="h-4 w-4" aria-hidden="true" />
+                {isLoading ? "Memproses" : "Ya, lanjutkan"}
               </button>
               <button
+                type="button"
                 onClick={onCancelAction}
                 disabled={isLoading}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-destructive/10 text-destructive text-sm rounded-md hover:bg-destructive/20 transition-colors cursor-pointer disabled:opacity-50"
+                className="inline-flex h-11 items-center gap-2 rounded-lg border border-border px-4 text-sm font-semibold text-foreground transition-colors hover:border-danger hover:text-danger disabled:opacity-50"
               >
-                <XCircle className="w-4 h-4" />
+                <XCircle className="h-4 w-4" aria-hidden="true" />
                 Batal
               </button>
             </div>

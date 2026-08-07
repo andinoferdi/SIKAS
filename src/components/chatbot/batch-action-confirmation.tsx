@@ -218,7 +218,7 @@ export function BatchActionConfirmation({
               value={confirmationText}
               onChange={(e) => setConfirmationText(e.target.value)}
               className={cn(
-                "w-full px-3 py-2 text-sm rounded-md border bg-background",
+                "h-11 w-full rounded-lg border bg-input px-4 text-base",
                 confirmationText === "HAPUS SEMUA"
                   ? "border-destructive"
                   : "border-input"
@@ -241,10 +241,10 @@ export function BatchActionConfirmation({
           onClick={onConfirm}
           disabled={!canConfirm || isLoading}
           className={cn(
-            "flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md transition-colors cursor-pointer",
+            "inline-flex h-11 items-center gap-2 rounded-lg px-4 text-sm font-semibold transition-colors",
             isDestructive
               ? "bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
-              : "bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50",
+              : "bg-primary text-primary-foreground hover:bg-btn-primary-hover disabled:opacity-50",
             (!canConfirm || isLoading) && "cursor-not-allowed"
           )}
         >
@@ -262,7 +262,7 @@ export function BatchActionConfirmation({
         <button
           onClick={onCancel}
           disabled={isLoading}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-muted text-muted-foreground text-sm rounded-md hover:bg-muted/80 transition-colors cursor-pointer disabled:opacity-50"
+          className="inline-flex h-11 items-center gap-2 rounded-lg border border-border px-4 text-sm font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-50"
         >
           <XCircle className="w-4 h-4" />
           Batal

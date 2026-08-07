@@ -52,7 +52,7 @@ export function ModelSelector({
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
+          <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg z-50 max-h-96 overflow-y-auto">
             <div className="p-2 space-y-1">
               <button
                 onClick={() => handleSelect({ mode: "auto" })}

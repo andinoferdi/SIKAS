@@ -1,51 +1,44 @@
-"use client";
+"use client"
 
-import { MessageCircle, X } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { MessageCircle, X } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface ChatbotButtonProps {
-  isOpen: boolean;
-  onClick: () => void;
+  isOpen: boolean
+  onClick: () => void
 }
 
+/*
+  Posisi mobile menghitung tinggi bottom nav (64px) ditambah safe area dan
+  jarak 16px, supaya tombol tidak pernah tertimpa nav di perangkat dengan
+  home indicator. Tepi kanannya disamakan dengan panel agar sejajar.
+
+  Halo animate-ping yang berdenyut tanpa henti dibuang. Denyut permanen
+  menarik perhatian terus-menerus tanpa menyampaikan informasi apa pun,
+  dan bertentangan dengan aturan motion di docs/fe-rules.md yang meminta
+  gerak yang singkat dan fungsional.
+*/
 export function ChatbotButton({ isOpen, onClick }: ChatbotButtonProps) {
   return (
     <button
+      type="button"
       onClick={onClick}
+      aria-label={isOpen ? "Tutup chat" : "Buka chat"}
+      aria-expanded={isOpen}
       className={cn(
-        // Base
-        "fixed w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 z-50 cursor-pointer",
-        /*
-         * MOBILE POSITIONING FIX:
-         *   - Lama: `bottom-20` (80px) — dihitung dari asumsi bottom nav 64px + gap 16px.
-         *     Namun jika bottom nav ada `pb-safe` (env safe-area-inset-bottom),
-         *     actual nav bisa lebih tinggi → button tertimpa nav.
-         *   - Baru: `bottom-[calc(4rem+env(safe-area-inset-bottom,0px)+1rem)]`
-         *     = 64px nav height + safe area + 16px gap.
-         *     Fallback: jika browser tidak support env(), tetap 80px (sama seperti semula).
-         *   - `right-4` (16px): konsisten dengan panel.
-         *
-         * DESKTOP POSITIONING FIX:
-         *   - Lama: `sm:bottom-4 sm:right-6`. Button di 16px dari bawah, 24px dari kanan.
-         *   - Baru: `sm:bottom-4 sm:right-4`. Samakan right dengan panel (sm:right-4)
-         *     agar button dan panel tepi kanannya rata.
-         */
+        "fixed z-50 flex h-14 w-14 items-center justify-center rounded-full transition-colors",
         "bottom-[calc(4rem+env(safe-area-inset-bottom,0px)+1rem)] right-4",
         "sm:bottom-4 sm:right-4",
         isOpen
-          ? "bg-foreground hover:bg-card-foreground rotate-0 hidden lg:flex"
-          : "bg-primary hover:bg-primary/90 hover:scale-110",
+          ? "hidden bg-foreground text-background hover:bg-neutral-800 lg:flex"
+          : "bg-primary text-primary-foreground hover:bg-btn-primary-hover"
       )}
-      aria-label={isOpen ? "Tutup chat" : "Buka chat"}
     >
       {isOpen ? (
-        <X className="w-6 h-6 text-on-surface" />
+        <X className="h-6 w-6" aria-hidden="true" />
       ) : (
-        <>
-          <MessageCircle className="w-6 h-6 text-on-surface" />
-          <span className="absolute w-full h-full rounded-full bg-primary animate-ping opacity-30" />
-        </>
+        <MessageCircle className="h-6 w-6" aria-hidden="true" />
       )}
     </button>
-  );
+  )
 }
