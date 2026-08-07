@@ -37,7 +37,7 @@ export function ModelSelector({
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 bg-muted hover:bg-muted/80 rounded-lg transition-colors w-full text-left text-sm cursor-pointer"
+        className="flex items-center gap-2 px-3 py-2 bg-muted hover:bg-muted/80 rounded-lg transition-colors w-full text-left text-sm"
       >
         <Sparkles className="w-4 h-4 text-primary" />
         <span className="flex-1 truncate">{displayText}</span>
@@ -57,7 +57,7 @@ export function ModelSelector({
               <button
                 onClick={() => handleSelect({ mode: "auto" })}
                 className={cn(
-                  "w-full flex items-center gap-2 px-3 py-2 rounded-md hover:bg-muted transition-colors cursor-pointer text-left",
+                  "w-full flex items-center gap-2 px-3 py-2 rounded-md hover:bg-muted transition-colors text-left",
                   currentSelection.mode === "auto" && "bg-primary/10"
                 )}
               >
@@ -83,7 +83,7 @@ export function ModelSelector({
                     handleSelect({ mode: "manual", selectedModelId: model.id })
                   }
                   className={cn(
-                    "w-full flex flex-col gap-1 px-3 py-2 rounded-md hover:bg-muted transition-colors cursor-pointer text-left",
+                    "w-full flex flex-col gap-1 px-3 py-2 rounded-md hover:bg-muted transition-colors text-left",
                     currentSelection.mode === "manual" &&
                       currentSelection.selectedModelId === model.id &&
                       "bg-primary/10"

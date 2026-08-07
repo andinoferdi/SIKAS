@@ -81,7 +81,7 @@ export const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(
       <div className="relative">
         <div
           className={cn(
-            "flex items-center gap-2 px-4 py-3 bg-card border border-input-border rounded-lg cursor-pointer hover:border-input-focus transition-colors",
+            "flex items-center gap-2 px-4 py-3 bg-card border border-input-border rounded-lg hover:border-input-focus transition-colors",
             className,
           )}
           onClick={() => setIsOpen(!isOpen)}

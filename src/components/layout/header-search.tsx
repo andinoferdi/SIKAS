@@ -74,7 +74,7 @@ export function HeaderSearch({
                 <button
                   key={transaction.id}
                   onClick={onResultClick}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left border-b border-border last:border-0 cursor-pointer"
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left border-b border-border last:border-0"
                 >
                   <div
                     className={cn(

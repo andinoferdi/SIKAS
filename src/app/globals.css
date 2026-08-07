@@ -326,6 +326,28 @@
   }
 }
 
+/*
+  Preflight Tailwind v4 mengikuti default native, yaitu cursor: default pada
+  tombol. Aturan ini mengembalikan pointer ke semua yang benar-benar bisa
+  diklik. Tautan sudah mendapatkannya dari browser, dan kontrol yang disabled
+  sengaja dibiarkan memakai cursor default supaya statusnya tetap terbaca.
+*/
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled),
+  a[href],
+  select:not(:disabled),
+  summary,
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  input[type="range"]:not(:disabled),
+  input[type="file"]:not(:disabled),
+  label:has(> input[type="checkbox"]:not(:disabled)),
+  label:has(> input[type="radio"]:not(:disabled)) {
+    cursor: pointer;
+  }
+}
+
 /* Plumbing smooth scroll Lenis (https://lenis.dev) */
 html.lenis,
 html.lenis body {

@@ -140,7 +140,7 @@ export const TransactionFormFields = memo(function TransactionFormFields({
             type="button"
             onClick={() => onPaymentMethodChange("cash")}
             className={cn(
-              "flex items-center gap-3 p-4 rounded-xl border-2 transition-all cursor-pointer",
+              "flex items-center gap-3 p-4 rounded-xl border-2 transition-all",
               compact && "justify-center gap-2",
               paymentMethod === "cash"
                 ? "border-primary bg-primary/10"
@@ -175,7 +175,7 @@ export const TransactionFormFields = memo(function TransactionFormFields({
             type="button"
             onClick={() => onPaymentMethodChange("mbanking")}
             className={cn(
-              "flex items-center gap-3 p-4 rounded-xl border-2 transition-all cursor-pointer",
+              "flex items-center gap-3 p-4 rounded-xl border-2 transition-all",
               compact && "justify-center gap-2",
               paymentMethod === "mbanking"
                 ? "border-primary bg-primary/10"

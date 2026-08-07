@@ -70,7 +70,7 @@ export function TransactionItem({ transaction, onDelete, onEdit }: TransactionIt
         {onEdit && (
           <button
             onClick={handleEdit}
-            className="p-2 text-primary active:bg-primary/10 rounded-lg transition-colors cursor-pointer"
+            className="p-2 text-primary active:bg-primary/10 rounded-lg transition-colors"
             title="Edit transaksi"
           >
             <Pencil className="h-4 w-4" />
@@ -82,7 +82,7 @@ export function TransactionItem({ transaction, onDelete, onEdit }: TransactionIt
           <button
             onClick={handleDelete}
             disabled={isDeleting}
-            className="p-2 text-danger active:bg-danger-bg rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
+            className="p-2 text-danger active:bg-danger-bg rounded-lg transition-colors disabled:opacity-50"
             title="Hapus transaksi"
           >
             {isDeleting ? (
