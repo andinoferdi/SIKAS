@@ -39,7 +39,7 @@ export function MobileSearchModal({
         <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
           <button
             onClick={handleClose}
-            className="p-2 -ml-2 rounded-lg hover:bg-muted"
+            className="-ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg hover:bg-muted"
           >
             <X className="h-5 w-5 text-muted-foreground" />
           </button>

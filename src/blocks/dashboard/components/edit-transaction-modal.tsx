@@ -72,12 +72,14 @@ export function EditTransactionModal({ transaction, onClose, onSuccess }: EditTr
 
   return (
     <div className="fixed inset-0 bg-overlay flex items-center justify-center z-50 p-4">
-      <div className="bg-card rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-xl bg-card">
         <div className="flex items-center justify-between p-6 border-b border-border">
           <h2 className="text-lg font-semibold text-foreground">Edit Transaksi</h2>
           <button
+            type="button"
             onClick={onClose}
-            className="p-2 text-muted-foreground hover:text-foreground rounded-lg transition-colors"
+            aria-label="Tutup"
+            className="flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             <X className="h-5 w-5" />
           </button>
@@ -113,6 +115,7 @@ export function EditTransactionModal({ transaction, onClose, onSuccess }: EditTr
             </Button>
             <Button
               type="submit"
+              variant="primary-solid"
               disabled={updateMutation.isPending || !!balanceWarning}
               className="flex-1"
             >

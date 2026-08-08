@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils"
 import { formatCurrency, getMonthName, getCurrentMonth, getCurrentYear } from "@/lib/utils/format"
 import { TrendingUp, TrendingDown, Scale } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
 
 interface SummaryCardProps {
   income: number
@@ -9,71 +10,59 @@ interface SummaryCardProps {
   year?: number
 }
 
-export function SummaryCard({ income, expense, month = getCurrentMonth(), year = getCurrentYear() }: SummaryCardProps) {
+interface SummaryRowProps {
+  icon: LucideIcon
+  label: string
+  value: string
+  tone: string
+}
+
+function SummaryRow({ icon: Icon, label, value, tone }: SummaryRowProps) {
+  return (
+    <div className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0 sm:flex-col sm:items-start sm:justify-start sm:gap-2 sm:px-4 sm:py-0 sm:first:pl-0 sm:last:pr-0">
+      <div className="flex min-w-0 items-center gap-2">
+        <Icon className={cn("h-4 w-4 shrink-0", tone)} />
+        <span className="truncate text-sm text-muted-foreground">{label}</span>
+      </div>
+      <p className={cn("shrink-0 text-base font-semibold tabular-nums", tone)}>{value}</p>
+    </div>
+  )
+}
+
+export function SummaryCard({
+  income,
+  expense,
+  month = getCurrentMonth(),
+  year = getCurrentYear(),
+}: SummaryCardProps) {
   const net = income - expense
 
   return (
-    <div className="bg-card rounded-2xl border border-border p-5 sm:p-6">
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <h3 className="font-semibold text-foreground text-base">Ringkasan Bulanan</h3>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {getMonthName(month)} {year}
-          </p>
-        </div>
-      </div>
+    <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
+      <h3 className="text-base font-semibold text-card-foreground">Ringkasan Bulanan</h3>
+      <p className="mt-0.5 text-sm text-muted-foreground">
+        {getMonthName(month)} {year}
+      </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="flex items-center gap-2.5 p-3.5 rounded-xl bg-success-bg border border-success-border">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-success-bg-dark flex items-center justify-center shrink-0">
-            <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-success" />
-          </div>
-          <div className="flex-1 overflow-hidden">
-            <p className="text-sm font-medium text-success-text mb-0.5">Pemasukan</p>
-            <p className="text-sm sm:text-sm font-bold text-success-text truncate">
-              +{formatCurrency(income)}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2.5 p-3.5 rounded-xl bg-danger-bg border border-danger-border">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-danger-bg-dark flex items-center justify-center shrink-0">
-            <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 text-danger" />
-          </div>
-          <div className="flex-1 overflow-hidden">
-            <p className="text-sm font-medium text-danger-text mb-0.5">Pengeluaran</p>
-            <p className="text-sm sm:text-sm font-bold text-danger-text truncate">
-              -{formatCurrency(expense)}
-            </p>
-          </div>
-        </div>
-
-        <div
-          className={cn(
-            "flex items-center gap-2.5 p-3.5 rounded-xl border",
-            net >= 0
-              ? "bg-primary/5 border-primary/20"
-              : "bg-warning-bg border-warning-border"
-          )}
-        >
-          <div
-            className={cn(
-              "w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0",
-              net >= 0 ? "bg-primary/10" : "bg-warning-bg-dark"
-            )}
-          >
-            <Scale className={cn("h-4 w-4 sm:h-5 sm:w-5", net >= 0 ? "text-primary" : "text-warning")} />
-          </div>
-          <div className="flex-1 overflow-hidden">
-            <p className={cn("text-sm font-medium mb-0.5", net >= 0 ? "text-primary" : "text-warning-text")}>
-              Selisih
-            </p>
-            <p className={cn("text-sm sm:text-sm font-bold truncate", net >= 0 ? "text-primary" : "text-warning-text")}>
-              {net >= 0 ? "+" : ""}
-              {formatCurrency(net)}
-            </p>
-          </div>
-        </div>
+      <div className="mt-4 divide-y divide-border sm:grid sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+        <SummaryRow
+          icon={TrendingUp}
+          label="Pemasukan"
+          value={`+${formatCurrency(income)}`}
+          tone="text-success"
+        />
+        <SummaryRow
+          icon={TrendingDown}
+          label="Pengeluaran"
+          value={`-${formatCurrency(expense)}`}
+          tone="text-danger"
+        />
+        <SummaryRow
+          icon={Scale}
+          label="Selisih"
+          value={`${net >= 0 ? "+" : ""}${formatCurrency(net)}`}
+          tone={net >= 0 ? "text-primary-solid" : "text-warning-text"}
+        />
       </div>
     </div>
   )

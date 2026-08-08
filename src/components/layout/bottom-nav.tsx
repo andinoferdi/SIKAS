@@ -40,10 +40,10 @@ export function BottomNav() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center justify-center w-14 h-14 -mt-7 rounded-2xl shadow-lg transition-all duration-200 active:scale-95",
+                  "-mt-7 flex h-14 w-14 items-center justify-center rounded-xl shadow-lg transition-transform duration-200 active:scale-95",
                   isActive
-                    ? "bg-primary/90 shadow-primary/30"
-                    : "bg-primary hover:bg-primary/90 shadow-primary/20"
+                    ? "bg-primary-solid-hover"
+                    : "bg-primary-solid hover:bg-primary-solid-hover"
                 )}
               >
                 <Icon className="h-6 w-6 text-primary-foreground" strokeWidth={2.5} />
@@ -56,14 +56,13 @@ export function BottomNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center gap-1 py-2 px-4 rounded-xl transition-all duration-200",
-                isActive
-                  ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                "flex min-h-11 flex-col items-center gap-1 rounded-xl px-4 py-2 transition-colors",
+                isActive ? "text-primary-solid" : "text-muted-foreground hover:text-foreground"
               )}
+              aria-current={isActive ? "page" : undefined}
             >
-              <Icon className={cn("h-5 w-5", isActive && "text-primary")} />
-              <span className={cn("text-sm font-medium", isActive && "text-primary")}>
+              <Icon className="h-5 w-5" />
+              <span className="text-sm font-medium">
                 {item.label}
               </span>
             </Link>

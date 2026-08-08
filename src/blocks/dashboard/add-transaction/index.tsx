@@ -40,6 +40,15 @@ export default function AddTransactionPage() {
     setError: setFormError,
   } = form
 
+  // Tombol simpan mati sampai jumlah dan kategori terisi. Sebutkan apa yang
+  // kurang supaya user tidak menebak kenapa tombolnya tidak bisa ditekan.
+  const missingFields = (() => {
+    if (createMutation.isPending || balanceWarning) return null
+    const missing = [!amount && "jumlah", !category && "kategori"].filter(Boolean)
+    if (missing.length === 0) return null
+    return `Isi ${missing.join(" dan ")} dulu untuk menyimpan.`
+  })()
+
   const onSubmit = handleSubmit((data) => {
     const numericAmount = validateAndGetAmount()
     if (!numericAmount) return
@@ -77,7 +86,7 @@ export default function AddTransactionPage() {
 
         <div className="lg:grid lg:grid-cols-5 lg:gap-8">
           <div className="lg:col-span-3">
-            <div className="bg-card rounded-2xl border border-border p-5 lg:p-6">
+            <div className="rounded-xl border border-border bg-card p-4 sm:p-5 lg:p-6">
               <form onSubmit={onSubmit} className="space-y-5">
                 <TransactionFormFields
                   type={type}
@@ -98,50 +107,56 @@ export default function AddTransactionPage() {
                   onDateChange={handleDateChange}
                 />
 
-                <Button
-                  type="submit"
-                  disabled={createMutation.isPending || !amount || !category || !!balanceWarning}
-                  size="lg"
-                  className="w-full h-12 text-base font-medium"
-                >
-                  {createMutation.isPending ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Menyimpan...
-                    </>
-                  ) : (
-                    "Simpan Transaksi"
+                <div>
+                  <Button
+                    type="submit"
+                    variant="primary-solid"
+                    disabled={createMutation.isPending || !amount || !category || !!balanceWarning}
+                    size="lg"
+                    className="w-full"
+                  >
+                    {createMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Menyimpan...
+                      </>
+                    ) : (
+                      "Simpan Transaksi"
+                    )}
+                  </Button>
+                  {missingFields && (
+                    <p className="mt-2 text-sm text-muted-foreground">{missingFields}</p>
                   )}
-                </Button>
+                </div>
               </form>
             </div>
           </div>
 
           <div className="hidden lg:block lg:col-span-2">
-            <div className="bg-card rounded-2xl border border-border p-5 sticky top-20">
+            <div className="sticky top-20 rounded-xl border border-border bg-card p-5">
               <h3 className="font-semibold text-foreground mb-4">Saldo Saat Ini</h3>
 
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-primary/10 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-primary/20 flex items-center justify-center">
-                      <Smartphone className="h-4 w-4 text-primary" />
+              <div className="divide-y divide-border">
+                <div className="flex items-center justify-between gap-3 py-3 first:pt-0">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-fund-mbanking/10">
+                      <Smartphone className="h-4 w-4 text-fund-mbanking" />
                     </div>
-                    <span className="text-sm text-muted-foreground">M-Banking</span>
+                    <span className="truncate text-sm text-muted-foreground">M-Banking</span>
                   </div>
-                  <span className="font-semibold text-foreground">
+                  <span className="shrink-0 font-semibold tabular-nums text-foreground">
                     {formatCurrency(Number(user?.mbanking_balance || 0))}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between p-3 bg-success-bg rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-success-bg-dark flex items-center justify-center">
-                      <Banknote className="h-4 w-4 text-success" />
+                <div className="flex items-center justify-between gap-3 py-3 last:pb-0">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-fund-cash/10">
+                      <Banknote className="h-4 w-4 text-fund-cash" />
                     </div>
-                    <span className="text-sm text-muted-foreground">Cash</span>
+                    <span className="truncate text-sm text-muted-foreground">Cash</span>
                   </div>
-                  <span className="font-semibold text-foreground">
+                  <span className="shrink-0 font-semibold tabular-nums text-foreground">
                     {formatCurrency(Number(user?.cash_balance || 0))}
                   </span>
                 </div>

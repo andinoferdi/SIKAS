@@ -21,13 +21,13 @@ export default function DashboardPage() {
           <div className="h-7 bg-muted rounded-lg w-48 animate-pulse" />
           <div className="h-4 bg-muted rounded w-64 animate-pulse" />
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
           {[...Array(2)].map((_, i) => (
-            <div key={i} className="h-28 bg-muted rounded-2xl animate-pulse" />
+            <div key={i} className="h-28 bg-muted rounded-xl animate-pulse" />
           ))}
         </div>
-        <div className="h-40 bg-muted rounded-2xl animate-pulse" />
-        <div className="h-48 bg-muted rounded-2xl animate-pulse" />
+        <div className="h-40 bg-muted rounded-xl animate-pulse" />
+        <div className="h-48 bg-muted rounded-xl animate-pulse" />
       </div>
     )
   }
@@ -70,7 +70,7 @@ export default function DashboardPage() {
         <h1 className="text-xl font-bold text-foreground">{user.name}</h1>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
         <BalanceCard title="M-Banking" amount={user.mbanking_balance} type="mbanking" />
         <BalanceCard title="Cash" amount={user.cash_balance} type="cash" />
       </div>
@@ -94,7 +94,7 @@ export default function DashboardPage() {
             <ChevronRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
           </Link>
         </div>
-        <div className="bg-card rounded-2xl p-4 lg:p-5 border border-border">
+        <div className="rounded-xl border border-border bg-card px-4 sm:px-5">
           <TransactionList transactions={transactions} />
         </div>
       </section>

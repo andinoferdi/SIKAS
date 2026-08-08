@@ -60,6 +60,17 @@ const CHECKS = [
   // dan tanpa fungsi batas komponen, jadi ambang 3:1 tidak berlaku. Yang
   // dijaga di sini cuma agar nilainya tidak pernah dibuat lebih pucat lagi.
   ["primary-surface", "card", 2.5, "bidang dekoratif besar, bukan teks"],
+
+  // Permukaan terisi di dashboard. Biru terang gagal menanggung teks putih,
+  // jadi aksi utama dan avatar memakai --primary-solid.
+  ["primary-solid", "primary-foreground", 4.5, "teks putih di tombol utama dashboard"],
+  ["primary-solid-hover", "primary-foreground", 4.5, "teks putih di tombol utama dashboard saat hover"],
+  ["primary-solid", "card", 4.5, "label nav aktif dan nominal selisih di atas kartu"],
+  ["primary-solid", "background", 4.5, "label nav aktif di atas latar halaman"],
+
+  // Ikon chip sumber dana. Ambang komponen non-teks adalah 3:1.
+  ["fund-mbanking", "card", 3, "ikon chip M-Banking di atas kartu"],
+  ["fund-cash", "card", 3, "ikon chip Cash di atas kartu"],
 ]
 
 let failed = 0

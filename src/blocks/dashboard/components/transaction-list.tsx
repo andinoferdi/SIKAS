@@ -17,12 +17,12 @@ export function TransactionList({
 }: TransactionListProps) {
   if (transactions.length === 0) {
     return (
-      <div className="text-center py-12">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-muted mb-4">
-          <Receipt className="w-7 h-7 text-muted-foreground" />
+      <div className="py-10 text-center">
+        <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
+          <Receipt className="h-6 w-6 text-muted-foreground" />
         </div>
-        <p className="text-foreground text-sm font-medium">{emptyMessage}</p>
-        <p className="text-muted-foreground text-sm mt-1">Mulai dengan menambah transaksi baru</p>
+        <p className="text-sm font-medium text-foreground">{emptyMessage}</p>
+        <p className="mt-1 text-sm text-muted-foreground">Mulai dengan menambah transaksi baru</p>
       </div>
     )
   }

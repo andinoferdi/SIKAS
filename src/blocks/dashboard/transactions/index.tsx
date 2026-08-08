@@ -148,7 +148,7 @@ export default function TransactionsPage() {
       </div>
 
     
-      <div className="bg-card rounded-2xl p-4 lg:p-5 border border-border">
+      <div className="rounded-xl border border-border bg-card px-4 sm:px-5">
         {isLoading ? (
           <div className="space-y-4">
             {Array.from({ length: 5 }).map((_, i) => (

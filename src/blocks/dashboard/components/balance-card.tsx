@@ -9,51 +9,24 @@ interface BalanceCardProps {
 
 export function BalanceCard({ title, amount, type }: BalanceCardProps) {
   const isMbanking = type === "mbanking"
+  const Icon = isMbanking ? Smartphone : Banknote
 
   return (
-    <div
-      className="relative overflow-hidden rounded-2xl p-5 transition-all duration-300 hover:shadow-lg"
-      style={{
-        background: isMbanking
-          ? "linear-gradient(to bottom right, var(--gradient-mbanking-from), var(--gradient-mbanking-to))"
-          : "linear-gradient(to bottom right, var(--gradient-cash-from), var(--gradient-cash-to))",
-      }}
-    >
- 
-      <div
-        className="absolute -right-6 -top-6 w-24 h-24 rounded-full opacity-20"
-        style={{
-          backgroundColor: isMbanking ? "var(--gradient-mbanking-from)" : "var(--gradient-cash-from)",
-        }}
-      />
-      <div
-        className="absolute -right-2 top-12 w-16 h-16 rounded-full opacity-10"
-        style={{
-          backgroundColor: isMbanking ? "var(--gradient-mbanking-from)" : "var(--gradient-cash-from)",
-        }}
-      />
-
-      <div className="relative z-10">
-    
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-on-surface-subtle backdrop-blur-sm flex items-center justify-center">
-            {isMbanking ? (
-              <Smartphone className="w-5 h-5 text-on-surface" />
-            ) : (
-              <Banknote className="w-5 h-5 text-on-surface" />
-            )}
-          </div>
-          <span className="text-on-surface-variant text-sm font-medium">{title}</span>
+    <div className="rounded-xl border border-border bg-card p-4 transition-colors hover:border-muted-foreground/30 sm:p-5">
+      <div className="flex items-center gap-2.5 sm:gap-3">
+        <div
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
+            isMbanking ? "bg-fund-mbanking/10" : "bg-fund-cash/10"
+          }`}
+        >
+          <Icon className={`h-5 w-5 ${isMbanking ? "text-fund-mbanking" : "text-fund-cash"}`} />
         </div>
-
-       
-        <div>
-          <p className="text-on-surface-muted text-sm font-medium mb-1">Saldo</p>
-          <p className="text-on-surface text-2xl sm:text-3xl font-bold tracking-tight">
-            {formatCurrency(amount)}
-          </p>
-        </div>
+        <span className="truncate text-sm font-medium text-muted-foreground">{title}</span>
       </div>
+
+      <p className="mt-3 text-xl font-bold tracking-tight text-foreground sm:mt-4 sm:text-2xl">
+        {formatCurrency(amount)}
+      </p>
     </div>
   )
 }
