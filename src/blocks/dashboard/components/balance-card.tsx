@@ -48,7 +48,7 @@ export function BalanceCard({ title, amount, type }: BalanceCardProps) {
 
        
         <div>
-          <p className="text-on-surface-muted text-xs font-medium mb-1">Saldo</p>
+          <p className="text-on-surface-muted text-sm font-medium mb-1">Saldo</p>
           <p className="text-on-surface text-2xl sm:text-3xl font-bold tracking-tight">
             {formatCurrency(amount)}
           </p>

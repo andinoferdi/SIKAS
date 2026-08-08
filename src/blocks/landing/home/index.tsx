@@ -3,6 +3,7 @@ import {
   HeroSection,
   StatsSection,
   FeaturesSection,
+  SavingsSimulator,
   CtaSection,
   Footer,
 } from "@/blocks/landing/home/components"
@@ -16,6 +17,7 @@ export default function HomePage() {
         <HeroSection />
         <StatsSection />
         <FeaturesSection />
+        <SavingsSimulator />
         <CtaSection />
       </main>
       <Footer />

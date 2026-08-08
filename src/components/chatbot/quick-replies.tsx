@@ -8,15 +8,21 @@ interface QuickRepliesProps {
   disabled?: boolean
 }
 
+/*
+  Versi lama memakai warna hardcode sky-600, sky-50, dan sky-200 sehingga
+  komponen ini tidak pernah ikut berubah saat token warna diperbarui.
+  Sekarang seluruhnya memakai token.
+*/
 export function QuickReplies({ replies, onSelect, disabled }: QuickRepliesProps) {
   return (
-    <div className="flex flex-wrap gap-2 px-1">
+    <div className="flex flex-wrap gap-2">
       {replies.map((reply) => (
         <button
           key={reply.id}
+          type="button"
           onClick={() => onSelect(reply.message)}
           disabled={disabled}
-          className="px-3 py-1.5 text-xs font-medium text-sky-600 bg-sky-50 border border-sky-200 rounded-full hover:bg-sky-100 hover:border-sky-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          className="rounded-lg border border-border px-3 py-2 text-sm text-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
         >
           {reply.text}
         </button>

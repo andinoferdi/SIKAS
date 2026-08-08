@@ -22,12 +22,12 @@ const MemoizedMarkdown = memo(
         strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
         em: ({ children }) => <em className="italic">{children}</em>,
         code: ({ children }) => (
-          <code className="bg-muted px-1 py-0.5 rounded text-xs font-mono">
+          <code className="bg-muted px-1 py-0.5 rounded text-sm font-mono">
             {children}
           </code>
         ),
         pre: ({ children }) => (
-          <pre className="bg-muted p-2 rounded text-xs font-mono overflow-x-auto mb-2">
+          <pre className="bg-muted p-2 rounded text-sm font-mono overflow-x-auto mb-2">
             {children}
           </pre>
         ),
@@ -91,9 +91,9 @@ export function ChatMessage({ message }: ChatMessageProps) {
     >
       <div
         className={cn(
-          "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
+          "h-8 w-8 shrink-0 rounded-full flex items-center justify-center",
           isBot
-            ? "bg-primary text-on-surface"
+            ? "border border-border bg-card text-primary"
             : "bg-muted text-muted-foreground"
         )}
       >
@@ -134,7 +134,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
         {message.isStreaming && message.content && (
           <div className="flex items-center gap-1.5 mt-2 text-muted-foreground">
             <Loader2 className="w-3 h-3 animate-spin" />
-            <span className="text-xs">Mengetik...</span>
+            <span className="text-sm">Mengetik...</span>
           </div>
         )}
       </ChatBubble>

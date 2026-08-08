@@ -1,15 +1,18 @@
 import type React from "react"
 import type { Metadata, Viewport } from "next"
-import { Plus_Jakarta_Sans } from "next/font/google"
+import { Inter } from "next/font/google"
 import { Toaster } from "sonner"
 import { Providers } from "@/components/providers"
+import { LenisProvider } from "@/components/scroll"
 import "@/app/globals.css"
 
 
-const plusJakarta = Plus_Jakarta_Sans({
-  variable: "--font-plus-jakarta",
+// Inter untuk seluruh teks dan UI. Variable font, jadi tidak perlu
+// mendaftar weight satu per satu.
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  display: "swap",
 })
 
 export const metadata: Metadata = {
@@ -34,7 +37,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
-  themeColor: "#c9b896",
+  themeColor: "#0369a1",
   colorScheme: "light",
 }
 
@@ -45,9 +48,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id" suppressHydrationWarning>
-      <body className={`${plusJakarta.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} font-sans antialiased`}>
         <Providers>
-          {children}
+          <LenisProvider>{children}</LenisProvider>
           <Toaster position="top-center" richColors closeButton />
         </Providers>
       </body>

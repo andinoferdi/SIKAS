@@ -163,7 +163,7 @@ export function BatchActionConfirmation({
 
       {batchDetails?.type === "edit" && batchDetails.items && (
         <div className="mb-3 space-y-1 max-h-32 overflow-y-auto">
-          <p className="text-xs text-muted-foreground mb-2">
+          <p className="text-sm text-muted-foreground mb-2">
             Transaksi yang akan diubah:
           </p>
           {batchDetails.items.map((item) => (
@@ -183,7 +183,7 @@ export function BatchActionConfirmation({
 
       {batchDetails?.type === "delete_filter" && batchDetails.filters && (
         <div className="mb-3 space-y-1">
-          <p className="text-xs text-muted-foreground mb-2">
+          <p className="text-sm text-muted-foreground mb-2">
             Transaksi yang sesuai filter akan dihapus:
           </p>
           {batchDetails.filters.map((filter, i) => (
@@ -204,13 +204,13 @@ export function BatchActionConfirmation({
             <p className="text-sm text-destructive font-medium mb-1">
               Peringatan: Aksi ini tidak dapat dibatalkan!
             </p>
-            <p className="text-xs text-destructive/80">
+            <p className="text-sm text-destructive/80">
               Semua transaksi {batchDetails.scope} akan dihapus permanen.
             </p>
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs text-muted-foreground">
+            <label className="text-sm text-muted-foreground">
               Ketik <span className="font-mono font-bold">HAPUS SEMUA</span> untuk konfirmasi:
             </label>
             <input
@@ -218,7 +218,7 @@ export function BatchActionConfirmation({
               value={confirmationText}
               onChange={(e) => setConfirmationText(e.target.value)}
               className={cn(
-                "w-full px-3 py-2 text-sm rounded-md border bg-background",
+                "h-11 w-full rounded-lg border bg-input px-4 text-base",
                 confirmationText === "HAPUS SEMUA"
                   ? "border-destructive"
                   : "border-input"
@@ -241,10 +241,10 @@ export function BatchActionConfirmation({
           onClick={onConfirm}
           disabled={!canConfirm || isLoading}
           className={cn(
-            "flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md transition-colors cursor-pointer",
+            "inline-flex h-11 items-center gap-2 rounded-lg px-4 text-sm font-semibold transition-colors",
             isDestructive
               ? "bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
-              : "bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50",
+              : "bg-primary text-primary-foreground hover:bg-btn-primary-hover disabled:opacity-50",
             (!canConfirm || isLoading) && "cursor-not-allowed"
           )}
         >
@@ -262,7 +262,7 @@ export function BatchActionConfirmation({
         <button
           onClick={onCancel}
           disabled={isLoading}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-muted text-muted-foreground text-sm rounded-md hover:bg-muted/80 transition-colors cursor-pointer disabled:opacity-50"
+          className="inline-flex h-11 items-center gap-2 rounded-lg border border-border px-4 text-sm font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-50"
         >
           <XCircle className="w-4 h-4" />
           Batal

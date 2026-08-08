@@ -10,35 +10,34 @@ export const metadata: Metadata = {
 
 export default function GuidePage() {
   return (
-    <main className="min-h-screen bg-background pb-20 lg:pb-0">
-      <div className="bg-primary/5 pt-12 pb-16 px-6 relative overflow-hidden">
-        <div className="max-w-4xl mx-auto relative z-10">
-          <Link 
-            href="/dashboard"
-            className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary mb-8 text-sm font-medium transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Kembali ke Dashboard
-          </Link>
-          
-          <div className="max-w-2xl">
-            <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">Panduan SIKAS</h1>
-            <p className="text-muted-foreground text-lg leading-relaxed">
-              Kumpulan artikel dan tutorial untuk membantu Anda menguasai manajemen keuangan pribadi menggunakan SIKAS.
-            </p>
-          </div>
-        </div>
-      </div>
+    <main className="min-h-dvh bg-background pb-20 lg:pb-0">
+      <div className="mx-auto max-w-6xl px-5 py-8 md:px-8 md:py-12">
+        <Link
+          href="/"
+          className="inline-flex w-fit items-center gap-2 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          Kembali ke beranda
+        </Link>
 
-      <div className="max-w-4xl mx-auto px-6 py-12">
-        <div className="mb-10 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-foreground">Topik Populer</h2>
-          <Link href="/faq" className="text-sm text-primary hover:underline font-medium">
-            Lihat FAQ
-          </Link>
+        <div className="mt-8 max-w-2xl md:mt-12">
+          <h1 className="text-h2 font-bold tracking-tight text-foreground">Panduan SIKAS</h1>
+          <p className="mt-4 text-base leading-relaxed text-muted-foreground">
+            Empat panduan singkat untuk menguasai pencatatan keuangan di SIKAS, dari mendaftar
+            sampai memanfaatkan asisten AI.
+          </p>
         </div>
-        
-        <GuideList />
+
+        <div className="mt-10 md:mt-12">
+          <GuideList />
+        </div>
+
+        <p className="mt-16 border-t border-border pt-8 text-sm text-muted-foreground">
+          Masih ada yang ingin ditanyakan?{" "}
+          <Link href="/faq" className="font-medium text-primary hover:underline">
+            Lihat pusat bantuan
+          </Link>
+        </p>
       </div>
     </main>
   )

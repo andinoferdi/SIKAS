@@ -47,7 +47,7 @@ export function TransactionItem({ transaction, onDelete, onEdit }: TransactionIt
 
       <div className="min-w-0 flex-1">
         <p className="font-medium text-foreground text-sm truncate">{transaction.category}</p>
-        <p className="text-xs text-muted-foreground mt-0.5 truncate">
+        <p className="text-sm text-muted-foreground mt-0.5 truncate">
           {formatShortDate(transaction.transaction_date)}
           {transaction.description && (
             <span className="text-muted-foreground/70"> - {transaction.description}</span>
@@ -61,7 +61,7 @@ export function TransactionItem({ transaction, onDelete, onEdit }: TransactionIt
             {isIncome ? "+" : "-"}
             {formatCurrency(transaction.amount)}
           </p>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-sm text-muted-foreground mt-0.5">
             {transaction.payment_method === "mbanking" ? "M-Banking" : "Cash"}
           </p>
         </div>
@@ -70,7 +70,7 @@ export function TransactionItem({ transaction, onDelete, onEdit }: TransactionIt
         {onEdit && (
           <button
             onClick={handleEdit}
-            className="p-2 text-primary active:bg-primary/10 rounded-lg transition-colors cursor-pointer"
+            className="p-2 text-primary active:bg-primary/10 rounded-lg transition-colors"
             title="Edit transaksi"
           >
             <Pencil className="h-4 w-4" />
@@ -82,7 +82,7 @@ export function TransactionItem({ transaction, onDelete, onEdit }: TransactionIt
           <button
             onClick={handleDelete}
             disabled={isDeleting}
-            className="p-2 text-danger active:bg-danger-bg rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
+            className="p-2 text-danger active:bg-danger-bg rounded-lg transition-colors disabled:opacity-50"
             title="Hapus transaksi"
           >
             {isDeleting ? (

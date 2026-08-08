@@ -37,7 +37,7 @@ export function ModelSelector({
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 bg-muted hover:bg-muted/80 rounded-lg transition-colors w-full text-left text-sm cursor-pointer"
+        className="flex items-center gap-2 px-3 py-2 bg-muted hover:bg-muted/80 rounded-lg transition-colors w-full text-left text-sm"
       >
         <Sparkles className="w-4 h-4 text-primary" />
         <span className="flex-1 truncate">{displayText}</span>
@@ -52,12 +52,12 @@ export function ModelSelector({
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
+          <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg z-50 max-h-96 overflow-y-auto">
             <div className="p-2 space-y-1">
               <button
                 onClick={() => handleSelect({ mode: "auto" })}
                 className={cn(
-                  "w-full flex items-center gap-2 px-3 py-2 rounded-md hover:bg-muted transition-colors cursor-pointer text-left",
+                  "w-full flex items-center gap-2 px-3 py-2 rounded-md hover:bg-muted transition-colors text-left",
                   currentSelection.mode === "auto" && "bg-primary/10"
                 )}
               >
@@ -68,8 +68,8 @@ export function ModelSelector({
                 )}
                 <div className="flex-1">
                   <div className="font-medium text-foreground">Auto Selection</div>
-                  <div className="text-xs text-muted-foreground">
-                    Otomatis pilih model Cerebras terbaik yang tersedia
+                  <div className="text-sm text-muted-foreground">
+                    Pakai model gratis OpenRouter terbaru yang tersedia
                   </div>
                 </div>
               </button>
@@ -83,7 +83,7 @@ export function ModelSelector({
                     handleSelect({ mode: "manual", selectedModelId: model.id })
                   }
                   className={cn(
-                    "w-full flex flex-col gap-1 px-3 py-2 rounded-md hover:bg-muted transition-colors cursor-pointer text-left",
+                    "w-full flex flex-col gap-1 px-3 py-2 rounded-md hover:bg-muted transition-colors text-left",
                     currentSelection.mode === "manual" &&
                       currentSelection.selectedModelId === model.id &&
                       "bg-primary/10"
@@ -97,22 +97,21 @@ export function ModelSelector({
                       <div className="w-4 h-4 shrink-0" />
                     )}
                     <span className="font-medium text-foreground">{model.name}</span>
+                    {model.recommended ? (
+                      <span className="rounded-full border border-border px-2 py-0.5 text-sm text-muted-foreground">
+                        Terbaru
+                      </span>
+                    ) : null}
+                    {model.vision ? (
+                      <span className="rounded-full border border-border px-2 py-0.5 text-sm text-muted-foreground">
+                        Gambar
+                      </span>
+                    ) : null}
                   </div>
 
-                  <div className="text-xs text-muted-foreground ml-6">
+                  <div className="ml-6 truncate text-sm text-muted-foreground">
                     {model.description}
                   </div>
-
-                  {model.pros.length > 0 && (
-                    <ul className="text-xs text-muted-foreground ml-6 space-y-0.5">
-                      {model.pros.map((pro) => (
-                        <li key={pro} className="flex items-start gap-1">
-                          <span className="text-primary">*</span>
-                          <span>{pro}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
                 </button>
               ))}
             </div>

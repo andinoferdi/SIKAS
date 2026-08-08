@@ -29,8 +29,8 @@ export function SummaryCard({ income, expense, month = getCurrentMonth(), year =
             <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-success" />
           </div>
           <div className="flex-1 overflow-hidden">
-            <p className="text-xs font-medium text-success-text mb-0.5">Pemasukan</p>
-            <p className="text-xs sm:text-sm font-bold text-success-text truncate">
+            <p className="text-sm font-medium text-success-text mb-0.5">Pemasukan</p>
+            <p className="text-sm sm:text-sm font-bold text-success-text truncate">
               +{formatCurrency(income)}
             </p>
           </div>
@@ -41,8 +41,8 @@ export function SummaryCard({ income, expense, month = getCurrentMonth(), year =
             <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 text-danger" />
           </div>
           <div className="flex-1 overflow-hidden">
-            <p className="text-xs font-medium text-danger-text mb-0.5">Pengeluaran</p>
-            <p className="text-xs sm:text-sm font-bold text-danger-text truncate">
+            <p className="text-sm font-medium text-danger-text mb-0.5">Pengeluaran</p>
+            <p className="text-sm sm:text-sm font-bold text-danger-text truncate">
               -{formatCurrency(expense)}
             </p>
           </div>
@@ -65,10 +65,10 @@ export function SummaryCard({ income, expense, month = getCurrentMonth(), year =
             <Scale className={cn("h-4 w-4 sm:h-5 sm:w-5", net >= 0 ? "text-primary" : "text-warning")} />
           </div>
           <div className="flex-1 overflow-hidden">
-            <p className={cn("text-xs font-medium mb-0.5", net >= 0 ? "text-primary" : "text-warning-text")}>
+            <p className={cn("text-sm font-medium mb-0.5", net >= 0 ? "text-primary" : "text-warning-text")}>
               Selisih
             </p>
-            <p className={cn("text-xs sm:text-sm font-bold truncate", net >= 0 ? "text-primary" : "text-warning-text")}>
+            <p className={cn("text-sm sm:text-sm font-bold truncate", net >= 0 ? "text-primary" : "text-warning-text")}>
               {net >= 0 ? "+" : ""}
               {formatCurrency(net)}
             </p>

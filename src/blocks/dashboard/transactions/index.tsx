@@ -93,7 +93,7 @@ export default function TransactionsPage() {
      
         <div className="flex gap-2">
           <Select value={month} onValueChange={(value) => handleFilterChange("month", value)}>
-            <SelectTrigger className="w-full sm:w-36 h-10 bg-card cursor-pointer">
+            <SelectTrigger className="w-full sm:w-36 h-10 bg-card">
               <Calendar className="h-4 w-4 text-muted-foreground mr-2" />
               <SelectValue placeholder="Bulan" />
             </SelectTrigger>
@@ -106,7 +106,7 @@ export default function TransactionsPage() {
             </SelectContent>
           </Select>
           <Select value={year} onValueChange={(value) => handleFilterChange("year", value)}>
-            <SelectTrigger className="w-24 h-10 bg-card cursor-pointer">
+            <SelectTrigger className="w-24 h-10 bg-card">
               <SelectValue placeholder="Tahun" />
             </SelectTrigger>
             <SelectContent>
@@ -130,7 +130,7 @@ export default function TransactionsPage() {
               key={filter.value}
               onClick={() => handleFilterChange("type", filter.value)}
               className={cn(
-                "flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-sm font-medium transition-all cursor-pointer",
+                "flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-sm font-medium transition-all",
                 isActive
                   ? "bg-card text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"

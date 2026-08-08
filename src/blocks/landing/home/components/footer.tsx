@@ -2,109 +2,92 @@ import Link from "next/link"
 import Image from "next/image"
 import { Mail, MapPin } from "lucide-react"
 
+const NAVIGASI = [
+  { href: "/", label: "Beranda" },
+  { href: "#fitur", label: "Fitur" },
+  { href: "#tentang", label: "Tentang" },
+  { href: "/guide", label: "Panduan" },
+  { href: "/faq", label: "FAQ" },
+]
+
+const AKUN = [
+  { href: "/login", label: "Masuk" },
+  { href: "/register", label: "Daftar" },
+]
+
 export function Footer() {
   return (
-    <footer className="bg-card border-t border-border">
-      <div className="max-w-300 mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12">
-          <div className="lg:col-span-1">
-            <div className="flex items-center gap-2.5 mb-6">
+    <footer className="border-t border-border">
+      <div className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-20">
+        <div className="grid gap-12 md:grid-cols-3 md:gap-16">
+          <div className="max-w-sm">
+            <div className="flex items-center gap-2.5">
               <Image
                 src="/images/logo.png"
                 alt="SIKAS"
-                width={40}
-                height={40}
+                width={36}
+                height={36}
                 className="object-contain"
               />
-              <span className="font-bold text-xl text-foreground">SIKAS</span>
+              <span className="text-lg font-bold tracking-tight text-foreground">SIKAS</span>
             </div>
 
-            <h5 className="font-semibold text-foreground mb-4">SIKAS Indonesia</h5>
+            <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+              Aplikasi pencatatan keuangan sederhana untuk mengelola pengeluaran dan
+              pemasukan. Data kamu tersimpan terenkripsi.
+            </p>
 
-            <div className="space-y-3 text-sm text-muted-foreground">
-              <a
-                href="#"
-                className="flex items-start gap-3 hover:text-primary transition-colors"
-              >
-                <MapPin className="w-5 h-5 shrink-0 mt-0.5" />
-                <span>Surabaya, Indonesia</span>
-              </a>
-
+            <div className="mt-6 flex flex-col gap-3 text-sm text-muted-foreground">
+              <span className="flex items-center gap-3">
+                <MapPin className="h-4 w-4 shrink-0" aria-hidden="true" />
+                Surabaya, Indonesia
+              </span>
               <a
                 href="mailto:andinoferdiansah@gmail.com"
-                className="flex items-center gap-3 hover:text-primary transition-colors"
+                className="flex items-center gap-3 py-1 transition-colors hover:text-primary"
               >
-                <Mail className="w-5 h-5 shrink-0" />
-                <span>andinoferdiansah@gmail.com</span>
+                <Mail className="h-4 w-4 shrink-0" aria-hidden="true" />
+                andinoferdiansah@gmail.com
               </a>
             </div>
           </div>
 
-          <div>
-            <h5 className="font-semibold text-foreground mb-4">Navigasi</h5>
-            <nav className="flex flex-col gap-3 text-sm text-muted-foreground">
-              <Link href="/" className="hover:text-primary transition-colors">
-                Beranda
-              </Link>
-              <Link href="#fitur" className="hover:text-primary transition-colors">
-                Fitur
-              </Link>
-              <Link href="#tentang" className="hover:text-primary transition-colors">
-                Tentang
-              </Link>
-            </nav>
+          <nav aria-label="Navigasi footer">
+            <h2 className="text-sm font-semibold text-foreground">Navigasi</h2>
+            <ul className="mt-4 flex flex-col">
+              {NAVIGASI.map((item) => (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className="block py-2 text-sm text-muted-foreground transition-colors hover:text-primary"
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
 
-            <h5 className="font-semibold text-foreground mt-6 mb-4">Fitur</h5>
-            <nav className="flex flex-col gap-3 text-sm text-muted-foreground">
-              <Link href="#" className="hover:text-primary transition-colors">
-                Kelola Saldo
-              </Link>
-              <Link href="#" className="hover:text-primary transition-colors">
-                Catat Transaksi
-              </Link>
-              <Link href="#" className="hover:text-primary transition-colors">
-                Laporan Keuangan
-              </Link>
-            </nav>
-          </div>
-
-          <div>
-            <h5 className="font-semibold text-foreground mb-4">Lainnya</h5>
-            <nav className="flex flex-col gap-3 text-sm text-muted-foreground">
-              <Link href="#" className="hover:text-primary transition-colors">
-                FAQ
-              </Link>
-              <Link href="#" className="hover:text-primary transition-colors">
-                Kebijakan Privasi
-              </Link>
-              <Link href="#" className="hover:text-primary transition-colors">
-                Syarat dan Ketentuan
-              </Link>
-            </nav>
-
-            <h5 className="font-semibold text-foreground mt-6 mb-4">Akun</h5>
-            <nav className="flex flex-col gap-3 text-sm text-muted-foreground">
-              <Link href="/login" className="hover:text-primary transition-colors">
-                Masuk
-              </Link>
-              <Link href="/register" className="hover:text-primary transition-colors">
-                Daftar
-              </Link>
-            </nav>
-          </div>
-
-          <div>
-            <h5 className="font-semibold text-foreground mb-4">Tentang Aplikasi</h5>
-            <p className="text-sm text-muted-foreground leading-relaxed mb-6">
-              SIKAS adalah aplikasi pencatatan keuangan sederhana yang membantu Anda mengelola pengeluaran dan pemasukan dengan mudah.
-            </p>
-
-            <h5 className="font-semibold text-foreground mb-4">Keamanan Data</h5>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Data Anda terenkripsi dan tersimpan dengan aman. Kami berkomitmen menjaga privasi pengguna.
-            </p>
-          </div>
+          <nav aria-label="Akun">
+            <h2 className="text-sm font-semibold text-foreground">Akun</h2>
+            <ul className="mt-4 flex flex-col">
+              {AKUN.map((item) => (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className="block py-2 text-sm text-muted-foreground transition-colors hover:text-primary"
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
         </div>
+
+        <p className="mt-12 border-t border-border pt-8 text-sm text-muted-foreground">
+          SIKAS Indonesia
+        </p>
       </div>
     </footer>
   )

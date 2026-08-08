@@ -43,7 +43,7 @@ export function Sidebar() {
             </div>
             <div>
               <h1 className="text-lg font-bold text-foreground">SIKAS</h1>
-              <p className="text-xs text-muted-foreground">Keuangan Bersama</p>
+              <p className="text-sm text-muted-foreground">Keuangan Bersama</p>
             </div>
           </div>
         </div>
@@ -79,7 +79,7 @@ export function Sidebar() {
         </nav>
 
         <div className="p-4 border-t border-border/50">
-          <p className="text-xs text-muted-foreground text-center">SIKAS v1.0</p>
+          <p className="text-sm text-muted-foreground text-center">SIKAS v1.0</p>
         </div>
       </div>
     </aside>

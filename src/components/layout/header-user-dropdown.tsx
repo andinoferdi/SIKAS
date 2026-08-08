@@ -46,7 +46,7 @@ export function HeaderUserDropdown({ userName }: HeaderUserDropdownProps) {
     <div ref={dropdownRef} className="relative">
       <button
         onClick={() => setDropdownOpen(!dropdownOpen)}
-        className="flex items-center gap-2 p-1.5 pr-3 rounded-xl hover:bg-muted transition-colors cursor-pointer"
+        className="flex items-center gap-2 p-1.5 pr-3 rounded-xl hover:bg-muted transition-colors"
       >
         <div className="h-8 w-8 rounded-full bg-linear-to-br from-primary/80 to-primary flex items-center justify-center text-primary-foreground text-sm font-medium shrink-0">
           {initial}
@@ -66,7 +66,7 @@ export function HeaderUserDropdown({ userName }: HeaderUserDropdownProps) {
         <div className="absolute right-0 mt-2 w-56 bg-card rounded-xl shadow-lg border border-border py-1 z-50">
           <div className="px-4 py-3 border-b border-border">
             <p className="text-sm font-medium text-foreground">{displayName}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Akun Personal</p>
+            <p className="text-sm text-muted-foreground mt-0.5">Akun Personal</p>
           </div>
 
           <div className="py-1">
@@ -76,7 +76,7 @@ export function HeaderUserDropdown({ userName }: HeaderUserDropdownProps) {
                 setDropdownOpen(false)
               }}
               disabled={logoutLoading}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-danger hover:bg-destructive/10 transition-colors disabled:opacity-50 cursor-pointer"
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-danger hover:bg-destructive/10 transition-colors disabled:opacity-50"
             >
               {logoutLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

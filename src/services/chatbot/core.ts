@@ -1,36 +1,6 @@
-import { type Message, type StreamChunk, type QuickReply, type AIModel } from "@/types/chatbot"
+import { type Message, type StreamChunk, type QuickReply } from "@/types/chatbot"
 import type { RAGContext, EnhancedRAGContext } from "@/types/rag"
 import { getJakartaDateString } from "@/lib/utils/format"
-
-const KNOWN_MODEL_METADATA: Record<
-  string,
-  Pick<AIModel, "name" | "description" | "pros" | "free">
-> = {
-  "llama3.1-8b": {
-    name: "Llama 3.1 8B",
-    description: "Model utama Cerebras untuk chat harian yang cepat dan ringan.",
-    pros: ["Respon cepat", "Cocok untuk pertanyaan langsung", "Efisien untuk percakapan umum"],
-    free: false,
-  },
-  "zai-glm-4.7": {
-    name: "GLM 4.7",
-    description: "Fallback yang lebih kuat untuk analisis dan penjelasan panjang.",
-    pros: ["Konteks lebih dalam", "Bagus untuk analisis", "Layak untuk pertanyaan kompleks"],
-    free: false,
-  },
-  "qwen-3-235b-a22b-instruct-2507": {
-    name: "Qwen 3 235B A22B",
-    description: "Fallback premium untuk reasoning dan instruksi yang lebih berat.",
-    pros: ["Reasoning kuat", "Stabil untuk instruksi rinci", "Bagus untuk jawaban panjang"],
-    free: false,
-  },
-  "gpt-oss-120b": {
-    name: "GPT OSS 120B",
-    description: "Fallback besar untuk percakapan kompleks dan multi-langkah.",
-    pros: ["Cocok untuk diskusi kompleks", "Penalaran luas", "Fleksibel untuk berbagai tugas"],
-    free: false,
-  },
-}
 
 const COMPLEX_KEYWORDS = [
   "analisis",
@@ -52,40 +22,6 @@ const COMPLEX_KEYWORDS = [
   "menurutmu",
 ]
 
-const humanizeModelId = (modelId: string): string => {
-  return modelId
-    .split("/")
-    .pop()
-    ?.split("-")
-    .map((part) => {
-      if (!part) return part
-      if (/^\d/.test(part)) return part.toUpperCase()
-      return part.charAt(0).toUpperCase() + part.slice(1)
-    })
-    .join(" ") || modelId
-}
-
-export const createAIModel = (modelId: string): AIModel => {
-  const known = KNOWN_MODEL_METADATA[modelId]
-
-  return {
-    id: modelId,
-    name: known?.name || humanizeModelId(modelId),
-    description: known?.description || "Model Cerebras untuk percakapan teks di SIKAS.",
-    pros: known?.pros || ["Chat teks", "Bisa dipakai sebagai model fallback"],
-    free: known?.free ?? false,
-  }
-}
-
-export const createModelCatalog = (modelIds: string[]): AIModel[] => {
-  const seen = new Set<string>()
-
-  return modelIds.filter(Boolean).filter((modelId) => {
-    if (seen.has(modelId)) return false
-    seen.add(modelId)
-    return true
-  }).map(createAIModel)
-}
 
 export const selectAutomaticModel = (
   messages: Message[],
