@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Keluaran `npm run build:check`. Tanpa ini eslint memindai bundle
+    // hasil build dan `npm run lint` membanjir error yang bukan milik src.
+    ".next-check/**",
   ]),
 ]);
 
