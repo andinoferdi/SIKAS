@@ -44,6 +44,133 @@ const parseScaledNumber = (value: string): number | null => {
   return Number.isFinite(parsed) ? parsed : null
 }
 
+/*
+  Nominal bentuk kata ("lima puluh ribu"). Tanpa ini kalimat sehari-hari tidak
+  tertangkap jalur deterministik dan terlempar ke LLM, yang belum tentu
+  mengeluarkan blok aksi sehingga transaksinya tidak pernah tercatat.
+*/
+const WORD_UNITS: Record<string, number> = {
+  nol: 0,
+  satu: 1,
+  dua: 2,
+  tiga: 3,
+  empat: 4,
+  lima: 5,
+  enam: 6,
+  tujuh: 7,
+  delapan: 8,
+  sembilan: 9,
+}
+
+const WORD_SCALES: Record<string, number> = {
+  ribu: 1_000,
+  juta: 1_000_000,
+  miliar: 1_000_000_000,
+  milyar: 1_000_000_000,
+}
+
+const WORD_TOKENS = [
+  "sembilan",
+  "sepuluh",
+  "sebelas",
+  "seratus",
+  "seribu",
+  "sejuta",
+  "delapan",
+  "tujuh",
+  "empat",
+  "enam",
+  "lima",
+  "tiga",
+  "satu",
+  "dua",
+  "nol",
+  "belas",
+  "puluh",
+  "ratus",
+  "ribu",
+  "juta",
+  "miliar",
+  "milyar",
+]
+
+const WORD_RUN_PATTERN = new RegExp(
+  `\\b((?:${WORD_TOKENS.join("|")})(?:\\s+(?:${WORD_TOKENS.join("|")}))*)\\b`,
+  "i"
+)
+
+const parseWordNumber = (phrase: string): number | null => {
+  let total = 0
+  let current = 0
+  let last = 0
+  let sawScale = false
+
+  for (const token of phrase.toLowerCase().split(/\s+/)) {
+    if (token in WORD_UNITS) {
+      last = WORD_UNITS[token]
+      continue
+    }
+
+    switch (token) {
+      case "sepuluh":
+        last = 10
+        break
+      case "sebelas":
+        last = 11
+        break
+      case "belas":
+        last = 10 + last
+        break
+      case "puluh":
+        current += (last || 1) * 10
+        last = 0
+        break
+      case "seratus":
+        current += 100
+        break
+      case "ratus":
+        current += (last || 1) * 100
+        last = 0
+        break
+      case "seribu":
+        total += 1_000
+        current = 0
+        last = 0
+        sawScale = true
+        break
+      case "sejuta":
+        total += 1_000_000
+        current = 0
+        last = 0
+        sawScale = true
+        break
+      default: {
+        const scale = WORD_SCALES[token]
+        if (!scale) return null
+        total += (current + last || 1) * scale
+        current = 0
+        last = 0
+        sawScale = true
+      }
+    }
+  }
+
+  /*
+    Tanpa satuan skala, "dua" pada kalimat biasa akan terbaca sebagai Rp 2.
+    Nominal bentuk kata hanya diterima bila menyebut ribu, juta, atau miliar.
+  */
+  if (!sawScale) return null
+
+  const amount = total + current + last
+  return amount > 0 ? amount : null
+}
+
+const extractAmountFromWords = (content: string): number | null => {
+  const match = content.match(WORD_RUN_PATTERN)
+  if (!match) return null
+  return parseWordNumber(match[1])
+}
+
 const extractAmountFromText = (content: string): number | null => {
   const unitMatch = content.match(/(?:rp\.?\s*)?(\d+(?:[.,]\d+)*)\s*(rb|ribu|jt|juta)\b/i)
   if (unitMatch) {
@@ -60,7 +187,7 @@ const extractAmountFromText = (content: string): number | null => {
     return parseScaledNumber(longNumberMatch[1])
   }
 
-  return null
+  return extractAmountFromWords(content)
 }
 
 const detectPaymentMethod = (content: string): "cash" | "mbanking" | null => {

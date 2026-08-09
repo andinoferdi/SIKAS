@@ -477,7 +477,16 @@ export async function POST(request: Request) {
           messages: apiMessages,
           stream: true,
           temperature: 0.7,
-          max_tokens: 1000,
+          /*
+            Seluruh model gratis OpenRouter saat ini adalah model reasoning, dan
+            token berpikirnya masuk ke delta.reasoning sambil tetap memotong
+            jatah max_tokens. Prompt CRUD membawa instruksi aksi ~4KB sehingga
+            model berpikir jauh lebih lama, jatah habis sebelum blok
+            [PENDING_ACTION] sempat ditutup, dan balasan datang kosong atau
+            terpotong. Reasoning dimatikan, jatah dinaikkan sebagai pengaman.
+          */
+          reasoning: { enabled: false },
+          max_tokens: 2000,
         }),
       })
 
@@ -510,9 +519,59 @@ export async function POST(request: Request) {
 
       const reader = response.body.getReader()
 
+      /*
+        OpenRouter tetap membalas 200 meski model tidak menghasilkan satu pun
+        token teks, misalnya saat seluruh jatah habis dipakai reasoning. Dulu
+        stream kosong itu diteruskan apa adanya dan user hanya melihat pesan
+        "tidak bisa memberikan respons" tanpa jejak apa pun di server. Chunk
+        awal ditahan dulu sampai ada teks sungguhan; bila tidak ada, model
+        berikutnya dicoba.
+      */
+      const prefix: Uint8Array[] = []
+      const peekDecoder = new TextDecoder()
+      let sawContent = false
+      let pending = ""
+
+      while (!sawContent) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        prefix.push(value)
+        pending += peekDecoder.decode(value, { stream: true })
+        const lines = pending.split("\n")
+        pending = lines.pop() || ""
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue
+          const data = line.slice(6)
+          if (data === "[DONE]") continue
+
+          try {
+            const chunk = JSON.parse(data) as StreamChunk
+            if (chunk.choices?.[0]?.delta?.content) {
+              sawContent = true
+              break
+            }
+          } catch {
+            continue
+          }
+        }
+      }
+
+      if (!sawContent) {
+        console.warn("[Chatbot] Model tidak menghasilkan teks jawaban", { modelId })
+        lastErrorMessage = `Model ${modelId} tidak menghasilkan teks jawaban.`
+        await reader.cancel().catch(() => undefined)
+        continue
+      }
+
       const stream = new ReadableStream<Uint8Array>({
         async start(controller) {
           try {
+            for (const chunk of prefix) {
+              controller.enqueue(chunk)
+            }
+
             while (true) {
               const { done, value } = await reader.read()
 
