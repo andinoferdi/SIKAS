@@ -7,11 +7,12 @@ import {
   resolveRequestedModelId,
 } from "@/lib/config/openrouter"
 import { errorResponse } from "@/lib/utils/api-response"
-import { formatShortDate } from "@/lib/utils/format"
+import { formatShortDate, getJakartaDateString } from "@/lib/utils/format"
 import { createSystemPrompt } from "@/services/chatbot"
 import {
   extractCreateTransactionPayload,
   extractEditTransactionUpdates,
+  extractSetBalanceTarget,
   isLikelyBalanceQuery,
   isLikelyDeleteLatestIntent,
   isLikelyEditLatestIntent,
@@ -311,6 +312,44 @@ const maybeHandleDeterministicIntent = async (
     Object.keys(editUpdates).length > 0 &&
     isLikelyEditLatestIntent(previousUserMessage) &&
     lastAssistantMessage.includes("Bagian mana yang mau diubah?")
+
+  const balanceTarget = extractSetBalanceTarget(message)
+  if (balanceTarget) {
+    if (!sessionUserId || !userContext) {
+      return createSseResponse(buildLoginRequiredMessage())
+    }
+
+    const methodLabel = getPaymentMethodLabel(balanceTarget.paymentMethod)
+    const current =
+      balanceTarget.paymentMethod === "mbanking"
+        ? userContext.balances.mbanking
+        : userContext.balances.cash
+    const difference = balanceTarget.target - current
+
+    if (difference === 0) {
+      return createSseResponse(
+        `Saldo ${methodLabel} kamu sudah ${formatAmount(balanceTarget.target)}, jadi tidak perlu penyesuaian.`
+      )
+    }
+
+    const payload: CreateTransactionPayload = {
+      amount: Math.abs(difference),
+      type: difference > 0 ? "income" : "expense",
+      category: "Lainnya",
+      payment_method: balanceTarget.paymentMethod,
+      transaction_date: getJakartaDateString(),
+      description: `Penyesuaian saldo ${methodLabel}`,
+    }
+
+    const arah = difference > 0 ? "menambah pemasukan" : "mencatat pengeluaran"
+    return createSseResponse(
+      `Saldo ${methodLabel} kamu saat ini ${formatAmount(current)}. Untuk mencapai ${formatAmount(
+        balanceTarget.target
+      )}, saya akan ${arah} ${formatAmount(Math.abs(difference))}. Mohon konfirmasi dulu ya.\n[PENDING_ACTION:create_transaction]${JSON.stringify(
+        payload
+      )}[/PENDING_ACTION]`
+    )
+  }
 
   if (isLikelyBalanceQuery(message)) {
     if (!sessionUserId || !userContext) {

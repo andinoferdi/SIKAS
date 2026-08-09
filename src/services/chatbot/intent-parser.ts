@@ -243,6 +243,16 @@ export function isLikelyBalanceQuery(content: string): boolean {
     return false
   }
 
+  /*
+    Perintah eksplisit menang atas kata benda yang kebetulan lewat. Tanpa ini,
+    kalimat seperti "catat pemasukan mbanking 500rb, anggap saja saldo awal"
+    terbaca sebagai pertanyaan saldo hanya karena mengandung kata "saldo" dan
+    "saya", lalu dijawab dengan angka saldo dan perintah mencatatnya hilang.
+  */
+  if (isLikelyCreateIntent(normalized)) {
+    return false
+  }
+
   if (/\b(set|atur|ubah)\b.*\bsaldo\b/i.test(normalized)) {
     return false
   }
@@ -252,6 +262,53 @@ export function isLikelyBalanceQuery(content: string): boolean {
   }
 
   return /\b(berapa|cek|lihat|tampilkan|saat ini|sekarang|saya|ku)\b/i.test(normalized)
+}
+
+/*
+  Angka telanjang hanya diterima pada posisi target ("... jadi 0"). Di teks
+  bebas angka pendek sengaja ditolak agar "beli 2 roti" tidak terbaca sebagai
+  Rp 2, tapi di sini angkanya tidak ambigu dan menyetel saldo ke nol itu sah.
+*/
+const extractBareTarget = (phrase: string): number | null => {
+  const match = phrase.match(/^\s*(?:rp\.?\s*)?(\d[\d.,]*)\s*(?:rupiah)?\s*$/i)
+  if (!match) return null
+
+  const digits = match[1].replace(/[^\d]/g, "")
+  if (!digits) return null
+
+  const parsed = Number.parseInt(digits, 10)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+export interface SetBalanceTarget {
+  paymentMethod: "cash" | "mbanking"
+  target: number
+}
+
+/*
+  "atur saldo mbanking jadi 500rb". Selisihnya dihitung di server lalu
+  dituangkan jadi transaksi penyesuaian, bukan menimpa kolom saldo, supaya
+  riwayat tetap nyambung. Sebelumnya seluruh aritmetika ini diserahkan ke LLM
+  lewat system prompt, dan model gratis kerap menjawab prosa tanpa blok aksi
+  atau salah hitung. Hitungan uang tidak boleh bergantung pada model bahasa.
+*/
+export function extractSetBalanceTarget(content: string): SetBalanceTarget | null {
+  const normalized = normalizeMessage(content)
+
+  if (!/\b(atur|set|ubah|jadikan|ganti)\b/.test(normalized)) return null
+  if (!/\bsaldo\b/.test(normalized)) return null
+
+  /* Wajib menyebut target, supaya "ubah saldo" tanpa angka tidak ikut tertangkap. */
+  const targetPhrase = normalized.match(/\b(?:jadi|menjadi|ke|jd)\b\s*(.+)$/)
+  if (!targetPhrase) return null
+
+  const target = extractAmountFromText(targetPhrase[1]) ?? extractBareTarget(targetPhrase[1])
+  if (target === null || target < 0) return null
+
+  const paymentMethod = detectPaymentMethod(normalized)
+  if (!paymentMethod) return null
+
+  return { paymentMethod, target }
 }
 
 export function isLikelyLatestTransactionQuery(content: string): boolean {
