@@ -4,6 +4,7 @@ import React from "react"
 import { Check, ChevronDown, Sparkles } from "lucide-react"
 import type { AIModel, ModelSelection } from "@/types/chatbot"
 import { cn } from "@/lib/utils"
+import { useLenisPanel } from "@/components/scroll"
 
 interface ModelSelectorProps {
   models: AIModel[]
@@ -27,6 +28,10 @@ export function ModelSelector({
       : selectedModel?.name || "Pilih model"
 
   const [isOpen, setIsOpen] = React.useState(false)
+  const listRef = React.useRef<HTMLDivElement>(null)
+
+  // Dropdown mount bersyarat, instance dibuat saat daftarnya muncul.
+  useLenisPanel(listRef, [isOpen])
 
   const handleSelect = (selection: ModelSelection) => {
     onSelectionChange(selection)
@@ -52,7 +57,10 @@ export function ModelSelector({
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div data-lenis-prevent className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg z-50 max-h-96 overflow-y-auto">
+          <div
+            ref={listRef}
+            className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg z-50 max-h-96 overflow-y-auto"
+          >
             <div className="p-2 space-y-1">
               <button
                 onClick={() => handleSelect({ mode: "auto" })}

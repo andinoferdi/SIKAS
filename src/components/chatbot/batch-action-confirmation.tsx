@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useRef } from "react"
 import { Check, XCircle, AlertTriangle, Trash2, Plus, Pencil } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { ChatbotAction, CreateTransactionPayload, ActionPayload } from "@/types/rag"
+import { useLenisPanel } from "@/components/scroll"
 
 export interface PendingAction {
   action: ChatbotAction
@@ -25,6 +26,12 @@ export function BatchActionConfirmation({
   isLoading = false,
 }: BatchActionConfirmationProps) {
   const [confirmationText, setConfirmationText] = useState("")
+  const createListRef = useRef<HTMLDivElement>(null)
+  const editListRef = useRef<HTMLDivElement>(null)
+
+  // Kedua daftar mount bersyarat sesuai jenis aksi batch-nya.
+  useLenisPanel(createListRef, [actions])
+  useLenisPanel(editListRef, [actions])
 
   const isBatchAction = actions.length === 1 && (
     actions[0].action === "batch_create_transactions" ||
@@ -140,7 +147,7 @@ export function BatchActionConfirmation({
       </div>
 
       {batchDetails?.type === "create" && batchDetails.items && (
-        <div data-lenis-prevent className="mb-3 space-y-1 max-h-32 overflow-y-auto">
+        <div ref={createListRef} className="mb-3 space-y-1 max-h-32 overflow-y-auto">
           {batchDetails.items.map((item) => (
             <div
               key={item.id}
@@ -162,7 +169,7 @@ export function BatchActionConfirmation({
       )}
 
       {batchDetails?.type === "edit" && batchDetails.items && (
-        <div data-lenis-prevent className="mb-3 space-y-1 max-h-32 overflow-y-auto">
+        <div ref={editListRef} className="mb-3 space-y-1 max-h-32 overflow-y-auto">
           <p className="text-sm text-muted-foreground mb-2">
             Transaksi yang akan diubah:
           </p>

@@ -5,6 +5,7 @@ import { Search, Loader2, X, TrendingUp, TrendingDown } from "lucide-react"
 import type { Transaction } from "@/types"
 import { formatCurrency, formatShortDate } from "@/lib/utils/format"
 import { cn } from "@/lib/utils"
+import { useLenisPanel } from "@/components/scroll"
 
 interface HeaderSearchProps {
   searchValue: string
@@ -30,6 +31,10 @@ export function HeaderSearch({
   onFocus,
 }: HeaderSearchProps) {
   const searchRef = useRef<HTMLDivElement>(null)
+  const resultsRef = useRef<HTMLDivElement>(null)
+
+  // Daftar hasil mount bersyarat, jadi instance dibuat ulang saat ia muncul.
+  useLenisPanel(resultsRef, [showSearchResults, searchResults])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -69,7 +74,7 @@ export function HeaderSearch({
       {showSearchResults && (
         <div className="absolute top-full left-0 right-0 mt-2 bg-card rounded-xl shadow-lg border border-border overflow-hidden z-50">
           {searchResults.length > 0 ? (
-            <div data-lenis-prevent className="max-h-80 overflow-y-auto">
+            <div ref={resultsRef} className="max-h-80 overflow-y-auto">
               {searchResults.map((transaction) => (
                 <button
                   key={transaction.id}

@@ -1,22 +1,28 @@
 "use client"
 
 import { useEffect } from "react"
-import { usePathname } from "next/navigation"
 import Lenis from "lenis"
 import { gsap } from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
+import { LENIS_PANEL_ATTRIBUTE } from "@/components/scroll/use-lenis-panel"
 
 gsap.registerPlugin(ScrollTrigger)
 
 /*
   Lenis memanggil preventDefault pada setiap event roda, jadi container yang
-  bisa di-scroll sendiri (modal, panel chatbot, dropdown) ikut mati: rodanya
-  ditelan dan pengguna terpaksa menyeret scrollbar. Menandai tiap container
-  dengan data-lenis-prevent sudah dilakukan, tapi cara itu bergantung pada
-  ingatan dan pernah gagal di repo ini. Pemeriksaan ini menutup celahnya:
-  elemen mana pun yang memang punya area gulir sendiri otomatis dilepas.
+  bisa digulir sendiri ikut mati kalau dibiarkan: rodanya ditelan dan pengguna
+  terpaksa menyeret scrollbar.
+
+  Panel yang memakai useLenisPanel punya Lenis sendiri dan menandai dirinya,
+  jadi root harus melepasnya. Bukan dengan mengabaikan event, melainkan dengan
+  tidak mencegatnya sama sekali, sebab root tetap perlu menerima event itu saat
+  panel sudah mentok dan menyerahkan guliran ke halaman.
+
+  Container yang bisa digulir tapi belum memakai hook tetap dicegat sebagai
+  jaring pengaman, supaya minimal bisa digulir secara native alih-alih mati.
 */
-const bisaDiScrollSendiri = (node: HTMLElement): boolean => {
+const perluDilepasDariLenisRoot = (node: HTMLElement): boolean => {
+  if (node.hasAttribute(LENIS_PANEL_ATTRIBUTE)) return false
   if (node.hasAttribute("data-lenis-prevent")) return true
 
   const { overflowY, overflowX } = getComputedStyle(node)
@@ -33,8 +39,6 @@ const bisaDiScrollSendiri = (node: HTMLElement): boolean => {
   tetap berfungsi penuh.
 */
 export function LenisProvider({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname()
-
   // Setiap muat ulang halaman mulai dari atas, browser tidak boleh memulihkan
   // posisi scroll sebelumnya. Sekali saat mount, bukan tiap pindah halaman.
   useEffect(() => {
@@ -43,18 +47,14 @@ export function LenisProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   useEffect(() => {
-    /*
-      Smooth scroll hanya untuk halaman publik, tempat ia memang dipasangkan
-      dengan animasi ScrollTrigger. Dashboard adalah alat kerja yang dipakai
-      berulang setiap hari, dan jeda gulir di sana hanya menambah beban tanpa
-      memberi apa pun.
-    */
-    if (pathname?.startsWith("/dashboard")) return
-
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches
     if (reduce) return
 
-    const lenis = new Lenis({ autoRaf: false, lerp: 0.12, prevent: bisaDiScrollSendiri })
+    const lenis = new Lenis({
+      autoRaf: false,
+      lerp: 0.12,
+      prevent: perluDilepasDariLenisRoot,
+    })
     ;(window as unknown as { __lenis?: Lenis }).__lenis = lenis
 
     lenis.on("scroll", ScrollTrigger.update)
@@ -67,7 +67,7 @@ export function LenisProvider({ children }: { children: React.ReactNode }) {
       lenis.destroy()
       delete (window as unknown as { __lenis?: Lenis }).__lenis
     }
-  }, [pathname])
+  }, [])
 
   return <>{children}</>
 }

@@ -37,7 +37,7 @@ const MemoizedMarkdown = memo(
           </a>
         ),
         table: ({ children }) => (
-          <div data-lenis-prevent className="my-2 w-full overflow-y-auto">
+          <div className="my-2 w-full overflow-y-auto">
             <table className="w-full text-sm border-collapse border border-border">
               {children}
             </table>

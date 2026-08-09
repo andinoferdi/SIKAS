@@ -1,5 +1,6 @@
 "use client"
 
+import { useRef } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui"
 import type { Transaction } from "@/types"
@@ -7,6 +8,7 @@ import { useUpdateTransaction } from "@/hooks"
 import { Loader2, X } from "lucide-react"
 import { useTransactionForm } from "@/blocks/dashboard/components/hooks/use-transaction-form"
 import { TransactionFormFields } from "@/blocks/dashboard/components/transaction-form-fields"
+import { useLenisPanel } from "@/components/scroll"
 
 interface EditTransactionModalProps {
   transaction: Transaction
@@ -16,6 +18,9 @@ interface EditTransactionModalProps {
 
 export function EditTransactionModal({ transaction, onClose, onSuccess }: EditTransactionModalProps) {
   const updateMutation = useUpdateTransaction()
+  const panelRef = useRef<HTMLDivElement>(null)
+
+  useLenisPanel(panelRef)
 
   const {
     form,
@@ -73,7 +78,7 @@ export function EditTransactionModal({ transaction, onClose, onSuccess }: EditTr
   return (
     <div className="fixed inset-0 bg-overlay flex items-center justify-center z-50 p-4">
       <div
-        data-lenis-prevent
+        ref={panelRef}
         className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-xl bg-card"
       >
         <div className="flex items-center justify-between p-6 border-b border-border">
