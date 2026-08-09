@@ -56,7 +56,7 @@ export function MobileSearchModal({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        <div data-lenis-prevent className="flex-1 overflow-y-auto">
           {searchLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-6 w-6 text-primary animate-spin" />

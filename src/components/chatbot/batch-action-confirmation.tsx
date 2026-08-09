@@ -140,7 +140,7 @@ export function BatchActionConfirmation({
       </div>
 
       {batchDetails?.type === "create" && batchDetails.items && (
-        <div className="mb-3 space-y-1 max-h-32 overflow-y-auto">
+        <div data-lenis-prevent className="mb-3 space-y-1 max-h-32 overflow-y-auto">
           {batchDetails.items.map((item) => (
             <div
               key={item.id}
@@ -162,7 +162,7 @@ export function BatchActionConfirmation({
       )}
 
       {batchDetails?.type === "edit" && batchDetails.items && (
-        <div className="mb-3 space-y-1 max-h-32 overflow-y-auto">
+        <div data-lenis-prevent className="mb-3 space-y-1 max-h-32 overflow-y-auto">
           <p className="text-sm text-muted-foreground mb-2">
             Transaksi yang akan diubah:
           </p>

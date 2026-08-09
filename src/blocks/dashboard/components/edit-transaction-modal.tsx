@@ -72,7 +72,10 @@ export function EditTransactionModal({ transaction, onClose, onSuccess }: EditTr
 
   return (
     <div className="fixed inset-0 bg-overlay flex items-center justify-center z-50 p-4">
-      <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-xl bg-card">
+      <div
+        data-lenis-prevent
+        className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-xl bg-card"
+      >
         <div className="flex items-center justify-between p-6 border-b border-border">
           <h2 className="text-lg font-semibold text-foreground">Edit Transaksi</h2>
           <button
