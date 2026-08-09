@@ -46,9 +46,9 @@ export function HeaderUserDropdown({ userName }: HeaderUserDropdownProps) {
     <div ref={dropdownRef} className="relative">
       <button
         onClick={() => setDropdownOpen(!dropdownOpen)}
-        className="flex items-center gap-2 p-1.5 pr-3 rounded-xl hover:bg-muted transition-colors"
+        className="flex min-h-11 items-center gap-2 rounded-xl p-1.5 pr-3 transition-colors hover:bg-muted"
       >
-        <div className="h-8 w-8 rounded-full bg-linear-to-br from-primary/80 to-primary flex items-center justify-center text-primary-foreground text-sm font-medium shrink-0">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-solid text-sm font-medium text-primary-foreground">
           {initial}
         </div>
         <span className="hidden sm:block text-sm font-medium text-foreground max-w-24 truncate">

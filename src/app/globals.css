@@ -10,6 +10,11 @@
   --primary: #0ea5e9;
   --primary-foreground: #ffffff;
   --primary-surface: #0ea5e9;
+  /* Untuk permukaan terisi yang menanggung teks putih. #0ea5e9 hanya 2,77:1
+     dengan putih, sedangkan --sky-700 mencapai 5,93:1. Biru terang tetap
+     dipakai untuk teks, ikon, dan border, tempat ia tidak menanggung teks putih. */
+  --primary-solid: #0369a1; /* sky-700 */
+  --primary-solid-hover: #075985; /* sky-800 */
   --secondary: #f1f5f9;
   --secondary-foreground: #0f172a;
   --muted: #f1f5f9;
@@ -58,10 +63,12 @@
   --beige-900: var(--sky-900);
   --beige-950: var(--sky-900);
 
-  --gradient-mbanking-from: #0ea5e9;
-  --gradient-mbanking-to: #0284c7;
-  --gradient-cash-from: #10b981;
-  --gradient-cash-to: #059669;
+  /* Warna aksen sumber dana. Dipakai sebagai chip ikon, bukan permukaan kartu.
+     Nilainya sengaja lebih gelap dari biru dan hijau identitas karena ikon
+     berwarna menanggung ambang kontras 3:1. #0ea5e9 hanya 2,77:1 dan
+     #10b981 hanya 2,1:1 di atas putih, keduanya gagal. */
+  --fund-mbanking: #0284c7; /* sky-600 */
+  --fund-cash: #047857;
 
   --input-bg: #ffffff;
   --input-border: #e2e8f0;
@@ -181,6 +188,8 @@
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary-surface: var(--primary-surface);
+  --color-primary-solid: var(--primary-solid);
+  --color-primary-solid-hover: var(--primary-solid-hover);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
@@ -220,10 +229,8 @@
   --color-beige-900: var(--beige-900);
   --color-beige-950: var(--beige-950);
 
-  --color-gradient-mbanking-from: var(--gradient-mbanking-from);
-  --color-gradient-mbanking-to: var(--gradient-mbanking-to);
-  --color-gradient-cash-from: var(--gradient-cash-from);
-  --color-gradient-cash-to: var(--gradient-cash-to);
+  --color-fund-mbanking: var(--fund-mbanking);
+  --color-fund-cash: var(--fund-cash);
 
   --color-neutral-50: var(--neutral-50);
   --color-neutral-100: var(--neutral-100);

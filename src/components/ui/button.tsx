@@ -2,7 +2,12 @@ import { cn } from "@/lib/utils"
 import { type ButtonHTMLAttributes, forwardRef } from "react"
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "outline" | "ghost" | "danger"
+  /**
+   * `primary` memakai biru terang identitas dan sengaja dipertahankan di landing.
+   * `primary-solid` memakai biru gelap agar teks putih di atasnya lolos kontras,
+   * dipakai untuk aksi utama di dashboard yang ditekan berulang setiap hari.
+   */
+  variant?: "primary" | "primary-solid" | "secondary" | "outline" | "ghost" | "danger"
   size?: "sm" | "md" | "lg"
 }
 
@@ -13,17 +18,22 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         disabled={disabled}
         className={cn(
-          "inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed",
+          "inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed",
           {
-            "bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 shadow-sm hover:shadow-md focus:ring-primary/50":
+            "bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 shadow-sm hover:shadow-md focus:ring-primary/50 disabled:opacity-50":
               variant === "primary",
-            "bg-secondary text-secondary-foreground hover:bg-secondary/80 active:bg-secondary/70 focus:ring-muted-foreground/50":
+            // Disabled tidak memudarkan tombol. Memudarkan permukaan terisi
+            // membuat teks putih di atasnya jatuh ke sekitar 2:1. Yang dipakai
+            // permukaan netral dengan teks gelap, jelas mati dan tetap terbaca.
+            "bg-primary-solid text-primary-foreground hover:bg-primary-solid-hover active:bg-primary-solid-hover focus:ring-primary/50 disabled:bg-muted disabled:text-muted-foreground disabled:hover:bg-muted":
+              variant === "primary-solid",
+            "bg-secondary text-secondary-foreground hover:bg-secondary/80 active:bg-secondary/70 focus:ring-muted-foreground/50 disabled:opacity-50":
               variant === "secondary",
-            "border border-border bg-card text-foreground hover:bg-muted hover:border-muted-foreground/30 active:bg-muted/80 focus:ring-muted-foreground/50":
+            "border border-border bg-card text-foreground hover:bg-muted hover:border-muted-foreground/30 active:bg-muted/80 focus:ring-muted-foreground/50 disabled:opacity-50":
               variant === "outline",
-            "bg-transparent text-foreground hover:bg-muted active:bg-muted/80 focus:ring-muted-foreground/50":
+            "bg-transparent text-foreground hover:bg-muted active:bg-muted/80 focus:ring-muted-foreground/50 disabled:opacity-50":
               variant === "ghost",
-            "bg-destructive text-destructive-foreground hover:bg-destructive/90 active:bg-destructive/80 shadow-sm hover:shadow-md focus:ring-destructive/50":
+            "bg-destructive text-destructive-foreground hover:bg-destructive/90 active:bg-destructive/80 shadow-sm hover:shadow-md focus:ring-destructive/50 disabled:opacity-50":
               variant === "danger",
           },
           {

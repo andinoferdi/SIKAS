@@ -118,6 +118,7 @@ const SelectContent = React.forwardRef<
           </div>
         )}
         <SelectPrimitive.Viewport
+          data-lenis-prevent
           className={cn(
             "p-1 overflow-x-hidden overflow-y-auto",
             hasSearch ? "max-h-75" : "max-h-100",

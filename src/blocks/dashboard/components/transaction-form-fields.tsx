@@ -17,6 +17,7 @@ import type { TransactionType, Category } from "@/types"
 import { cn } from "@/lib/utils"
 import { formatCurrency } from "@/lib/utils/format"
 import { Banknote, Smartphone, AlertCircle } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
 import type { UseFormRegister, FieldErrors } from "react-hook-form"
 import type { TransactionFormData } from "@/lib/validations"
 
@@ -38,6 +39,60 @@ interface TransactionFormFieldsProps {
   onPaymentMethodChange: (method: "cash" | "mbanking") => void
   onDateChange: (date: string) => void
   compact?: boolean
+}
+
+interface PaymentMethodOptionProps {
+  icon: LucideIcon
+  label: string
+  fundTone: string
+  selected: boolean
+  compact: boolean
+  onSelect: () => void
+}
+
+function PaymentMethodOption({
+  icon: Icon,
+  label,
+  fundTone,
+  selected,
+  compact,
+  onSelect,
+}: PaymentMethodOptionProps) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={selected}
+      className={cn(
+        "flex min-h-11 items-center gap-2 rounded-xl border-2 p-3 transition-colors sm:gap-3 sm:p-4",
+        compact && "justify-center gap-2",
+        selected
+          ? "border-primary bg-primary/5"
+          : "border-border hover:border-muted-foreground/30",
+      )}
+    >
+      {compact ? (
+        <Icon className={cn("h-5 w-5 shrink-0", selected ? fundTone : "text-muted-foreground")} />
+      ) : (
+        <div
+          className={cn(
+            "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg sm:h-10 sm:w-10",
+            selected ? "bg-primary/10" : "bg-muted",
+          )}
+        >
+          <Icon className={cn("h-4 w-4 sm:h-5 sm:w-5", selected ? fundTone : "text-muted-foreground")} />
+        </div>
+      )}
+      <span
+        className={cn(
+          "truncate text-sm",
+          selected ? "font-semibold text-foreground" : "font-medium text-muted-foreground",
+        )}
+      >
+        {label}
+      </span>
+    </button>
+  )
 }
 
 export const TransactionFormFields = memo(function TransactionFormFields({
@@ -136,76 +191,22 @@ export const TransactionFormFields = memo(function TransactionFormFields({
       <div>
         <label className="block text-sm font-medium text-card-foreground mb-2">Metode Pembayaran</label>
         <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={() => onPaymentMethodChange("cash")}
-            className={cn(
-              "flex items-center gap-3 p-4 rounded-xl border-2 transition-all",
-              compact && "justify-center gap-2",
-              paymentMethod === "cash"
-                ? "border-primary bg-primary/10"
-                : "border-border hover:border-muted-foreground/30"
-            )}
-          >
-            {!compact && (
-              <div className={cn(
-                "w-10 h-10 rounded-xl flex items-center justify-center",
-                paymentMethod === "cash" ? "bg-primary/20" : "bg-muted"
-              )}>
-                <Banknote className={cn(
-                  "h-5 w-5",
-                  paymentMethod === "cash" ? "text-primary" : "text-muted-foreground"
-                )} />
-              </div>
-            )}
-            {compact && (
-              <Banknote className={cn(
-                "h-5 w-5",
-                paymentMethod === "cash" ? "text-primary" : "text-muted-foreground"
-              )} />
-            )}
-            <span className={cn(
-              "font-medium text-sm",
-              paymentMethod === "cash" ? "text-primary" : "text-muted-foreground"
-            )}>
-              Cash
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => onPaymentMethodChange("mbanking")}
-            className={cn(
-              "flex items-center gap-3 p-4 rounded-xl border-2 transition-all",
-              compact && "justify-center gap-2",
-              paymentMethod === "mbanking"
-                ? "border-primary bg-primary/10"
-                : "border-border hover:border-muted-foreground/30"
-            )}
-          >
-            {!compact && (
-              <div className={cn(
-                "w-10 h-10 rounded-xl flex items-center justify-center",
-                paymentMethod === "mbanking" ? "bg-primary/20" : "bg-muted"
-              )}>
-                <Smartphone className={cn(
-                  "h-5 w-5",
-                  paymentMethod === "mbanking" ? "text-primary" : "text-muted-foreground"
-                )} />
-              </div>
-            )}
-            {compact && (
-              <Smartphone className={cn(
-                "h-5 w-5",
-                paymentMethod === "mbanking" ? "text-primary" : "text-muted-foreground"
-              )} />
-            )}
-            <span className={cn(
-              "font-medium text-sm",
-              paymentMethod === "mbanking" ? "text-primary" : "text-muted-foreground"
-            )}>
-              M-Banking
-            </span>
-          </button>
+          <PaymentMethodOption
+            icon={Banknote}
+            label="Cash"
+            fundTone="text-fund-cash"
+            selected={paymentMethod === "cash"}
+            compact={compact}
+            onSelect={() => onPaymentMethodChange("cash")}
+          />
+          <PaymentMethodOption
+            icon={Smartphone}
+            label="M-Banking"
+            fundTone="text-fund-mbanking"
+            selected={paymentMethod === "mbanking"}
+            compact={compact}
+            onSelect={() => onPaymentMethodChange("mbanking")}
+          />
         </div>
       </div>
 

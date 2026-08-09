@@ -7,11 +7,12 @@ import {
   resolveRequestedModelId,
 } from "@/lib/config/openrouter"
 import { errorResponse } from "@/lib/utils/api-response"
-import { formatShortDate } from "@/lib/utils/format"
+import { formatShortDate, getJakartaDateString } from "@/lib/utils/format"
 import { createSystemPrompt } from "@/services/chatbot"
 import {
   extractCreateTransactionPayload,
   extractEditTransactionUpdates,
+  extractSetBalanceTarget,
   isLikelyBalanceQuery,
   isLikelyDeleteLatestIntent,
   isLikelyEditLatestIntent,
@@ -312,6 +313,44 @@ const maybeHandleDeterministicIntent = async (
     isLikelyEditLatestIntent(previousUserMessage) &&
     lastAssistantMessage.includes("Bagian mana yang mau diubah?")
 
+  const balanceTarget = extractSetBalanceTarget(message)
+  if (balanceTarget) {
+    if (!sessionUserId || !userContext) {
+      return createSseResponse(buildLoginRequiredMessage())
+    }
+
+    const methodLabel = getPaymentMethodLabel(balanceTarget.paymentMethod)
+    const current =
+      balanceTarget.paymentMethod === "mbanking"
+        ? userContext.balances.mbanking
+        : userContext.balances.cash
+    const difference = balanceTarget.target - current
+
+    if (difference === 0) {
+      return createSseResponse(
+        `Saldo ${methodLabel} kamu sudah ${formatAmount(balanceTarget.target)}, jadi tidak perlu penyesuaian.`
+      )
+    }
+
+    const payload: CreateTransactionPayload = {
+      amount: Math.abs(difference),
+      type: difference > 0 ? "income" : "expense",
+      category: "Lainnya",
+      payment_method: balanceTarget.paymentMethod,
+      transaction_date: getJakartaDateString(),
+      description: `Penyesuaian saldo ${methodLabel}`,
+    }
+
+    const arah = difference > 0 ? "menambah pemasukan" : "mencatat pengeluaran"
+    return createSseResponse(
+      `Saldo ${methodLabel} kamu saat ini ${formatAmount(current)}. Untuk mencapai ${formatAmount(
+        balanceTarget.target
+      )}, saya akan ${arah} ${formatAmount(Math.abs(difference))}. Mohon konfirmasi dulu ya.\n[PENDING_ACTION:create_transaction]${JSON.stringify(
+        payload
+      )}[/PENDING_ACTION]`
+    )
+  }
+
   if (isLikelyBalanceQuery(message)) {
     if (!sessionUserId || !userContext) {
       return createSseResponse(buildLoginRequiredMessage())
@@ -477,7 +516,16 @@ export async function POST(request: Request) {
           messages: apiMessages,
           stream: true,
           temperature: 0.7,
-          max_tokens: 1000,
+          /*
+            Seluruh model gratis OpenRouter saat ini adalah model reasoning, dan
+            token berpikirnya masuk ke delta.reasoning sambil tetap memotong
+            jatah max_tokens. Prompt CRUD membawa instruksi aksi ~4KB sehingga
+            model berpikir jauh lebih lama, jatah habis sebelum blok
+            [PENDING_ACTION] sempat ditutup, dan balasan datang kosong atau
+            terpotong. Reasoning dimatikan, jatah dinaikkan sebagai pengaman.
+          */
+          reasoning: { enabled: false },
+          max_tokens: 2000,
         }),
       })
 
@@ -510,9 +558,59 @@ export async function POST(request: Request) {
 
       const reader = response.body.getReader()
 
+      /*
+        OpenRouter tetap membalas 200 meski model tidak menghasilkan satu pun
+        token teks, misalnya saat seluruh jatah habis dipakai reasoning. Dulu
+        stream kosong itu diteruskan apa adanya dan user hanya melihat pesan
+        "tidak bisa memberikan respons" tanpa jejak apa pun di server. Chunk
+        awal ditahan dulu sampai ada teks sungguhan; bila tidak ada, model
+        berikutnya dicoba.
+      */
+      const prefix: Uint8Array[] = []
+      const peekDecoder = new TextDecoder()
+      let sawContent = false
+      let pending = ""
+
+      while (!sawContent) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        prefix.push(value)
+        pending += peekDecoder.decode(value, { stream: true })
+        const lines = pending.split("\n")
+        pending = lines.pop() || ""
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue
+          const data = line.slice(6)
+          if (data === "[DONE]") continue
+
+          try {
+            const chunk = JSON.parse(data) as StreamChunk
+            if (chunk.choices?.[0]?.delta?.content) {
+              sawContent = true
+              break
+            }
+          } catch {
+            continue
+          }
+        }
+      }
+
+      if (!sawContent) {
+        console.warn("[Chatbot] Model tidak menghasilkan teks jawaban", { modelId })
+        lastErrorMessage = `Model ${modelId} tidak menghasilkan teks jawaban.`
+        await reader.cancel().catch(() => undefined)
+        continue
+      }
+
       const stream = new ReadableStream<Uint8Array>({
         async start(controller) {
           try {
+            for (const chunk of prefix) {
+              controller.enqueue(chunk)
+            }
+
             while (true) {
               const { done, value } = await reader.read()
 

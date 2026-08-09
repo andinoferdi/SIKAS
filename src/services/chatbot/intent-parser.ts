@@ -44,6 +44,133 @@ const parseScaledNumber = (value: string): number | null => {
   return Number.isFinite(parsed) ? parsed : null
 }
 
+/*
+  Nominal bentuk kata ("lima puluh ribu"). Tanpa ini kalimat sehari-hari tidak
+  tertangkap jalur deterministik dan terlempar ke LLM, yang belum tentu
+  mengeluarkan blok aksi sehingga transaksinya tidak pernah tercatat.
+*/
+const WORD_UNITS: Record<string, number> = {
+  nol: 0,
+  satu: 1,
+  dua: 2,
+  tiga: 3,
+  empat: 4,
+  lima: 5,
+  enam: 6,
+  tujuh: 7,
+  delapan: 8,
+  sembilan: 9,
+}
+
+const WORD_SCALES: Record<string, number> = {
+  ribu: 1_000,
+  juta: 1_000_000,
+  miliar: 1_000_000_000,
+  milyar: 1_000_000_000,
+}
+
+const WORD_TOKENS = [
+  "sembilan",
+  "sepuluh",
+  "sebelas",
+  "seratus",
+  "seribu",
+  "sejuta",
+  "delapan",
+  "tujuh",
+  "empat",
+  "enam",
+  "lima",
+  "tiga",
+  "satu",
+  "dua",
+  "nol",
+  "belas",
+  "puluh",
+  "ratus",
+  "ribu",
+  "juta",
+  "miliar",
+  "milyar",
+]
+
+const WORD_RUN_PATTERN = new RegExp(
+  `\\b((?:${WORD_TOKENS.join("|")})(?:\\s+(?:${WORD_TOKENS.join("|")}))*)\\b`,
+  "i"
+)
+
+const parseWordNumber = (phrase: string): number | null => {
+  let total = 0
+  let current = 0
+  let last = 0
+  let sawScale = false
+
+  for (const token of phrase.toLowerCase().split(/\s+/)) {
+    if (token in WORD_UNITS) {
+      last = WORD_UNITS[token]
+      continue
+    }
+
+    switch (token) {
+      case "sepuluh":
+        last = 10
+        break
+      case "sebelas":
+        last = 11
+        break
+      case "belas":
+        last = 10 + last
+        break
+      case "puluh":
+        current += (last || 1) * 10
+        last = 0
+        break
+      case "seratus":
+        current += 100
+        break
+      case "ratus":
+        current += (last || 1) * 100
+        last = 0
+        break
+      case "seribu":
+        total += 1_000
+        current = 0
+        last = 0
+        sawScale = true
+        break
+      case "sejuta":
+        total += 1_000_000
+        current = 0
+        last = 0
+        sawScale = true
+        break
+      default: {
+        const scale = WORD_SCALES[token]
+        if (!scale) return null
+        total += (current + last || 1) * scale
+        current = 0
+        last = 0
+        sawScale = true
+      }
+    }
+  }
+
+  /*
+    Tanpa satuan skala, "dua" pada kalimat biasa akan terbaca sebagai Rp 2.
+    Nominal bentuk kata hanya diterima bila menyebut ribu, juta, atau miliar.
+  */
+  if (!sawScale) return null
+
+  const amount = total + current + last
+  return amount > 0 ? amount : null
+}
+
+const extractAmountFromWords = (content: string): number | null => {
+  const match = content.match(WORD_RUN_PATTERN)
+  if (!match) return null
+  return parseWordNumber(match[1])
+}
+
 const extractAmountFromText = (content: string): number | null => {
   const unitMatch = content.match(/(?:rp\.?\s*)?(\d+(?:[.,]\d+)*)\s*(rb|ribu|jt|juta)\b/i)
   if (unitMatch) {
@@ -60,7 +187,7 @@ const extractAmountFromText = (content: string): number | null => {
     return parseScaledNumber(longNumberMatch[1])
   }
 
-  return null
+  return extractAmountFromWords(content)
 }
 
 const detectPaymentMethod = (content: string): "cash" | "mbanking" | null => {
@@ -116,6 +243,16 @@ export function isLikelyBalanceQuery(content: string): boolean {
     return false
   }
 
+  /*
+    Perintah eksplisit menang atas kata benda yang kebetulan lewat. Tanpa ini,
+    kalimat seperti "catat pemasukan mbanking 500rb, anggap saja saldo awal"
+    terbaca sebagai pertanyaan saldo hanya karena mengandung kata "saldo" dan
+    "saya", lalu dijawab dengan angka saldo dan perintah mencatatnya hilang.
+  */
+  if (isLikelyCreateIntent(normalized)) {
+    return false
+  }
+
   if (/\b(set|atur|ubah)\b.*\bsaldo\b/i.test(normalized)) {
     return false
   }
@@ -125,6 +262,53 @@ export function isLikelyBalanceQuery(content: string): boolean {
   }
 
   return /\b(berapa|cek|lihat|tampilkan|saat ini|sekarang|saya|ku)\b/i.test(normalized)
+}
+
+/*
+  Angka telanjang hanya diterima pada posisi target ("... jadi 0"). Di teks
+  bebas angka pendek sengaja ditolak agar "beli 2 roti" tidak terbaca sebagai
+  Rp 2, tapi di sini angkanya tidak ambigu dan menyetel saldo ke nol itu sah.
+*/
+const extractBareTarget = (phrase: string): number | null => {
+  const match = phrase.match(/^\s*(?:rp\.?\s*)?(\d[\d.,]*)\s*(?:rupiah)?\s*$/i)
+  if (!match) return null
+
+  const digits = match[1].replace(/[^\d]/g, "")
+  if (!digits) return null
+
+  const parsed = Number.parseInt(digits, 10)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+export interface SetBalanceTarget {
+  paymentMethod: "cash" | "mbanking"
+  target: number
+}
+
+/*
+  "atur saldo mbanking jadi 500rb". Selisihnya dihitung di server lalu
+  dituangkan jadi transaksi penyesuaian, bukan menimpa kolom saldo, supaya
+  riwayat tetap nyambung. Sebelumnya seluruh aritmetika ini diserahkan ke LLM
+  lewat system prompt, dan model gratis kerap menjawab prosa tanpa blok aksi
+  atau salah hitung. Hitungan uang tidak boleh bergantung pada model bahasa.
+*/
+export function extractSetBalanceTarget(content: string): SetBalanceTarget | null {
+  const normalized = normalizeMessage(content)
+
+  if (!/\b(atur|set|ubah|jadikan|ganti)\b/.test(normalized)) return null
+  if (!/\bsaldo\b/.test(normalized)) return null
+
+  /* Wajib menyebut target, supaya "ubah saldo" tanpa angka tidak ikut tertangkap. */
+  const targetPhrase = normalized.match(/\b(?:jadi|menjadi|ke|jd)\b\s*(.+)$/)
+  if (!targetPhrase) return null
+
+  const target = extractAmountFromText(targetPhrase[1]) ?? extractBareTarget(targetPhrase[1])
+  if (target === null || target < 0) return null
+
+  const paymentMethod = detectPaymentMethod(normalized)
+  if (!paymentMethod) return null
+
+  return { paymentMethod, target }
 }
 
 export function isLikelyLatestTransactionQuery(content: string): boolean {

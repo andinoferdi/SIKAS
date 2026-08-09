@@ -81,7 +81,7 @@ export function DashboardHeader() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setMobileSearchOpen(true)}
-              className="md:hidden p-2.5 rounded-xl hover:bg-muted transition-colors"
+              className="flex h-11 w-11 items-center justify-center rounded-xl transition-colors hover:bg-muted md:hidden"
               aria-label="Search"
             >
               <Search className="h-5 w-5 text-muted-foreground" />

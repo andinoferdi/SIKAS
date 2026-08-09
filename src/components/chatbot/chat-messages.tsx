@@ -7,6 +7,7 @@ import { ChatMessage } from "@/components/chatbot/chat-message"
 import { QuickReplies } from "@/components/chatbot/quick-replies"
 import { BatchActionConfirmation, type PendingAction } from "@/components/chatbot/batch-action-confirmation"
 import { isBatchAction } from "@/components/chatbot/utils/action-parser"
+import { useLenisPanel } from "@/components/scroll"
 
 interface ChatMessagesProps {
   messages: Message[]
@@ -31,14 +32,23 @@ export const ChatMessages = memo(function ChatMessages({
   isLoading,
   quickRepliesLabel,
 }: ChatMessagesProps) {
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
+  useLenisPanel(containerRef)
+
+  /*
+    Menempel ke pesan terbaru dengan lompatan instan pada container, bukan
+    scrollIntoView beranimasi. Animasi smooth milik browser berjalan lintas
+    frame dan berebut dengan Lenis yang menulis scrollTop tiap frame, sedangkan
+    lompatan instan diserap Lenis lalu disinkronkan.
+  */
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    const el = containerRef.current
+    if (el) el.scrollTo({ top: el.scrollHeight })
   }, [messages])
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+    <div ref={containerRef} className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
       {messages.map((message) => (
         <ChatMessage key={message.id} message={message} />
       ))}
@@ -93,7 +103,6 @@ export const ChatMessages = memo(function ChatMessages({
         )
       )}
 
-      <div ref={messagesEndRef} />
     </div>
   )
 })

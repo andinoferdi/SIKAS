@@ -1,9 +1,11 @@
 "use client"
 
+import { useRef } from "react"
 import { Search, X, Loader2, TrendingUp, TrendingDown } from "lucide-react"
 import type { Transaction } from "@/types"
 import { formatCurrency, formatShortDate } from "@/lib/utils/format"
 import { cn } from "@/lib/utils"
+import { useLenisPanel } from "@/components/scroll"
 
 interface MobileSearchModalProps {
   isOpen: boolean
@@ -26,6 +28,10 @@ export function MobileSearchModal({
   onClearSearch,
   onResultClick,
 }: MobileSearchModalProps) {
+  const resultsRef = useRef<HTMLDivElement>(null)
+
+  useLenisPanel(resultsRef, [isOpen, searchResults])
+
   if (!isOpen) return null
 
   const handleClose = () => {
@@ -39,7 +45,7 @@ export function MobileSearchModal({
         <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
           <button
             onClick={handleClose}
-            className="p-2 -ml-2 rounded-lg hover:bg-muted"
+            className="-ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg hover:bg-muted"
           >
             <X className="h-5 w-5 text-muted-foreground" />
           </button>
@@ -56,7 +62,7 @@ export function MobileSearchModal({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        <div ref={resultsRef} className="flex-1 overflow-y-auto">
           {searchLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-6 w-6 text-primary animate-spin" />
