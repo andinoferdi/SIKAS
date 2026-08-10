@@ -3,6 +3,7 @@ import { errorResponse } from "@/lib/utils/api-response"
 import { createClient } from "@/lib/supabase/server"
 import { getSession } from "@/lib/auth/session"
 import { getJakartaDateString } from "@/lib/utils/format"
+import { normalizePaymentMethod } from "@/services/chatbot/intent-parser"
 import type {
   ChatbotAction,
   BatchCreateTransactionsPayload,
@@ -72,6 +73,11 @@ async function handleBatchCreate(
     if (!tx.amount || !tx.type || !tx.category || !tx.payment_method) {
       return errorResponse(`Transaksi #${i + 1} tidak lengkap`, 400)
     }
+    const normalizedPaymentMethod = normalizePaymentMethod(tx.payment_method)
+    if (!normalizedPaymentMethod) {
+      return errorResponse(`Transaksi #${i + 1}: metode pembayaran tidak dikenali, gunakan Cash atau M-Banking`, 400)
+    }
+    payload.transactions[i] = { ...tx, payment_method: normalizedPaymentMethod }
   }
 
   const { data: user, error: userError } = await supabase
@@ -327,6 +333,13 @@ async function handleBatchEdit(
     }
     if (!update.updates || Object.keys(update.updates).length === 0) {
       return errorResponse(`Update #${i + 1} tidak memiliki perubahan`, 400)
+    }
+    if (update.updates.payment_method !== undefined) {
+      const normalizedPaymentMethod = normalizePaymentMethod(update.updates.payment_method)
+      if (!normalizedPaymentMethod) {
+        return errorResponse(`Update #${i + 1}: metode pembayaran tidak dikenali, gunakan Cash atau M-Banking`, 400)
+      }
+      update.updates = { ...update.updates, payment_method: normalizedPaymentMethod }
     }
   }
 

@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server"
 import { getSession } from "@/lib/auth/session"
 import { searchUserTransactions } from "@/services/chatbot/user-context"
 import { getJakartaDateString } from "@/lib/utils/format"
+import { normalizePaymentMethod } from "@/services/chatbot/intent-parser"
 import type {
   ChatbotAction,
   CreateTransactionPayload,
@@ -79,6 +80,12 @@ async function handleCreateTransaction(
   if (!payload.amount || !payload.type || !payload.category || !payload.payment_method) {
     return errorResponse("Data transaksi tidak lengkap", 400)
   }
+
+  const paymentMethod = normalizePaymentMethod(payload.payment_method)
+  if (!paymentMethod) {
+    return errorResponse("Metode pembayaran tidak dikenali, gunakan Cash atau M-Banking", 400)
+  }
+  payload = { ...payload, payment_method: paymentMethod }
 
   const { data: user, error: userError } = await supabase
     .from("users")
@@ -237,6 +244,14 @@ async function handleEditTransaction(
 
   if (!payload.updates || Object.keys(payload.updates).length === 0) {
     return errorResponse("Tidak ada data yang diubah", 400)
+  }
+
+  if (payload.updates.payment_method !== undefined) {
+    const normalizedPaymentMethod = normalizePaymentMethod(payload.updates.payment_method)
+    if (!normalizedPaymentMethod) {
+      return errorResponse("Metode pembayaran tidak dikenali, gunakan Cash atau M-Banking", 400)
+    }
+    payload = { ...payload, updates: { ...payload.updates, payment_method: normalizedPaymentMethod } }
   }
 
   const fullId = await resolveTransactionId(userId, payload.transactionId)

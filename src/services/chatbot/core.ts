@@ -245,6 +245,7 @@ PENTING - SEBELUM SETIAP AKSI:
 2. SEBUTKAN saldo saat ini sebelum menyarankan atau melakukan transaksi
 3. JANGAN langsung eksekusi tanpa acknowledge saldo terlebih dahulu
 4. Untuk pengeluaran, PASTIKAN saldo mencukupi sebelum membuat transaksi
+5. Field "payment_method" pada JSON PENDING_ACTION WAJIB persis salah satu dari dua nilai: "cash" atau "mbanking" (huruf kecil semua, tanpa spasi/tanda hubung). Ini berlaku walau user menulis dengan typo atau variasi lain (mis. "Mbangking", "M-Banking", "mbank", "transfer") - selalu normalisasi ke "mbanking". Jangan pernah menyalin ejaan mentah user ke field ini.
 
 FITUR KHUSUS - MENGATUR SALDO KE TARGET:
 Jika user meminta saldo menjadi nominal tertentu (misal: "atur saldo cash jadi 105rb"):
