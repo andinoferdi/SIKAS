@@ -191,18 +191,22 @@ const extractAmountFromText = (content: string): number | null => {
     return parseScaledNumber(currencyMatch[1])
   }
 
+  /*
+    Nominal ribuan Indonesia sering ditulis tanpa prefiks "Rp" (mis. "32.500").
+    Pola dipersempit ke titik-diikuti-tepat-3-digit supaya tidak salah tangkap
+    angka lain seperti tanggal (10.08) atau versi (v2.5).
+  */
+  const groupedThousandsMatch = content.match(/\b(\d{1,3}(?:\.\d{3})+)\b/)
+  if (groupedThousandsMatch) {
+    return parseScaledNumber(groupedThousandsMatch[1])
+  }
+
   const longNumberMatch = content.match(/\b(\d{4,})\b/)
   if (longNumberMatch) {
     return parseScaledNumber(longNumberMatch[1])
   }
 
   return extractAmountFromWords(content)
-}
-
-const detectPaymentMethod = (content: string): "cash" | "mbanking" | null => {
-  if (/\b(cash|tunai)\b/i.test(content)) return "cash"
-  if (/\b(m-?banking|mbanking|bank)\b/i.test(content)) return "mbanking"
-  return null
 }
 
 const levenshteinDistance = (a: string, b: string): number => {
@@ -222,22 +226,30 @@ const levenshteinDistance = (a: string, b: string): number => {
 }
 
 /*
-  Dipakai di batas API (bukan hanya saat parsing kalimat bebas) karena JSON
-  aksi transaksi juga bisa datang dari model LLM, yang kadang menyalin typo
-  user apa adanya (mis. "mbangking"). detectPaymentMethod berbasis word
-  boundary tidak menangkap typo, jadi nilai mentah bisa lolos sampai ke
-  constraint database. Jarak edit menoleransi typo umum tanpa membuka celah
-  untuk nilai yang benar-benar tidak dikenal.
+  Regex dulu (murah, akurat untuk kasus umum), baru jatuh ke pencocokan per
+  kata dengan jarak edit. Tanpa fallback ini, pesan bertypo seperti
+  "mbangking" gagal dikenali parser deterministik dan jatuh ke LLM bebas,
+  yang pernah menyalin typo mentah ke JSON aksi (lolos sampai constraint
+  database) dan sesekali malah berputar mengulang kalimat yang sama.
+  Tokenisasi + jarak edit per kata dipakai (bukan jarak edit atas seluruh
+  kalimat) supaya tetap mengenali typo di tengah kalimat panjang.
 */
+const detectPaymentMethod = (content: string): "cash" | "mbanking" | null => {
+  if (/\b(cash|tunai)\b/i.test(content)) return "cash"
+  if (/\b(m-?banking|mbanking|bank)\b/i.test(content)) return "mbanking"
+
+  for (const word of content.toLowerCase().split(/[^a-z]+/)) {
+    if (word.length < 3) continue
+    if (levenshteinDistance(word, "mbanking") <= 2) return "mbanking"
+    if (levenshteinDistance(word, "cash") <= 1) return "cash"
+  }
+
+  return null
+}
+
 export const normalizePaymentMethod = (value: unknown): "cash" | "mbanking" | null => {
   if (typeof value !== "string") return null
-  const normalized = value.trim().toLowerCase()
-  if (normalized === "cash" || normalized === "mbanking") return normalized
-  const direct = detectPaymentMethod(normalized)
-  if (direct) return direct
-  if (levenshteinDistance(normalized, "mbanking") <= 2) return "mbanking"
-  if (levenshteinDistance(normalized, "cash") <= 1) return "cash"
-  return null
+  return detectPaymentMethod(value.trim())
 }
 
 const detectTransactionType = (
@@ -247,7 +259,16 @@ const detectTransactionType = (
     return "income"
   }
 
-  if (/\b(pengeluaran|expense|bayar|beli|keluar|spend)\b/i.test(content)) {
+  /*
+    Sama seperti CREATE_VERBS: bentuk berimbuhan didaftar eksplisit karena
+    \bbayar\b tidak cocok dengan "bayarin"/"membayar" (tidak ada batas kata
+    di antara "bayar" dan imbuhannya).
+  */
+  if (
+    /\b(pengeluaran|expense|bayar|membayar|dibayar|dibayarkan|bayarkan|bayarin|dibayarin|kebayar|beli|membeli|dibeli|belikan|dibelikan|keluar|spend)\b/i.test(
+      content
+    )
+  ) {
     return "expense"
   }
 
