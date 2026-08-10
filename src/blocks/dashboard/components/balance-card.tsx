@@ -14,11 +14,7 @@ export function BalanceCard({ title, amount, type }: BalanceCardProps) {
   return (
     <div className="rounded-xl border border-border bg-card p-4 transition-colors hover:border-muted-foreground/30 sm:p-5">
       <div className="flex items-center gap-2.5 sm:gap-3">
-        <div
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
-            isMbanking ? "bg-fund-mbanking/10" : "bg-fund-cash/10"
-          }`}
-        >
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center">
           <Icon className={`h-5 w-5 ${isMbanking ? "text-fund-mbanking" : "text-fund-cash"}`} />
         </div>
         <span className="truncate text-sm font-medium text-muted-foreground">{title}</span>

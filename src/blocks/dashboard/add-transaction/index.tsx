@@ -139,7 +139,7 @@ export default function AddTransactionPage() {
               <div className="divide-y divide-border">
                 <div className="flex items-center justify-between gap-3 py-3 first:pt-0">
                   <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-fund-mbanking/10">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center">
                       <Smartphone className="h-4 w-4 text-fund-mbanking" />
                     </div>
                     <span className="truncate text-sm text-muted-foreground">M-Banking</span>
@@ -151,7 +151,7 @@ export default function AddTransactionPage() {
 
                 <div className="flex items-center justify-between gap-3 py-3 last:pb-0">
                   <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-fund-cash/10">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center">
                       <Banknote className="h-4 w-4 text-fund-cash" />
                     </div>
                     <span className="truncate text-sm text-muted-foreground">Cash</span>
