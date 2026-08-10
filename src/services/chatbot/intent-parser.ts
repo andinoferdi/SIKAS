@@ -205,6 +205,41 @@ const detectPaymentMethod = (content: string): "cash" | "mbanking" | null => {
   return null
 }
 
+const levenshteinDistance = (a: string, b: string): number => {
+  const rows = Array.from({ length: a.length + 1 }, (_, i) => i)
+  for (let j = 1; j <= b.length; j++) {
+    let previousDiagonal = rows[0]
+    rows[0] = j
+    for (let i = 1; i <= a.length; i++) {
+      const previous = rows[i]
+      rows[i] = a[i - 1] === b[j - 1]
+        ? previousDiagonal
+        : 1 + Math.min(previousDiagonal, rows[i], rows[i - 1])
+      previousDiagonal = previous
+    }
+  }
+  return rows[a.length]
+}
+
+/*
+  Dipakai di batas API (bukan hanya saat parsing kalimat bebas) karena JSON
+  aksi transaksi juga bisa datang dari model LLM, yang kadang menyalin typo
+  user apa adanya (mis. "mbangking"). detectPaymentMethod berbasis word
+  boundary tidak menangkap typo, jadi nilai mentah bisa lolos sampai ke
+  constraint database. Jarak edit menoleransi typo umum tanpa membuka celah
+  untuk nilai yang benar-benar tidak dikenal.
+*/
+export const normalizePaymentMethod = (value: unknown): "cash" | "mbanking" | null => {
+  if (typeof value !== "string") return null
+  const normalized = value.trim().toLowerCase()
+  if (normalized === "cash" || normalized === "mbanking") return normalized
+  const direct = detectPaymentMethod(normalized)
+  if (direct) return direct
+  if (levenshteinDistance(normalized, "mbanking") <= 2) return "mbanking"
+  if (levenshteinDistance(normalized, "cash") <= 1) return "cash"
+  return null
+}
+
 const detectTransactionType = (
   content: string
 ): CreateTransactionPayload["type"] | null => {

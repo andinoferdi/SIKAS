@@ -89,11 +89,20 @@ export function HeroSection() {
       <div className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-24 lg:py-32">
         <div className="grid gap-12 lg:grid-cols-2 lg:items-center lg:gap-16">
           <div className="flex flex-col gap-6">
-            <h1 className="font-bold tracking-tight text-display text-foreground">
+            {/*
+              Tiga baris dikunci lewat <br> eksplisit dan kata berputar dijaga
+              nowrap. Sebelumnya "untuk" dan kata berputar berbagi satu baris,
+              sehingga kata panjang seperti "Masa Depan" memecah baris, tinggi
+              judul bertambah, dan seluruh konten di bawahnya ikut terdorong
+              tiap kali kata berganti. Dengan jumlah baris tetap, kata sepanjang
+              apa pun yang ditambahkan nanti tidak menggeser apa-apa.
+            */}
+            <h1 className="font-bold tracking-tight text-display lg:text-display-split text-foreground">
               Kelola keuangan
               <br />
-              untuk{" "}
-              <span ref={wordRef} className="inline-block text-primary">
+              untuk
+              <br />
+              <span ref={wordRef} className="inline-block whitespace-nowrap text-primary">
                 {ROTATING_WORDS[wordIndex]}
               </span>
             </h1>

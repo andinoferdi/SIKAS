@@ -74,12 +74,7 @@ function PaymentMethodOption({
       {compact ? (
         <Icon className={cn("h-5 w-5 shrink-0", selected ? fundTone : "text-muted-foreground")} />
       ) : (
-        <div
-          className={cn(
-            "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg sm:h-10 sm:w-10",
-            selected ? "bg-primary/10" : "bg-muted",
-          )}
-        >
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center sm:h-10 sm:w-10">
           <Icon className={cn("h-4 w-4 sm:h-5 sm:w-5", selected ? fundTone : "text-muted-foreground")} />
         </div>
       )}
