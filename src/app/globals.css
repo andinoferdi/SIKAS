@@ -320,6 +320,16 @@
 
   --text-display: clamp(2.5rem, 8vw, 5rem);
   --text-display--line-height: 1.05;
+  /*
+    Untuk judul yang hidup di dalam kolom, bukan selebar halaman. Faktor 8vw
+    pada --text-display diukur untuk teks selebar layar, sehingga saat hero
+    berubah jadi dua kolom di breakpoint lg, kolom judul menyusut ke 448px
+    sampai 512px sementara fontnya tetap mentok 80px dan barisnya pecah.
+    Batas bawah 56px aman di kolom tersempit 448px, batas atas 64px menyisakan
+    margin di kolom 512px: baris terpanjang "Kelola keuangan" mencapai 492px.
+  */
+  --text-display-split: clamp(3.5rem, 5.5vw, 4rem);
+  --text-display-split--line-height: 1.05;
   --text-h2: clamp(1.75rem, 4vw, 2.75rem);
   --text-h2--line-height: 1.15;
 }
