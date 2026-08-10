@@ -10,6 +10,7 @@ import { errorResponse } from "@/lib/utils/api-response"
 import { formatShortDate, getJakartaDateString } from "@/lib/utils/format"
 import { createSystemPrompt } from "@/services/chatbot"
 import {
+  extractCreateFollowUpPayload,
   extractCreateTransactionPayload,
   extractEditTransactionUpdates,
   extractSetBalanceTarget,
@@ -312,6 +313,33 @@ const maybeHandleDeterministicIntent = async (
     Object.keys(editUpdates).length > 0 &&
     isLikelyEditLatestIntent(previousUserMessage) &&
     lastAssistantMessage.includes("Bagian mana yang mau diubah?")
+
+  /*
+    Didahulukan sebelum pemeriksaan saldo. Pesan lanjutan kerap menyebut kata
+    seperti "saldo awal", dan bila ditaruh belakangan ia akan dibajak jalur
+    saldo persis seperti bug sebelumnya.
+  */
+  const createFollowUp = extractCreateFollowUpPayload(previousUserMessage, message)
+  if (createFollowUp) {
+    if (!sessionUserId || !userContext) {
+      return createSseResponse(buildLoginRequiredMessage())
+    }
+
+    const validationError = validateCreateTransaction(userContext, createFollowUp)
+    if (validationError) {
+      return createSseResponse(validationError)
+    }
+
+    const transactionLabel = formatDraftTransactionSummary(createFollowUp)
+    const payload: CreateTransactionPayload = {
+      ...createFollowUp,
+      transactionLabel,
+    }
+
+    return createSseResponse(
+      `Saya siap mencatat ${transactionLabel}. Mohon konfirmasi dulu ya.\n[PENDING_ACTION:create_transaction]${JSON.stringify(payload)}[/PENDING_ACTION]`
+    )
+  }
 
   const balanceTarget = extractSetBalanceTarget(message)
   if (balanceTarget) {

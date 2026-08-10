@@ -1,7 +1,16 @@
 import type { CreateTransactionPayload, EditTransactionPayload } from "@/types/rag"
 import { getJakartaDateString } from "@/lib/utils/format"
 
-const CREATE_VERBS = /\b(catat|tambah(?:kan)?|buat(?:kan)?|masukkan)\b/i
+/*
+  Bentuk berimbuhan didaftar eksplisit, bukan dengan melonggarkan batas kata.
+  Pola lama `\bcatat\b` tidak pernah cocok dengan "mencatat" karena huruf n di
+  depannya memblokir batas kata, sehingga kalimat sewajarnya seperti "tolong
+  bantu saya mencatat" tidak dikenali sebagai niat mencatat. Melepas batas kata
+  akan memperbaiki itu tapi membuat kata benda "pemasukan" ikut cocok lewat
+  "masuk", dan pertanyaan saldo yang menyebutnya akan salah rute.
+*/
+const CREATE_VERBS =
+  /\b(catat|mencatat|dicatat|catatkan|tambah|tambahkan|menambah|menambahkan|ditambah|ditambahkan|buat|buatkan|membuat|dibuat|masukkan|masukan|memasukkan|dimasukkan|dimasukan|masukin)\b/i
 const DELETE_VERBS = /\b(hapus|delete|remove)\b/i
 const EDIT_VERBS = /\b(edit|ubah|ganti|koreksi)\b/i
 const BALANCE_TERMS = /\b(saldo|balance|duit|uang saya|uangku)\b/i
@@ -354,6 +363,35 @@ export function extractCreateTransactionPayload(
     transaction_date: transactionDate,
     ...(extractDescription(content) && { description: extractDescription(content) }),
   }
+}
+
+/*
+  Pencatatan yang dibangun dari dua pesan. Pengguna sering membuka dengan niat
+  saja ("tolong bantu saya mencatat transaksi pemasukan"), bot menanyakan
+  detailnya, lalu pengguna menjawab dengan angka dan metode saja tanpa mengulang
+  kata kerjanya. Jalur cepat dulu melewatkan kasus ini karena hanya memeriksa
+  satu pesan terakhir, sehingga percakapan jatuh ke LLM yang kerap menjawab
+  prosa tanpa blok aksi dan kartu konfirmasinya tidak pernah muncul.
+
+  Penggabungan dibatasi pada pesan pengguna tepat sebelumnya, dan hanya jika
+  pesan itu memang berisi kata kerja perintah sementara pesan terakhir tidak.
+  Bila gabungannya tetap tidak lengkap, hasilnya null dan alurnya kembali ke
+  perilaku lama.
+*/
+export function extractCreateFollowUpPayload(
+  previousUserMessage: string,
+  message: string,
+  transactionDate: string = getJakartaDateString()
+): CreateTransactionPayload | null {
+  if (!previousUserMessage.trim()) return null
+
+  /* Pesan terakhir sudah lengkap sendiri, bukan urusan fungsi ini. */
+  if (isLikelyCreateIntent(message)) return null
+
+  const sebelumnya = normalizeMessage(previousUserMessage)
+  if (!CREATE_VERBS.test(sebelumnya)) return null
+
+  return extractCreateTransactionPayload(`${previousUserMessage} ${message}`, transactionDate)
 }
 
 export function extractEditTransactionUpdates(
