@@ -550,10 +550,13 @@ export async function POST(request: Request) {
             jatah max_tokens. Prompt CRUD membawa instruksi aksi ~4KB sehingga
             model berpikir jauh lebih lama, jatah habis sebelum blok
             [PENDING_ACTION] sempat ditutup, dan balasan datang kosong atau
-            terpotong. Reasoning dimatikan, jatah dinaikkan sebagai pengaman.
+            terpotong. Sebagian model gratis sekarang malah mewajibkan
+            reasoning menyala (menolak enabled: false dengan error 400
+            "Reasoning is mandatory"), jadi reasoning diaktifkan dan jatah
+            token dinaikkan lagi sebagai pengaman.
           */
-          reasoning: { enabled: false },
-          max_tokens: 2000,
+          reasoning: { enabled: true },
+          max_tokens: 3000,
         }),
       })
 
